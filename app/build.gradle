@@ -1,0 +1,71 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 35
+    namespace 'com.thelinkphone.app'
+    defaultConfig {
+        applicationId "com.thelinkphone.app"
+        minSdkVersion 24
+        targetSdkVersion 35
+        versionCode 10007
+        versionName "1.0.7"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    buildTypes {
+        release {
+            debuggable false
+            minifyEnabled true
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            debuggable true
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        encoding = 'UTF-8'
+    }
+
+    // Add Java toolchain configuration
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.github.bumptech.glide:glide:4.15.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.github.aitsuki:SwipeMenuRecyclerView:2.1.5'
+    implementation 'com.makeramen:roundedimageview:2.3.0'
+    implementation 'com.romainpiel.shimmer:library:1.4.0'
+    implementation 'com.github.yalantis:ucrop:2.2.8'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'com.github.yuriy-budiyev:code-scanner:2.3.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
+    implementation 'com.github.chtgupta:QRUtils-Android:0.1.0'
+    
+    // Add Kotlin stdlib with compatible version
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.1"
+}

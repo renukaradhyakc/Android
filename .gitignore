@@ -1,0 +1,55 @@
+# === Android / Gradle ===
+.gradle/
+build/
+*/build/
+local.properties
+*.iml
+.gradle/
+captures/
+output.json
+
+# === IntelliJ / Android Studio ===
+.idea/
+*.ipr
+*.iws
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/navEditor.xml
+.idea/deploymentTargetDropDown.xml
+
+# === OS Specific ===
+.DS_Store
+Thumbs.db
+
+# === Logs and temporary files ===
+*.log
+*.tmp
+*.temp
+*.swp
+
+# === Keystore files (do NOT upload signing keys!) ===
+*.jks
+*.keystore
+*.pem
+*.key
+
+# === Local test / output ===
+app/release/
+app/debug/
+app/build/
+bin/
+gen/
+out/
+
+# === Gradle wrapper files (optional) ===
+# If using Gradle Wrapper, keep these:
+gradlew
+gradlew.bat
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties

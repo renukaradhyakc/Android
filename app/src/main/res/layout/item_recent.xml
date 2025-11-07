@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.aitsuki.swipe.SwipeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:autoClose="true"
+    app:preview="none">
+
+    <com.thelinkphone.app.custom.TextW
+        android:textColor="#fff"
+        android:gravity="center"
+        android:layout_gravity="end"
+        android:id="@+id/right_menu"
+        android:background="#ff2828"
+        android:layout_width="80dp"
+        android:layout_height="match_parent"
+        android:text="@string/delete" />
+
+    <com.thelinkphone.app.custom.LayoutRecent
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</com.aitsuki.swipe.SwipeLayout>

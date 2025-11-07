@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="_10dp">10dp</dimen>
+    <dimen name="_15dp">15dp</dimen>
+
+    <dimen name="magin_cv">5dp</dimen>
+    <dimen name="mar_item_setting">15dp</dimen>
+    <dimen name="mar_rv">5dp</dimen>
+
+    <dimen name="padding_dialog">13dp</dimen>
+    <dimen name="size_add_call">60dp</dimen>
+</resources>
