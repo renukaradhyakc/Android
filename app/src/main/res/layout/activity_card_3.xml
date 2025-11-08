@@ -87,6 +87,12 @@
                 android:textColor="#FFFFFF"
                 android:textSize="20sp"
                 android:textStyle="bold|italic"
+                android:ellipsize="marquee"
+                android:singleLine="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:scrollHorizontally="true"
                 app:layout_constraintEnd_toStartOf="@id/button_close"
                 app:layout_constraintHorizontal_bias="0.682"
                 app:layout_constraintStart_toEndOf="@id/avatar_container"
@@ -96,6 +102,7 @@
 
 
             <LinearLayout
+                android:id="@+id/block_reason_container"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_badge_yellow_enhanced"
@@ -105,7 +112,7 @@
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="6dp"
                 android:layout_marginTop="15dp"
-                android:layout_marginBottom="5dp"
+                android:layout_marginBottom="10dp"
                 android:layout_marginLeft="40dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -119,6 +126,7 @@
                     app:tint="#FFB800" />
 
                 <TextView
+                    android:id="@+id/block_reason"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:letterSpacing="0.05"
@@ -138,7 +146,7 @@
                 android:background="#FFFFFF"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/avatar_container" />
+                app:layout_constraintTop_toBottomOf="@id/block_reason_container" />
 
             <TextView
                 android:id="@+id/model_label"
@@ -161,6 +169,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+
                 android:layout_marginEnd="20dp"
                 android:text="callalink"
                 android:textColor="#EAE8FF"

@@ -1,7 +1,5 @@
 package com.thelinkphone.app.service;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -19,11 +17,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -290,17 +284,21 @@ public class IncomingCallPopupService extends Service {
     }
 
 
-
     @SuppressLint("ClickableViewAccessibility")
     private void makeDraggable(final View view, final WindowManager.LayoutParams params, final WindowManager windowManager) {
-        // Define a threshold for horizontal glide to trigger dismissal
-        final int SWIPE_THRESHOLD_X = (int) (windowManager.getDefaultDisplay().getWidth() * 0.10); // 30% of screen width
+        final int SWIPE_THRESHOLD_X = (int) (windowManager.getDefaultDisplay().getWidth() * 0.10);
 
         view.setOnTouchListener(new View.OnTouchListener() {
+            private static final long DOUBLE_TAP_TIMEOUT = 300;
+            private static final int TAP_MOVEMENT_THRESHOLD = 20;
             private int initialX, initialY;
             private float initialTouchX, initialTouchY;
             private int screenWidth, screenHeight;
-            private boolean isBeingSwiped = false; // Flag to track if a swipe is in progress
+            private boolean isBeingSwiped = false;
+            private boolean isDragging = false;
+            private long firstTapTime = 0;
+            private float firstTapX = 0;
+            private float firstTapY = 0;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -313,43 +311,45 @@ public class IncomingCallPopupService extends Service {
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        // Reset swipe flag
                         isBeingSwiped = false;
+                        isDragging = false;
                         initialX = params.x;
                         initialY = params.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
+
+                        Log.d(TAG, "ACTION_DOWN detected at: " + initialTouchX + ", " + initialTouchY);
                         return true;
 
                     case MotionEvent.ACTION_MOVE:
                         int deltaX = (int) (event.getRawX() - initialTouchX);
                         int deltaY = (int) (event.getRawY() - initialTouchY);
 
-                        // Check if horizontal movement significantly exceeds vertical movement
-                        if (Math.abs(deltaX) > Math.abs(deltaY) * 2) {
+                        if (Math.abs(deltaX) > TAP_MOVEMENT_THRESHOLD || Math.abs(deltaY) > TAP_MOVEMENT_THRESHOLD) {
+                            isDragging = true;
+                        }
+
+                        if (!isDragging) {
+                            return true;
+                        }
+
+                        if (Math.abs(deltaX) > Math.abs(deltaY) * 2 && Math.abs(deltaX) > TAP_MOVEMENT_THRESHOLD) {
                             isBeingSwiped = true;
-                            // For a horizontal glide, we primarily update X and update the alpha
                             params.x = initialX + deltaX;
 
-                            // Calculate alpha based on horizontal displacement
-                            // Alpha should decrease as deltaX approaches SWIPE_THRESHOLD_X
                             float displacementRatio = Math.min(1.0f, (float) Math.abs(deltaX) / SWIPE_THRESHOLD_X);
                             float alpha = 1.0f - displacementRatio;
-                            view.setAlpha(alpha); // Change the view's opacity
+                            view.setAlpha(alpha);
 
-                            // Do not clamp the X position when swiping for dismissal
                             windowManager.updateViewLayout(view, params);
                             return true;
                         } else if (!isBeingSwiped) {
-                            // Standard dragging logic (if not actively swiping for dismissal)
                             params.x = initialX + deltaX;
                             params.y = initialY + deltaY;
 
-                            // Get popup's width & height
                             int popupWidth = view.getWidth();
                             int popupHeight = view.getHeight();
 
-                            // Clamp to prevent half disappearing
                             int minX = -screenWidth / 2 + popupWidth / 2;
                             int maxX = screenWidth / 2 - popupWidth / 2;
                             int minY = -screenHeight / 2 + popupHeight / 2;
@@ -361,16 +361,71 @@ public class IncomingCallPopupService extends Service {
                             windowManager.updateViewLayout(view, params);
                             return true;
                         }
-                        return true; // Continue to return true if dragging/swiping
+                        return true;
 
                     case MotionEvent.ACTION_UP:
-                        int finalDeltaX = (int) (event.getRawX() - initialTouchX);
+                        long currentTime = System.currentTimeMillis();
+                        float upX = event.getRawX();
+                        float upY = event.getRawY();
+
+                        float totalMovementX = Math.abs(upX - initialTouchX);
+                        float totalMovementY = Math.abs(upY - initialTouchY);
+
+                        Log.d(TAG, "ACTION_UP - Movement: X=" + totalMovementX + ", Y=" + totalMovementY +
+                                ", isDragging=" + isDragging + ", isBeingSwiped=" + isBeingSwiped);
+
+                        if (!isDragging && !isBeingSwiped &&
+                                totalMovementX < TAP_MOVEMENT_THRESHOLD && totalMovementY < TAP_MOVEMENT_THRESHOLD) {
+
+                            Log.d(TAG, "Valid tap detected");
+
+                            if (firstTapTime > 0 && (currentTime - firstTapTime) < DOUBLE_TAP_TIMEOUT) {
+                                float tapDistanceX = Math.abs(upX - firstTapX);
+                                float tapDistanceY = Math.abs(upY - firstTapY);
+
+                                Log.d(TAG, "Checking double-tap: time=" + (currentTime - firstTapTime) +
+                                        "ms, distance: X=" + tapDistanceX + ", Y=" + tapDistanceY);
+
+                                if (tapDistanceX < TAP_MOVEMENT_THRESHOLD * 2 && tapDistanceY < TAP_MOVEMENT_THRESHOLD * 2) {
+                                    Log.d(TAG, "✅ DOUBLE TAP DETECTED - Launching ActivityCall");
+
+                                    try {
+                                        Intent intent = new Intent(IncomingCallPopupService.this, com.thelinkphone.app.ActivityCall.class);
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                        startActivity(intent);
+
+                                        new Handler().postDelayed(() -> {
+                                            hidePopup(view, windowManager, params);
+                                        }, 100);
+
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "❌ Error launching ActivityCall on double tap", e);
+                                    }
+
+                                    firstTapTime = 0;
+                                    firstTapX = 0;
+                                    firstTapY = 0;
+                                    return true;
+                                }
+                            }
+
+                            Log.d(TAG, "First tap recorded, waiting for second tap...");
+                            firstTapTime = currentTime;
+                            firstTapX = upX;
+                            firstTapY = upY;
+                            return true;
+                        }
+
+                        firstTapTime = 0;
+                        firstTapX = 0;
+                        firstTapY = 0;
 
                         if (isBeingSwiped) {
+                            int finalDeltaX = (int) (upX - initialTouchX);
+
                             if (Math.abs(finalDeltaX) >= SWIPE_THRESHOLD_X) {
-                                // **Trigger Fade Out and Dismissal (SLOWER)**
+                                Log.d(TAG, "Swipe threshold reached - dismissing popup");
                                 android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 0.0f);
-                                // 💡 Increased duration for slower fade-out
                                 animator.setDuration(800);
                                 final int direction = (int) Math.signum(finalDeltaX);
 
@@ -380,30 +435,30 @@ public class IncomingCallPopupService extends Service {
                                         float animatedValue = (Float) animation.getAnimatedValue();
                                         view.setAlpha(animatedValue);
 
-                                        // Move off-screen slower while fading out
-                                        params.x = params.x + (int) (screenWidth * 0.025 * direction); // Adjusted multiplier
+                                        params.x = params.x + (int) (screenWidth * 0.025 * direction);
                                         try {
                                             windowManager.updateViewLayout(view, params);
                                         } catch (IllegalArgumentException e) {}
                                     }
                                 });
+
                                 animator.addListener(new android.animation.AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(android.animation.Animator animation) {
                                         try {
                                             windowManager.removeView(view);
+                                            isVisible = false;
+                                            stopSelf();
                                         } catch (IllegalArgumentException e) {}
                                     }
                                 });
                                 animator.start();
 
                             } else {
-                                // **Snap Back (Cancel Dismissal) (SLOWER)**
-
+                                Log.d(TAG, "Swipe cancelled - snapping back");
                                 android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator.ofInt(params.x, initialX);
                                 android.animation.ValueAnimator alphaAnimator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 1.0f);
 
-                                // 💡 Increased duration for slower snap back
                                 xAnimator.setDuration(400);
                                 alphaAnimator.setDuration(400);
 
@@ -427,19 +482,15 @@ public class IncomingCallPopupService extends Service {
                                 alphaAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(android.animation.Animator animation) {
-                                        // Ensure full opacity is set explicitly after the animation finishes
                                         view.setAlpha(1.0f);
                                     }
                                 });
-
                                 xAnimator.start();
                                 alphaAnimator.start();
                             }
                             isBeingSwiped = false;
                             return true;
                         }
-
-                        // Standard drag release (if not swiping)
                         return true;
                 }
                 return false;

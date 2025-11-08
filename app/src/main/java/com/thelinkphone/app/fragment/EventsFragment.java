@@ -243,7 +243,7 @@ public class EventsFragment extends Fragment {
             Log.d(TAG, "onCreateView: "+mIsloggedIn);
             /*String urlToLoad = "https://www.app.thelinkphone.com/events";
             webview.loadUrl(urlToLoad + "?token=" + mIsloggedIn);*/
-            webview.loadUrl("http://192.168.0.101:8000/events");
+            webview.loadUrl("http://192.168.0.102:8000/events");
         }
         else
         {

@@ -196,6 +196,12 @@
             android:foregroundServiceType="mediaProjection|phoneCall"
             tools:ignore="ForegroundServicePermission" />
 
+        <service
+            android:name=".service.BlockedPopupService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="phoneCall" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

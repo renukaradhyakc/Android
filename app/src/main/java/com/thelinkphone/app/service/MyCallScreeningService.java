@@ -10,11 +10,9 @@ import android.telephony.PhoneNumberUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
-import com.thelinkphone.app.ActivityCall;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemPhone;
 import com.thelinkphone.app.model.Event;
-import com.thelinkphone.app.model.EventResponse;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.CheckEventTimeListener;
@@ -22,10 +20,6 @@ import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.ReadContact;
 
 import java.util.Iterator;
-
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
 
 /**
  * Call screening service that implements two modes:
@@ -71,16 +65,6 @@ public class MyCallScreeningService extends CallScreeningService {
 
         Log.d(TAG, "Screening incoming call from: " + phoneNumber);
 
-        // Check if number is manually blocked by user
-        boolean isManuallyBlocked = isNumberManuallyBlocked(phoneNumber);
-        Log.d(TAG, "Manual block check result: " + isManuallyBlocked);
-
-        if (isManuallyBlocked) {
-            Log.d(TAG, "BLOCKING CALL - number is in block list: " + phoneNumber);
-            blockCall(details);
-            return;
-        }
-
         // Check call settings preference
         int callSetting = MyShare.getCallSetting(this);
         Log.d(TAG, "Call screening for " + phoneNumber + " - Setting: " + (callSetting == MyShare.CALL_SETTING_UNRESTRICTED ? "UNRESTRICTED" : "PHONELINK_SCHEDULED"));
@@ -88,13 +72,16 @@ public class MyCallScreeningService extends CallScreeningService {
         Log.d(TAG, "CALL MODE: " + (callSetting == MyShare.CALL_SETTING_UNRESTRICTED ? "UNRESTRICTED" : "PHONELINK_SCHEDULED"));
         Log.d(TAG, "Fetching event info for: " + phoneNumber);
 
-        checkEventAndProceed(details, phoneNumber, callSetting);
+        final boolean isManuallyBlocked = isNumberManuallyBlocked(phoneNumber);
+        Log.d(TAG, "Manual block check result: " + isManuallyBlocked);
+
+        checkEventAndProceed(details, phoneNumber, callSetting, isManuallyBlocked);
 
         Log.d(TAG, "==================== CALL SCREENING END ====================");
     }
 
     private void launchActivityCall(int callMode,Event event,String phoneNumber) {
-        Intent intent = new Intent(getApplicationContext(), com.thelinkphone.app.service.IncomingCallPopupService.class);;
+        Intent intent = new Intent(getApplicationContext(), com.thelinkphone.app.service.IncomingCallPopupService.class);
         intent.putExtra("CALL_MODE", callMode);
 
         String displayName = "Unknown Caller";
@@ -107,16 +94,13 @@ public class MyCallScreeningService extends CallScreeningService {
             isWithinTime = event.isWithinTime();
         }
 
-        String[] namePhoto = ReadContact.getNamePhoto(getApplicationContext(), phoneNumber);
-        String contactName = namePhoto != null ? namePhoto[0] : null;
+        displayName=getDisplayName(phoneNumber,event);
 
-        if (contactName != null && !contactName.isEmpty()) {
-            displayName = contactName;
+        if (isNumberInContacts(phoneNumber)) {
             isAContact=true;
-            Log.d("launchActivityCall", "Found local contact: " + displayName);
-        } else if (event != null && event.getUsername() != null && !event.getUsername().isEmpty()) {
-            displayName = event.getUsername();
-            Log.d("launchActivityCall", "Using API username: " + displayName);
+            Log.d(TAG, "Found local contact: " + displayName);
+        } else {
+            Log.d(TAG, "Not found in local contact: " + displayName);
         }
 
         intent.putExtra("IS_CALLALINK_USER", isCallalinkUser);
@@ -124,7 +108,7 @@ public class MyCallScreeningService extends CallScreeningService {
         intent.putExtra("USERNAME", displayName);
         intent.putExtra("IS_A_CONTACT",isAContact);
 
-        Log.d(TAG, "Received popup data -> username: " + displayName +
+        Log.d(TAG, "Launching incoming call popup ->username: " + displayName +
                 ", callMode: " + callMode +
                 ", isCallALinkUser: " + isCallalinkUser +
                 ", isWithinSchedule: " + isWithinTime +
@@ -141,12 +125,21 @@ public class MyCallScreeningService extends CallScreeningService {
 
     }
 
+    private void launchBlockedPopup(int callMode,Event event,String phoneNumber,boolean isManuallyBlocked) {
+
+        String displayName = "Unknown Caller";
+        displayName=getDisplayName(phoneNumber,event);
+
+        Log.d(TAG, "Launching blocked popup -> username: " + displayName +
+                ", callMode: " + callMode +
+                ", isManuallyBlocked: " + isManuallyBlocked);
+
+        MyShare.saveCallInfo(getApplicationContext(), displayName);
+        BlockedPopupService.showPopup(getApplicationContext(), callMode, displayName, isManuallyBlocked,phoneNumber);
+    }
 
     private boolean isNumberManuallyBlocked(String phoneNumber) {
         Log.d(TAG, "Checking if number is manually blocked: " + phoneNumber);
-
-        // Log all blocked numbers for debugging
-        logAllBlockedNumbers();
 
         Iterator<ItemContact> it = MyShare.getArrBlock(this).iterator();
         while (it.hasNext()) {
@@ -177,129 +170,11 @@ public class MyCallScreeningService extends CallScreeningService {
         return false;
     }
 
-    private void logAllBlockedNumbers() {
-        Log.d(TAG, "=== LOGGING ALL BLOCKED NUMBERS ===");
-        Iterator<ItemContact> it = MyShare.getArrBlock(this).iterator();
-        int count = 0;
-        while (it.hasNext()) {
-            ItemContact contact = it.next();
-            count++;
-            Log.d(TAG, "Blocked Contact #" + count + ":");
-            Log.d(TAG, "  - ID: " + (contact.getId() != null ? contact.getId() : "null"));
-            Log.d(TAG, "  - Name: " + (contact.getName() != null ? contact.getName() : "null"));
-
-            if (contact.getArrPhone() != null && !contact.getArrPhone().isEmpty()) {
-                for (int i = 0; i < contact.getArrPhone().size(); i++) {
-                    ItemPhone phone = contact.getArrPhone().get(i);
-                    Log.d(TAG, "  - Phone #" + (i+1) + ": " + (phone.getNumber() != null ? phone.getNumber() : "null"));
-                }
-            } else {
-                Log.d(TAG, "  - No phone numbers");
-            }
-        }
-        Log.d(TAG, "Total blocked contacts: " + count);
-        Log.d(TAG, "=== END BLOCKED NUMBERS LOG ===");
-    }
-
     private boolean isNumberInContacts(String phoneNumber) {
         String contactId = ReadContact.getIdWithNumber(this, phoneNumber);
         boolean isInContacts = contactId != null && !contactId.isEmpty();
         Log.d(TAG, "Contact check for " + phoneNumber + ": " + (isInContacts ? "FOUND" : "NOT FOUND"));
         return isInContacts;
-    }
-
-    private void checkPhonelinkScheduledCall(Call.Details details, String phoneNumber,int callMode) {
-        // Check if the number exists in contacts using helper method
-        if (isNumberInContacts(phoneNumber)) {
-            // Known number (in contacts) - always allow
-            Log.d(TAG, "Call allowed - number found in contacts: " + phoneNumber);
-            allowCall(details);
-            launchActivityCall(callMode,null,phoneNumber);
-        } else {
-            // Unknown number (not in contacts) - check scheduled events
-            Log.d(TAG, "Unknown number detected, checking scheduled events: " + phoneNumber);
-            checkScheduledEventsForUnknownNumber(details, phoneNumber,callMode);
-        }
-    }
-
-    private void checkScheduledEventsForUnknownNumber(Call.Details details, String phoneNumber,int callMode) {
-        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        String userToken = sharedPreferences.getString(TOKEN_KEY, null);
-
-        // If user is not logged in, block unknown numbers
-        if (userToken == null || userToken.isEmpty()) {
-            Log.w(TAG, "User not logged in - blocking unknown number: " + phoneNumber);
-            blockCall(details);
-            return;
-        }
-
-        // Get user credentials from shared preferences (saved during login)
-        String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
-        String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
-
-        // If credentials are not available, block unknown numbers
-        if (userEmail.isEmpty() || userPassword.isEmpty()) {
-            Log.w(TAG, "User credentials not available - blocking unknown number: " + phoneNumber);
-            blockCall(details);
-            return;
-        }
-
-        checkEventTime(userEmail, userPassword, phoneNumber, new CheckEventTimeListener() {
-            @Override
-            public void onEventCheckComplete(Event event,boolean apiFailed) {
-                if (event == null) {
-                    Log.e("MyCallScreeningService", "Event is null — API call failed or returned empty.");
-                    blockCall(details);
-                    return;
-                }
-                if (event.isWithinTime()) {
-                    Log.d(TAG, "Call allowed - unknown number within scheduled event time: " + phoneNumber);
-                    allowCall(details);
-                    launchActivityCall(callMode,event,phoneNumber);
-                } else {
-                    Log.d(TAG, "Call blocked - unknown number, no scheduled event: " + phoneNumber);
-                    blockCall(details);
-                }
-            }
-        });
-    }
-
-    private void checkScheduledEvents(Call.Details details, String phoneNumber,int callMode) {
-        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        String userToken = sharedPreferences.getString(TOKEN_KEY, null);
-
-        // If user is not logged in, use fallback behavior
-        if (userToken == null || userToken.isEmpty()) {
-            Log.w(TAG, "User not logged in - using fallback behavior (block call)");
-            blockCall(details);
-            return;
-        }
-
-        // Get user credentials from shared preferences (saved during login)
-        String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
-        String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
-
-        // If credentials are not available, block the call
-        if (userEmail.isEmpty() || userPassword.isEmpty()) {
-            Log.w(TAG, "User credentials not available - blocking call for security");
-            Log.d(TAG, "Email available: " + !userEmail.isEmpty() + ", Password available: " + !userPassword.isEmpty());
-            blockCall(details);
-            return;
-        }
-
-        checkEventTime(userEmail, userPassword, phoneNumber, new CheckEventTimeListener() {
-            @Override
-            public void onEventCheckComplete(Event event,boolean apiFailed) {
-                if (event.isWithinTime()) {
-                    Log.d(TAG, "Call allowed - within scheduled event time");
-                    allowCall(details);
-                    launchActivityCall(callMode,event,phoneNumber);
-                } else {
-                    Log.d(TAG, "Call blocked - no scheduled event found");
-                    blockCall(details);
-                }
-            }
-        });
     }
 
     private void allowCall(Call.Details details) {
@@ -402,183 +277,13 @@ public class MyCallScreeningService extends CallScreeningService {
             @Override
             public void onFailure(retrofit2.Call<Event> call, Throwable t) {
                 Log.e(TAG, "API call failed: " + t.getMessage());
-                // On API failure, fallback to blocking the call for security
-                // In a production app, you might want to allow calls on API failure
-                // depending on your security requirements
                 listener.onEventCheckComplete(null,false);
                 t.printStackTrace();
             }
         });
     }
 
-    // Debug method to log current call settings
-    public void logCurrentSettings() {
-        String currentSetting = MyShare.getCallSettingName(this);
-        Log.d(TAG, "Current call setting: " + currentSetting);
-
-        if (MyShare.isCallSettingUnrestricted(this)) {
-            Log.d(TAG, "Call mode: UNRESTRICTED - All calls will be allowed");
-        } else {
-            Log.d(TAG, "Call mode: PHONELINK_SCHEDULED - Known contacts always allowed, unknown numbers only during scheduled events");
-        }
-    }
-
-    // Method to test call screening logic without an actual call
-    public void testCallScreening(String testPhoneNumber) {
-        Log.d(TAG, "Testing call screening for number: " + testPhoneNumber);
-
-        boolean isBlocked = isNumberManuallyBlocked(testPhoneNumber);
-        Log.d(TAG, "Number manually blocked: " + isBlocked);
-
-        int callSetting = MyShare.getCallSetting(this);
-        Log.d(TAG, "Call setting: " + (callSetting == MyShare.CALL_SETTING_UNRESTRICTED ? "UNRESTRICTED" : "PHONELINK_SCHEDULED"));
-
-        if (isBlocked) {
-            Log.d(TAG, "TEST RESULT: Call would be BLOCKED (manually blocked)");
-        } else if (callSetting == MyShare.CALL_SETTING_UNRESTRICTED) {
-            Log.d(TAG, "TEST RESULT: Call would be ALLOWED (unrestricted mode)");
-        } else {
-            // Check if number is in contacts using helper method
-            if (!isNumberInContacts(testPhoneNumber)) {
-                Log.d(TAG, "TEST RESULT: Unknown number - would check scheduled events");
-            } else {
-                Log.d(TAG, "TEST RESULT: Call would be ALLOWED (number found in contacts)");
-            }
-        }
-    }
-
-    // Method to test the scheduled events API
-    public void testScheduledEventsAPI(String testPhoneNumber) {
-        Log.d(TAG, "Testing scheduled events API...");
-
-        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        String userToken = sharedPreferences.getString(TOKEN_KEY, null);
-
-        if (userToken == null || userToken.isEmpty()) {
-            Log.w(TAG, "Cannot test API - user not logged in");
-            return;
-        }
-
-        String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
-        String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
-
-        if (userEmail.isEmpty() || userPassword.isEmpty()) {
-            Log.w(TAG, "Cannot test API - user credentials not available");
-            Log.d(TAG, "Email available: " + !userEmail.isEmpty() + ", Password available: " + !userPassword.isEmpty());
-            return;
-        }
-
-        checkEventTime(userEmail, userPassword, testPhoneNumber, new CheckEventTimeListener() {
-            @Override
-            public void onEventCheckComplete(Event event,boolean apiFailed) {
-                Log.d(TAG, "API TEST RESULT: " + (event.isWithinTime() ? "WITHIN SCHEDULED TIME" : "NOT WITHIN SCHEDULED TIME"));
-                Log.d(TAG, "This means calls would be: " + (event.isWithinTime() ? "ALLOWED" : "BLOCKED"));
-            }
-        });
-    }
-
-    // Comprehensive test method to verify the entire call screening flow
-    public void testCompleteCallScreeningFlow(String testPhoneNumber) {
-        Log.d(TAG, "=== TESTING COMPLETE CALL SCREENING FLOW ===");
-        Log.d(TAG, "Test phone number: " + testPhoneNumber);
-
-        // Test 1: Check if user is logged in
-        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        String userToken = sharedPreferences.getString(TOKEN_KEY, "");
-        String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
-        String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
-
-        Log.d(TAG, "User login status: " + (!userToken.isEmpty() ? "LOGGED IN" : "NOT LOGGED IN"));
-        Log.d(TAG, "Credentials available - Email: " + !userEmail.isEmpty() + ", Password: " + !userPassword.isEmpty());
-
-        // Test 2: Check manual blocking
-        boolean isManuallyBlocked = isNumberManuallyBlocked(testPhoneNumber);
-        Log.d(TAG, "Manual block status: " + (isManuallyBlocked ? "BLOCKED" : "NOT BLOCKED"));
-
-        // Test 3: Check call settings
-        int callSetting = MyShare.getCallSetting(this);
-        String settingName = callSetting == MyShare.CALL_SETTING_UNRESTRICTED ? "UNRESTRICTED" : "PHONELINK_SCHEDULED";
-        Log.d(TAG, "Call setting: " + settingName);
-
-        // Test 4: Predict call outcome
-        if (isManuallyBlocked) {
-            Log.d(TAG, "FINAL RESULT: Call would be BLOCKED (manually blocked number)");
-        } else if (callSetting == MyShare.CALL_SETTING_UNRESTRICTED) {
-            Log.d(TAG, "FINAL RESULT: Call would be ALLOWED (unrestricted mode)");
-        } else {
-            // In Phonelink Scheduled mode, check if number is in contacts using helper method
-            if (!isNumberInContacts(testPhoneNumber)) {
-                if (userEmail.isEmpty() || userPassword.isEmpty()) {
-                    Log.d(TAG, "FINAL RESULT: Call would be BLOCKED (unknown number, credentials not available)");
-                } else {
-                    Log.d(TAG, "FINAL RESULT: Unknown number would be CHECKED against scheduled events");
-                    // Test the API call
-                    checkEventTime(userEmail, userPassword, testPhoneNumber, new CheckEventTimeListener() {
-                        @Override
-                        public void onEventCheckComplete(Event event,boolean apiFailed) {
-                            Log.d(TAG, "SCHEDULED EVENT CHECK: " + (event.isWithinTime() ? "WITHIN TIME - ALLOW" : "NOT WITHIN TIME - BLOCK"));
-                        }
-                    });
-                }
-            } else {
-                Log.d(TAG, "FINAL RESULT: Call would be ALLOWED (number found in contacts)");
-            }
-        }
-
-        Log.d(TAG, "=== END OF CALL SCREENING FLOW TEST ===");
-    }
-
-    // Method to verify user credentials are properly saved
-    public void verifyUserCredentials() {
-        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        String userToken = sharedPreferences.getString(TOKEN_KEY, "");
-        String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
-        String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
-        String domain = sharedPreferences.getString(DOMAIN_KEY, "");
-        String phone = sharedPreferences.getString(PHONE_KEY, "");
-
-        Log.d(TAG, "=== USER CREDENTIALS VERIFICATION ===");
-        Log.d(TAG, "Token available: " + !userToken.isEmpty());
-        Log.d(TAG, "Email available: " + !userEmail.isEmpty());
-        Log.d(TAG, "Password available: " + !userPassword.isEmpty());
-        Log.d(TAG, "Domain available: " + !domain.isEmpty());
-        Log.d(TAG, "Phone available: " + !phone.isEmpty());
-
-        if (!userEmail.isEmpty()) {
-            Log.d(TAG, "Email preview: " + userEmail.substring(0, Math.min(3, userEmail.length())) + "***");
-        }
-        if (!domain.isEmpty()) {
-            Log.d(TAG, "Domain: " + domain);
-        }
-    }
-
-    // Method to explain the complete Phonelink Scheduled behavior
-    public void explainPhonelinkScheduledBehavior() {
-        Log.d(TAG, "=== PHONELINK SCHEDULED BEHAVIOR EXPLANATION ===");
-        Log.d(TAG, "When 'Phonelink Scheduled' is enabled, calls are handled as follows:");
-        Log.d(TAG, "");
-        Log.d(TAG, "1. MANUAL BLOCK LIST CHECK:");
-        Log.d(TAG, "   - If caller is in manual block list → BLOCK (regardless of contact/schedule status)");
-        Log.d(TAG, "");
-        Log.d(TAG, "2. CONTACT CHECK:");
-        Log.d(TAG, "   - If caller is saved in phonebook contacts → ALLOW (always)");
-        Log.d(TAG, "   - Known contacts can call anytime, no schedule restrictions");
-        Log.d(TAG, "");
-        Log.d(TAG, "3. UNKNOWN NUMBER + SCHEDULE CHECK:");
-        Log.d(TAG, "   - If caller is NOT in contacts → Check scheduled events");
-        Log.d(TAG, "   - If user not logged in → BLOCK");
-        Log.d(TAG, "   - If no credentials available → BLOCK");
-        Log.d(TAG, "   - If within scheduled event time → ALLOW");
-        Log.d(TAG, "   - If no active scheduled event → BLOCK");
-        Log.d(TAG, "");
-        Log.d(TAG, "SUMMARY:");
-        Log.d(TAG, "- Contacts: Always allowed");
-        Log.d(TAG, "- Unknown numbers: Only allowed during scheduled events");
-        Log.d(TAG, "- Blocked numbers: Never allowed");
-        Log.d(TAG, "=== END OF EXPLANATION ===");
-    }
-
-    private void checkEventAndProceed(Call.Details details, String phoneNumber, int callMode) {
+    private void checkEventAndProceed(Call.Details details, String phoneNumber, int callMode,boolean isManuallyBlocked) {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
         String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
         String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
@@ -596,14 +301,40 @@ public class MyCallScreeningService extends CallScreeningService {
             public void onEventCheckComplete(Event event,boolean apiFailed) {
                 Log.d(TAG, "Event check complete for " + phoneNumber);
 
+                if (isManuallyBlocked) {
+                    Log.d(TAG, "BLOCKING CALL - number is in manual block list: " + phoneNumber);
+                    blockCall(details);
+                    launchBlockedPopup(callMode, event, phoneNumber, true);
+                    return;
+
+                }
+
                 if (apiFailed) {
-                    Log.e(TAG, "API failed — blocking call");
-                    blockCall(details); // don't allow
+                    Log.e(TAG, "API failed for non-blocked call");
+                    if (callMode == MyShare.CALL_SETTING_UNRESTRICTED) {
+                        Log.d(TAG, "Unrestricted mode - allowing call despite API failure");
+                        allowCall(details);
+                        launchActivityCall(callMode, null, phoneNumber);
+
+                    } else {
+                        boolean isContact = isNumberInContacts(phoneNumber);
+                        if (isContact) {
+                            Log.d(TAG, "Known contact - allowing despite API failure");
+                            allowCall(details);
+                            launchActivityCall(callMode, null, phoneNumber);
+
+                        } else {
+                            Log.d(TAG, "Unknown number + API failure - blocking for safety");
+                            blockCall(details);
+                            launchBlockedPopup(callMode, null, phoneNumber, false);
+                        }
+                    }
                     return;
                 }
 
                 // For unrestricted mode → always allow (ignore schedule)
                 if (callMode == MyShare.CALL_SETTING_UNRESTRICTED) {
+                    Log.d(TAG, "Unrestricted mode - allowing call");
                     allowCall(details);
                     launchActivityCall(callMode, event, phoneNumber);
                     return;
@@ -622,11 +353,27 @@ public class MyCallScreeningService extends CallScreeningService {
                 } else {
                     Log.d(TAG, "Unknown number — outside schedule, blocking");
                     blockCall(details);
+                    launchBlockedPopup(callMode,event,phoneNumber,isManuallyBlocked);
                 }
             }
         });
     }
 
+    public void logCurrentSettings() {
+        String currentSetting = MyShare.getCallSettingName(this);
+        Log.d(TAG, "Current call setting: " + currentSetting);
+        if (MyShare.isCallSettingUnrestricted(this)) {
+            Log.d(TAG, "Call mode: UNRESTRICTED - All calls will be allowed");
+        } else {
+            Log.d(TAG, "Call mode: PHONELINK_SCHEDULED - Known contacts always allowed, unknown numbers only during scheduled events");
+        }
+    }
 
+    private String getDisplayName(String phoneNumber, Event event) {
+        String[] namePhoto = ReadContact.getNamePhoto(getApplicationContext(), phoneNumber);
+        if (namePhoto != null && !namePhoto[0].isEmpty()) return namePhoto[0];
+        if (event != null && event.getUsername() != null && !event.getUsername().isEmpty()) return event.getUsername();
+        return "Unknown Caller";
+    }
 }
 

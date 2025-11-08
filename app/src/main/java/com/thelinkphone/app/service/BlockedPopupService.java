@@ -1,7 +1,7 @@
 package com.thelinkphone.app.service;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import static com.thelinkphone.app.service.IncomingCallPopupService.CALL_MODE;
+
 import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -19,16 +19,11 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.AccelerateInterpolator;
-import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.cardview.widget.CardView;
+
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
@@ -48,16 +43,29 @@ public class BlockedPopupService extends Service {
     private boolean isVisible = false;
 
     public static final String USERNAME = "USERNAME";
+    public static final String IS_MANUALLY_BLOCKED = "IS_MANUALLY_BLOCKED";
+    public static final String PHONE_NUMBER="PHONE_NUMBER";
 
-    public static void showPopup(Context context, String username) {
+    public static void showPopup(Context context,int callMode,String username,boolean isManuallyBlocked,String phoneNumber) {
+        Log.d(TAG, "Static showPopup called with username: " + username + ", callMode: " + callMode + ", isManuallyBlocked: " + isManuallyBlocked);
         Intent intent = new Intent(context, BlockedPopupService.class);
         intent.putExtra(USERNAME, username);
-        ContextCompat.startForegroundService(context, intent);
+        intent.putExtra(CALL_MODE, callMode);
+        intent.putExtra(IS_MANUALLY_BLOCKED,isManuallyBlocked);
+        intent.putExtra(PHONE_NUMBER,phoneNumber);
+        try {
+            ContextCompat.startForegroundService(context, intent);
+            Log.d(TAG, "Foreground service started successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting service: " + e.getMessage(), e);
+        }
     }
+
 
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.d(TAG, "onCreate called");
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, buildNotification());
     }
@@ -65,29 +73,37 @@ public class BlockedPopupService extends Service {
     @SuppressLint("InflateParams")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "Popup service started");
-
+        Log.d(TAG, "onStartCommand called");
         if (intent == null) {
+            Log.e(TAG, "Intent is null, stopping service");
             stopSelf();
             return START_NOT_STICKY;
         }
 
         String username = intent.getStringExtra(USERNAME);
-
-        Log.d(TAG, "Received popup data -> username: " + username);
+        boolean isManuallyBlocked = intent.getBooleanExtra(IS_MANUALLY_BLOCKED, false);
+        int callMode = intent.getIntExtra(CALL_MODE, MyShare.CALL_SETTING_UNRESTRICTED);
+        String phoneNumber=intent.getStringExtra(PHONE_NUMBER);
+        Log.d(TAG, "Received popup data -> username: " + username +
+                ", callMode: " + callMode +
+                ", isManuallyBlocked: " + isManuallyBlocked);
 
 
         // Show popup if not already visible
         if (!isVisible) {
-            showPopupLayout(username);
+            Log.d(TAG, "Popup not visible, showing layout");
+            showPopupLayout(callMode, username, isManuallyBlocked,phoneNumber);
+        } else {
+            Log.w(TAG, "Popup already visible, skipping");
         }
 
         return START_STICKY;
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private void showPopupLayout(String username) {
+    private void showPopupLayout(int mode,String username,boolean isManuallyBlocked,String phoneNumber) {
         try {
+            Log.d(TAG, "showPopupLayout started for username: " + username);
             if (popupView != null && popupView.isAttachedToWindow()) {
                 Log.w(TAG, "Popup already attached, skipping duplicate addView");
                 return;
@@ -98,8 +114,16 @@ public class BlockedPopupService extends Service {
             LayoutInflater inflater = LayoutInflater.from(themedContext);
             popupView = inflater.inflate(R.layout.activity_card_3, null);
 
+            try {
+                popupView = inflater.inflate(R.layout.activity_card_3, null);
+                Log.d(TAG, "Successfully inflated activity_card_3");
+            } catch (Exception e) {
+                Log.w(TAG, "activity_card_3 not found, using activity_card as fallback");
+                popupView = inflater.inflate(R.layout.activity_card, null);
+            }
+
             if (popupView == null) {
-                Log.e(TAG, "FATAL: Failed to inflate R.layout.activity_card. Exiting.");
+                Log.e(TAG, "FATAL: Failed to inflate layout. Exiting.");
                 stopSelf();
                 return;
             }
@@ -120,11 +144,10 @@ public class BlockedPopupService extends Service {
                             | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
                     PixelFormat.TRANSLUCENT
             );
-            params.gravity = Gravity.TOP;
+            params.gravity = Gravity.CENTER;
 
-            // --- 2. Set Initial State (Invisible, Scaled, OFF-SCREEN RIGHT) BEFORE Adding ---
+            //Set Initial State (Invisible, Scaled, OFF-SCREEN RIGHT) BEFORE Adding
 
-            // Explicitly hide the view before adding it
             popupView.setVisibility(View.INVISIBLE);
             popupView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
@@ -133,7 +156,7 @@ public class BlockedPopupService extends Service {
             windowManager.getDefaultDisplay().getSize(size);
             int screenWidth = size.x;
 
-            // **** CRITICAL FIX: Set the Window position (params.x) off-screen right ****
+            //Set the Window position (params.x) off-screen right
             params.x = screenWidth;
 
             // Set starting animation properties for the view (within the window)
@@ -143,26 +166,33 @@ public class BlockedPopupService extends Service {
             popupView.setScaleX(0.9f);
             popupView.setScaleY(0.9f);
 
-            Log.d(TAG, String.format("DEBUG 2: Initial State set. Alpha: 0.0, Params.X: %d, Scale: 0.9", params.x));
+            Log.d(TAG, "Initial state set. Alpha: 0.0, Params.X: " + params.x + ", Scale: 0.9");
 
-            // --- 3. View Addition ---
+            // Add view to WindowManager
             windowManager.addView(popupView, params);
             isVisible = true;
-            Log.d(TAG, "DEBUG 3: View added to WindowManager.");
+            Log.d(TAG, "View added to WindowManager successfully");
 
             makeDraggable(popupView, params, windowManager);
+            applyBlockedTheme(mode,username,isManuallyBlocked,phoneNumber);
+
 
             ImageButton buttonClose = popupView.findViewById(R.id.button_close);
-            buttonClose.setOnClickListener(v -> hidePopup(popupView, windowManager, params));
+            if (buttonClose != null) {
+                buttonClose.setOnClickListener(v -> {
+                    Log.d(TAG, "Close button clicked");
+                    hidePopup(popupView, windowManager, params);
+                });
+            } else {
+                Log.w(TAG, "Close button not found in layout");
+            }
 
-            // --- 4. Guaranteed Animation Start with Delay (Dual Animator) ---
+            //Guaranteed Animation Start with Delay (Dual Animator)
             new Handler().postDelayed(() -> {
 
-                // Re-set VISIBLE: This is the trigger.
+                Log.d(TAG, "Starting animation sequence");
                 popupView.setVisibility(View.VISIBLE);
-                Log.d(TAG, "DEBUG 4A: Visibility set to VISIBLE. Starting animation sequence.");
 
-                // --- A) Animate Window Position (Horizontal Slide) using ValueAnimator ---
                 android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator.ofInt(screenWidth, 0);
                 xAnimator.setDuration(400);
                 xAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator());
@@ -172,22 +202,24 @@ public class BlockedPopupService extends Service {
                     try {
                         // Update the window position on every frame
                         windowManager.updateViewLayout(popupView, params);
-                    } catch (IllegalArgumentException e) {}
+                    } catch (IllegalArgumentException e) {
+                        Log.e(TAG, "Error updating view layout: " + e.getMessage());
+                    }
                 });
 
                 xAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationStart(android.animation.Animator animation) {
-                        Log.d(TAG, "DEBUG 4B: Animation officially started (Sliding X).");
+                        Log.d(TAG, "Slide animation started");
                     }
                     @Override
                     public void onAnimationEnd(android.animation.Animator animation) {
-                        Log.d(TAG, "DEBUG 4C: Animation completed (Sliding X).");
+                        Log.d(TAG, "Slide animation completed");
                     }
                 });
                 xAnimator.start();
 
-                // --- B) Animate View Properties (Alpha and Scale) using ViewPropertyAnimator ---
+                // Animate View Properties (Alpha and Scale) using ViewPropertyAnimator
                 popupView.animate()
                         .alpha(1f)
                         .scaleX(1f)
@@ -201,18 +233,105 @@ public class BlockedPopupService extends Service {
 
             // Auto-dismiss after 30s
             new Handler().postDelayed(() -> {
+                Log.d(TAG,"Auto-dissmis timer triggered");
                 if (isVisible) hidePopup(popupView, windowManager, params);
             }, 30000);
 
         } catch (Exception e) {
             Log.e(TAG, "Error showing popup: " + e.getMessage(), e);
+            e.printStackTrace();
             stopSelf();
+        }
+    }
+
+    private void applyBlockedTheme(int mode,String username,boolean isManuallyBlocked,String phoneNumber) {
+        try {
+            Log.d(TAG, "Applying blocked theme for: " + username + ", mode: " + mode + ", manuallyBlocked: " + isManuallyBlocked);
+
+            TextView userNameView = popupView.findViewById(R.id.text_name);
+            if (userNameView != null) {
+                userNameView.setSelected(true);
+
+                String displayNameToShow = (username != null && !username.isEmpty()) ? username : "Unknown Caller";
+                String numberToShow = (phoneNumber != null && !phoneNumber.isEmpty()) ? phoneNumber : "Unknown Number";
+
+                String combinedText = displayNameToShow + "   •   " + numberToShow + "   •   ";
+
+                StringBuilder marqueeBuilder = new StringBuilder();
+                for (int i = 0; i < 10; i++) {
+                    marqueeBuilder.append(combinedText);
+                }
+
+                userNameView.setText(marqueeBuilder.toString());
+            }
+
+
+            // Set branding
+            TextView brandingView = popupView.findViewById(R.id.text_branding);
+            if (brandingView != null) {
+                brandingView.setTextColor(ContextCompat.getColor(this, android.R.color.white));
+            }
+
+            // Set mode label
+            TextView modeText = popupView.findViewById(R.id.model_label);
+            if (modeText != null) {
+                if (mode == MyShare.CALL_SETTING_UNRESTRICTED) {
+                    modeText.setText(R.string.unrestricted_mode_label);
+                } else {
+                    modeText.setText(R.string.callalink_mode_label);
+                }
+            }
+
+            // Set block reason badge
+            TextView reasonForBlock = popupView.findViewById(R.id.block_reason);
+            if (reasonForBlock != null) {
+                if (isManuallyBlocked) {
+                    reasonForBlock.setText("Manually Blocked");
+                } else {
+                    reasonForBlock.setText("Outside-Schedule-Call");
+                }
+                Log.d(TAG, "Block reason set to: " + (isManuallyBlocked ? "Manually Blocked" : "Outside-Schedule-Call"));
+            }
+
+            // Set avatar
+            TextView avatarText = popupView.findViewById(R.id.text_avatar);
+            if (avatarText != null) {
+                if (username != null && username.length() > 0) {
+                    // Get the first character that is a letter or digit
+                    String firstChar = "";
+                    for (int i = 0; i < username.length(); i++) {
+                        char c = username.charAt(i);
+                        if (Character.isLetterOrDigit(c)) {
+                            firstChar = String.valueOf(Character.toUpperCase(c));
+                            break;
+                        }
+                    }
+                    if (!firstChar.isEmpty()) {
+                        avatarText.setText(firstChar);
+                        Log.d(TAG, "Avatar text set to: " + firstChar);
+                    } else {
+                        avatarText.setText("?");
+                        Log.d(TAG, "Avatar text set to default: ?");
+                    }
+                } else {
+                    avatarText.setText("?");
+                    Log.d(TAG, "Avatar text set to default: ?");
+                }
+                Log.d(TAG, "Blocked theme applied successfully");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying blocked theme: " + e.getMessage(), e);
         }
     }
 
 
     private void hidePopup(final View view, final WindowManager windowManager, final WindowManager.LayoutParams params) {
-        if (view == null || windowManager == null) return;
+        if (view == null || windowManager == null) {
+            Log.w(TAG, "Cannot hide popup - view or windowManager is null");
+            return;
+        }
+        Log.d(TAG, "Hiding popup");
 
         // Get screen width (for horizontal movement)
         android.graphics.Point size = new android.graphics.Point();
@@ -221,8 +340,8 @@ public class BlockedPopupService extends Service {
 
         // 💡 Fade-out with side movement (same as in makeDraggable)
         android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 0.0f);
-        animator.setDuration(800); // same slow fade-out duration
-        final int direction = 1; // you can randomize or fix (1 = right, -1 = left)
+        animator.setDuration(800);
+        final int direction = 1;
 
         animator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
             @Override
@@ -243,7 +362,12 @@ public class BlockedPopupService extends Service {
             public void onAnimationEnd(android.animation.Animator animation) {
                 try {
                     windowManager.removeView(view);
-                } catch (IllegalArgumentException ignored) {}
+                    isVisible = false;
+                    Log.d(TAG, "Popup removed from WindowManager");
+                    stopSelf(); // Stop the service after hiding
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Error removing view: " + e.getMessage());
+                }
             }
         });
 
@@ -254,31 +378,29 @@ public class BlockedPopupService extends Service {
 
     public static void hidePopup(Context context) {
         if (context == null) {
-            android.util.Log.e("IncomingCallPopupService", "Cannot hide popup — context is null");
+            Log.e(TAG, "Cannot hide popup — context is null");
             return;
         }
 
         try {
-            Intent intent = new Intent(context.getApplicationContext(), IncomingCallPopupService.class);
+            Intent intent = new Intent(context.getApplicationContext(), BlockedPopupService.class);
             context.getApplicationContext().stopService(intent);
-            android.util.Log.d("IncomingCallPopupService", "Popup hide requested");
+            Log.d(TAG, "Popup hide requested");
         } catch (Exception e) {
-            android.util.Log.e("IncomingCallPopupService", "Error hiding popup: " + e.getMessage());
+            Log.e(TAG, "Error hiding popup: " + e.getMessage());
         }
     }
 
-
-
     @SuppressLint("ClickableViewAccessibility")
     private void makeDraggable(final View view, final WindowManager.LayoutParams params, final WindowManager windowManager) {
-        // Define a threshold for horizontal glide to trigger dismissal
+
         final int SWIPE_THRESHOLD_X = (int) (windowManager.getDefaultDisplay().getWidth() * 0.10); // 30% of screen width
 
         view.setOnTouchListener(new View.OnTouchListener() {
             private int initialX, initialY;
             private float initialTouchX, initialTouchY;
             private int screenWidth, screenHeight;
-            private boolean isBeingSwiped = false; // Flag to track if a swipe is in progress
+            private boolean isBeingSwiped = false;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -291,7 +413,7 @@ public class BlockedPopupService extends Service {
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        // Reset swipe flag
+
                         isBeingSwiped = false;
                         initialX = params.x;
                         initialY = params.y;
@@ -303,31 +425,27 @@ public class BlockedPopupService extends Service {
                         int deltaX = (int) (event.getRawX() - initialTouchX);
                         int deltaY = (int) (event.getRawY() - initialTouchY);
 
-                        // Check if horizontal movement significantly exceeds vertical movement
                         if (Math.abs(deltaX) > Math.abs(deltaY) * 2) {
                             isBeingSwiped = true;
-                            // For a horizontal glide, we primarily update X and update the alpha
+
                             params.x = initialX + deltaX;
 
-                            // Calculate alpha based on horizontal displacement
-                            // Alpha should decrease as deltaX approaches SWIPE_THRESHOLD_X
                             float displacementRatio = Math.min(1.0f, (float) Math.abs(deltaX) / SWIPE_THRESHOLD_X);
                             float alpha = 1.0f - displacementRatio;
                             view.setAlpha(alpha); // Change the view's opacity
 
-                            // Do not clamp the X position when swiping for dismissal
+
                             windowManager.updateViewLayout(view, params);
                             return true;
                         } else if (!isBeingSwiped) {
-                            // Standard dragging logic (if not actively swiping for dismissal)
+
                             params.x = initialX + deltaX;
                             params.y = initialY + deltaY;
 
-                            // Get popup's width & height
+
                             int popupWidth = view.getWidth();
                             int popupHeight = view.getHeight();
 
-                            // Clamp to prevent half disappearing
                             int minX = -screenWidth / 2 + popupWidth / 2;
                             int maxX = screenWidth / 2 - popupWidth / 2;
                             int minY = -screenHeight / 2 + popupHeight / 2;
@@ -339,16 +457,14 @@ public class BlockedPopupService extends Service {
                             windowManager.updateViewLayout(view, params);
                             return true;
                         }
-                        return true; // Continue to return true if dragging/swiping
+                        return true;
 
                     case MotionEvent.ACTION_UP:
                         int finalDeltaX = (int) (event.getRawX() - initialTouchX);
 
                         if (isBeingSwiped) {
                             if (Math.abs(finalDeltaX) >= SWIPE_THRESHOLD_X) {
-                                // **Trigger Fade Out and Dismissal (SLOWER)**
                                 android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 0.0f);
-                                // 💡 Increased duration for slower fade-out
                                 animator.setDuration(800);
                                 final int direction = (int) Math.signum(finalDeltaX);
 
@@ -370,18 +486,17 @@ public class BlockedPopupService extends Service {
                                     public void onAnimationEnd(android.animation.Animator animation) {
                                         try {
                                             windowManager.removeView(view);
+                                            isVisible = false;
+                                            stopSelf();
                                         } catch (IllegalArgumentException e) {}
                                     }
                                 });
                                 animator.start();
 
                             } else {
-                                // **Snap Back (Cancel Dismissal) (SLOWER)**
-
                                 android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator.ofInt(params.x, initialX);
                                 android.animation.ValueAnimator alphaAnimator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 1.0f);
 
-                                // 💡 Increased duration for slower snap back
                                 xAnimator.setDuration(400);
                                 alphaAnimator.setDuration(400);
 
@@ -405,7 +520,6 @@ public class BlockedPopupService extends Service {
                                 alphaAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(android.animation.Animator animation) {
-                                        // Ensure full opacity is set explicitly after the animation finishes
                                         view.setAlpha(1.0f);
                                     }
                                 });
@@ -417,7 +531,6 @@ public class BlockedPopupService extends Service {
                             return true;
                         }
 
-                        // Standard drag release (if not swiping)
                         return true;
                 }
                 return false;
@@ -429,10 +542,10 @@ public class BlockedPopupService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Incoming Call Popup",
+                    "Blocked Call Popup",
                     NotificationManager.IMPORTANCE_LOW
             );
-            channel.setDescription("Shows incoming call popup overlays");
+            channel.setDescription("Shows blocked call popup overlays");
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) manager.createNotificationChannel(channel);
         }
@@ -440,8 +553,8 @@ public class BlockedPopupService extends Service {
 
     private Notification buildNotification() {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Incoming call popup active")
-                .setContentText("Displaying call overlay")
+                .setContentTitle("Blocked call notification")
+                .setContentText("Displaying blocked call overlay")
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
                 .build();
@@ -451,13 +564,20 @@ public class BlockedPopupService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Service destroyed — hiding popup if visible");
-        if (isVisible){
-            hidePopup(popupView, windowManager, params);
+        if (isVisible && popupView != null && windowManager != null) {
+            try {
+                windowManager.removeView(popupView);
+                isVisible = false;
+            } catch (Exception e) {
+                Log.e(TAG, "Error in onDestroy: " + e.getMessage());
+            }
         }
     }
+
 
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
+    
 }
