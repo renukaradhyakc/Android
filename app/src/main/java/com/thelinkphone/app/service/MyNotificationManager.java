@@ -16,7 +16,6 @@ import androidx.core.app.NotificationCompat;
 import com.thelinkphone.app.ActivityCall;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.broadcase.MyCallReceiver;
-import com.thelinkphone.app.utils.CallerInfoManager;
 import com.thelinkphone.app.utils.MyConst;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
@@ -42,27 +41,19 @@ public class MyNotificationManager {
         final String phoneCall = CallManager.getInstance().getPhoneCall();
         android.util.Log.d("MyNotificationManager", "Setting up notification for: " + phoneCall);
 
-        // Try to get contact info first for immediate display
-        CallerInfoManager.CallerInfo contactInfo = CallerInfoManager.getContactInfoSync(this.c, phoneCall);
-        if (contactInfo != null) {
-            android.util.Log.d("MyNotificationManager", "Found contact info: " + contactInfo.getDisplayName());
-            setupNotificationWithCallerInfo(z, phoneCall, contactInfo);
-        } else {
-            // Use enhanced caller info lookup
-            CallerInfoManager.getCallerInfo(this.c, phoneCall, new CallerInfoManager.CallerInfoCallback() {
-                @Override
-                public void onCallerInfoRetrieved(CallerInfoManager.CallerInfo callerInfo) {
-                    android.util.Log.d("MyNotificationManager", "Retrieved caller info: " + callerInfo.getDisplayName());
-                    setupNotificationWithCallerInfo(z, phoneCall, callerInfo);
-                }
-            });
+        String[] contactData = ReadContact.getNamePhoto(this.c, phoneCall);
+        String contactName = (contactData != null && contactData[0] != null && !contactData[0].isEmpty())
+                ? contactData[0]
+                : MyShare.getCallerName(this.c);
 
-            // Also set up with default info immediately
-            setupNotificationWithCallerInfo(z, phoneCall, CallerInfoManager.getDefaultCallerInfo());
+        if (contactName == null || contactName.isEmpty()) {
+            contactName = c.getString(R.string.unknown_caller);
         }
+
+        android.util.Log.d("MyNotificationManager", "Caller for notification: " + contactName);
+        setupNotificationWithCallerInfo(z, phoneCall, contactName);
+
     }
-
-
 
     public  boolean m236x28553fb0(boolean z, String str, Message message) {
         String str2;
@@ -138,9 +129,9 @@ public class MyNotificationManager {
         handler.sendMessage(message);
     }
 
-    private void setupNotificationWithCallerInfo(boolean isHeadsUp, String phoneNumber, CallerInfoManager.CallerInfo callerInfo) {
+    private void setupNotificationWithCallerInfo(boolean isHeadsUp, String phoneNumber, String displayName) {
         try {
-            android.util.Log.d("MyNotificationManager", "Setting up notification with caller info: " + callerInfo.getDisplayName());
+            android.util.Log.d("MyNotificationManager", "Setting up notification with caller info: " + displayName);
 
             int state = CallManager.getInstance().getState();
             boolean shouldShowHeadsUp = ((PowerManager) this.c.getSystemService(Context.POWER_SERVICE)).isInteractive() && state == 2 && isHeadsUp;
@@ -174,7 +165,6 @@ public class MyNotificationManager {
             PendingIntent declinePendingIntent = PendingIntent.getBroadcast(this.c, 1, declineIntent, 301989888);
 
             // Use formatted display name
-            String displayName = MyShare.getCallerName(this.c);
             if (displayName == null || displayName.isEmpty() || displayName.equals("Unknown")) {
                 displayName = c.getString(R.string.unknown_caller);
             }

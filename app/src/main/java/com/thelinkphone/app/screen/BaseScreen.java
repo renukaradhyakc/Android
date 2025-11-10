@@ -11,11 +11,9 @@ import com.thelinkphone.app.R;
 import com.thelinkphone.app.custom.AvatarPeople;
 import com.thelinkphone.app.custom.TextW;
 import com.thelinkphone.app.service.CallManager;
-import com.thelinkphone.app.utils.CallerInfoManager;
+import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
-
-
 
 public abstract class BaseScreen extends RelativeLayout {
     public ActionScreenResult actionScreenResult;
@@ -87,67 +85,16 @@ public abstract class BaseScreen extends RelativeLayout {
         String phoneNumber = CallManager.getInstance().getPhoneCall();
         android.util.Log.d("BaseScreen", "Setting caller info for: " + phoneNumber);
 
-        // First try to get contact info synchronously for immediate display
-        CallerInfoManager.CallerInfo contactInfo = CallerInfoManager.getContactInfoSync(getContext(), phoneNumber);
-        if (contactInfo != null) {
-            // Found contact, display immediately
-            displayCallerInfo(contactInfo);
-            return;
+        String[] contactData = ReadContact.getNamePhoto(getContext(), phoneNumber);
+        String displayName = (contactData != null && !contactData[0].isEmpty())
+                ? contactData[0]
+                : MyShare.getCallerName(getContext());
+
+        if (displayName == null || displayName.isEmpty()) {
+            displayName = getContext().getString(R.string.unknown_caller);
         }
 
-        // Set default display first, then check for scheduled events
-        displayCallerInfo(CallerInfoManager.getDefaultCallerInfo());
-
-        // Check for scheduled event username (async)
-        CallerInfoManager.getCallerInfo(getContext(), phoneNumber, new CallerInfoManager.CallerInfoCallback() {
-            @Override
-            public void onCallerInfoRetrieved(CallerInfoManager.CallerInfo callerInfo) {
-                // Update display on main thread
-                if (activityCall != null) {
-                    activityCall.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            displayCallerInfo(callerInfo);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    private void displayCallerInfo(CallerInfoManager.CallerInfo callerInfo) {
-        try {
-            String displayName = CallerInfoManager.formatDisplayName(callerInfo);
-            int textColor = CallerInfoManager.getTextColor(callerInfo);
-
-            this.tvName.setText(displayName);
-            this.tvName.setTextColor(textColor);
-            this.tvName.setGravity(android.view.Gravity.CENTER);
-
-            // Always hide avatar as photos are not required
-            this.imAvatar.setVisibility(View.INVISIBLE);
-
-            this.tvStatus.setGravity(android.view.Gravity.CENTER);
-
-            // Style the name text based on caller type
-            if (callerInfo.isContact()) {
-                this.tvName.setupText(700, 6.5f); // Bold for contacts
-            } else if (callerInfo.isScheduledUser()) {
-                this.tvName.setupText(600, 6.0f); // Medium weight for scheduled
-                this.tvName.setShadowLayer(1.5f, 0.5f, 0.5f, android.graphics.Color.parseColor("#40000000"));
-            } else {
-                this.tvName.setupText(700, 7.0f); // Bold for branding
-                this.tvName.setShadowLayer(2.0f, 1.0f, 1.0f, android.graphics.Color.parseColor("#80000000"));
-            }
-
-            android.util.Log.d("BaseScreen", "Caller info displayed: " + displayName + " (" + callerInfo.getType() + ")");
-
-        } catch (Exception e) {
-            android.util.Log.e("BaseScreen", "Error displaying caller info: " + e.getMessage());
-            // Fallback to default display
-            this.tvName.setText("📱 TheLinkPhone");
-            this.tvName.setTextColor(android.graphics.Color.WHITE);
-        }
+        setCallerName(displayName);
     }
 
     public void setActionScreenResult(ActionScreenResult actionScreenResult) {
@@ -212,9 +159,6 @@ public abstract class BaseScreen extends RelativeLayout {
             return;
         }
 
-        // Clear stored LinkPhone username when call ends
-        CallerInfoManager.clearStoredLinkPhoneUsername(getContext());
-
         if (appCompatActivity instanceof ActivityCall) {
             ((ActivityCall) appCompatActivity).stopSensor();
         }
@@ -245,7 +189,11 @@ public abstract class BaseScreen extends RelativeLayout {
         }, 1500L);
     }
 
-
+    public void setCallerName(String name) {
+        if (tvName != null && name != null && !name.isEmpty()) {
+            tvName.setText(name);
+        }
+    }
 
     public  void m180x50ebbaff() {
         this.activityCall.finishAndRemoveTask();

@@ -216,7 +216,7 @@ public class ScheduledEventsFrag extends Fragment {
         // int index = random.nextInt(kfclinks.length);
         if(mIsloggedIn != null)
         {
-            webview.loadUrl("http://192.168.0.102:8000/scheduled-events");
+            webview.loadUrl("http://192.168.0.103:8000/scheduled-events");
         }
         else
         {

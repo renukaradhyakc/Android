@@ -86,6 +86,7 @@ public class ActivityCall extends AppCompatActivity {
             this.baseScreen = new ViewScreenOther(this);
         }
         setContentView(this.baseScreen);
+
         this.baseScreen.setActionScreenResult(new ActionScreenResult() { 
             @Override 
             public void onAccept() {

@@ -13,6 +13,7 @@ import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
@@ -26,9 +27,18 @@ import android.widget.TextView;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.PagerSnapHelper;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.thelinkphone.app.R;
+import com.thelinkphone.app.adapter.AdapterContextAndContent;
+import com.thelinkphone.app.model.ContextAndContent;
+import com.thelinkphone.app.utils.ContextCarouselManager;
 import com.thelinkphone.app.utils.MyShare;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BlockedPopupService extends Service {
 
@@ -36,7 +46,7 @@ public class BlockedPopupService extends Service {
     private static final long AUTO_DISMISS_MS = 10000;
     private static final int NOTIFICATION_ID = 2025;
     private static final String CHANNEL_ID = "blocked_call_popup_channel";
-
+    private ContextCarouselManager carouselManager;
     private WindowManager windowManager;
     private View popupView;
     private WindowManager.LayoutParams params;
@@ -112,10 +122,10 @@ public class BlockedPopupService extends Service {
             windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
             Context themedContext = new ContextThemeWrapper(this, R.style.AppTheme);
             LayoutInflater inflater = LayoutInflater.from(themedContext);
-            popupView = inflater.inflate(R.layout.activity_card_3, null);
+            popupView = inflater.inflate(R.layout.context_and_content_blocked, null);
 
             try {
-                popupView = inflater.inflate(R.layout.activity_card_3, null);
+                popupView = inflater.inflate(R.layout.context_and_content_blocked, null);
                 Log.d(TAG, "Successfully inflated activity_card_3");
             } catch (Exception e) {
                 Log.w(TAG, "activity_card_3 not found, using activity_card as fallback");
@@ -127,6 +137,8 @@ public class BlockedPopupService extends Service {
                 stopSelf();
                 return;
             }
+
+            setupStoryCarousel(popupView);
 
             int layoutFlag = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                     ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -333,6 +345,11 @@ public class BlockedPopupService extends Service {
         }
         Log.d(TAG, "Hiding popup");
 
+        if (carouselManager != null) {
+            carouselManager.stopAutoScroll();
+            Log.d(TAG, "Carousel auto-scroll stopped before hide animation");
+        }
+
         // Get screen width (for horizontal movement)
         android.graphics.Point size = new android.graphics.Point();
         windowManager.getDefaultDisplay().getSize(size);
@@ -363,6 +380,7 @@ public class BlockedPopupService extends Service {
                 try {
                     windowManager.removeView(view);
                     isVisible = false;
+                    popupView=null;
                     Log.d(TAG, "Popup removed from WindowManager");
                     stopSelf(); // Stop the service after hiding
                 } catch (IllegalArgumentException e) {
@@ -563,14 +581,15 @@ public class BlockedPopupService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "Service destroyed — hiding popup if visible");
-        if (isVisible && popupView != null && windowManager != null) {
-            try {
-                windowManager.removeView(popupView);
-                isVisible = false;
-            } catch (Exception e) {
-                Log.e(TAG, "Error in onDestroy: " + e.getMessage());
-            }
+        Log.d(TAG, "Service destroyed — cleaning up popup and carousel");
+
+        if (carouselManager != null) {
+            carouselManager.stopAutoScroll();
+            carouselManager = null;
+        }
+
+        if (isVisible && popupView != null) {
+            hidePopup(popupView, windowManager, params);
         }
     }
 
@@ -579,5 +598,31 @@ public class BlockedPopupService extends Service {
     public IBinder onBind(Intent intent) {
         return null;
     }
-    
+
+    private void setupStoryCarousel(View popupView) {
+        RecyclerView storiesRecycler = popupView.findViewById(R.id.stories_container);
+        if (storiesRecycler == null) {
+            Log.e(TAG, "RecyclerView stories_container not found in layout");
+            return;
+        }
+
+        List<ContextAndContent> storyList = new ArrayList<>();
+        storyList.add(new ContextAndContent(1, "X", "", "https://x.com/wojakcodes/status/1898356531822748053"));
+        storyList.add(new ContextAndContent(2, "Pinterest", "", "https://in.pinterest.com/pin/20547742047210017/"));
+        storyList.add(new ContextAndContent(3, "MyDrive", "", "https://docs.google.com/document/d/1A1toZSN0EOEWv1BkwVmv6PsH0vR8N4ERc60J7uKDIzw"));
+        storyList.add(new ContextAndContent(4, "TOI", "", "https://timesofindia.indiatimes.com/"));
+        storyList.add(new ContextAndContent(5, "Android", "", "https://developer.android.com"));
+        storyList.add(new ContextAndContent(6, "CallALink", "", "https://www.freepik.com/free-ai-image/anime-night-sky-illustration_249236808.htm"));
+        storyList.add(new ContextAndContent(7, "TheLinkPhone", "", "https://www.freepik.com/free-ai-image/japanese-samurai-rain_417436943.htm"));
+
+        if (storyList.isEmpty()) {
+            storiesRecycler.setVisibility(View.GONE);
+            return;
+        } else {
+            storiesRecycler.setVisibility(View.VISIBLE);
+        }
+
+        carouselManager = new ContextCarouselManager(this, storiesRecycler, storyList);
+        carouselManager.startAutoScroll();
+    }
 }
