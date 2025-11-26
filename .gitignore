@@ -53,3 +53,14 @@ gradlew
 gradlew.bat
 gradle/wrapper/gradle-wrapper.jar
 gradle/wrapper/gradle-wrapper.properties
+
+# === APKs ===
+*.apk
+*.aab
+
+# === Optional ===
+app/release/
+app/debug/
+
+# === Firebase ===
+app/google-services.json

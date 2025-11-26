@@ -18,6 +18,7 @@ public class CallManager {
     private static CallManager callManager;
     private static InCallService staticInCallService; // Keep a static reference to prevent loss
     private Call call;
+    private Context context;
     private final Call.Callback callback = new Call.Callback() {
         @Override
         public void onStateChanged(Call call, int i) {
@@ -85,6 +86,7 @@ public class CallManager {
             boolean isCallalinkUser = false;
             boolean isWithinSchedule = true;
             boolean isAContact = false;
+            String phoneNumber="";
 
             try {
                 IncomingCallPopupService.showPopup(
@@ -93,7 +95,8 @@ public class CallManager {
                         username,
                         isCallalinkUser,
                         isWithinSchedule,
-                        isAContact
+                        isAContact,
+                        phoneNumber
                 );
             } catch (Exception e) {
                 Log.e("CallManager", "Error launching IncomingCallPopupService: " + e.getMessage());
@@ -117,15 +120,25 @@ public class CallManager {
             if (callState == 7) { // Call.STATE_DISCONNECTED
                 Log.d("CallManager", "Call disconnected, clearing service references");
 
+                Context ctx = (inCallService != null) ? inCallService : staticInCallService;
+                String phoneNumber="";
+                if (ctx != null) {
+                    phoneNumber = MyShare.getActiveNumber(ctx);
+                    Log.d("CallManager", "🧹 Removing Firestore data for stored number: " + phoneNumber);
+                }
+
                 try {
                     IncomingCallPopupService.hidePopup(call.getDetails().getHandle() != null
                             ? inCallService : staticInCallService);
+                    Log.d("CallManager", "🧹 Removing Firestore data");
+                    IncomingCallPopupService.removeCallData(phoneNumber);
                 } catch (Exception e) {
                     Log.e("CallManager", "Failed to hide popup: " + e.getMessage());
                 }
-                Context context = (inCallService != null) ? inCallService : staticInCallService;
-                if (context != null) {
-                    MyShare.clearCallInfo(context);
+
+                Context ctx2 = (inCallService != null) ? inCallService : staticInCallService;
+                if (ctx2 != null) {
+                    MyShare.clearCallInfo(ctx2);
                 }
 
                 this.inCallService = null;

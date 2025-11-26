@@ -48,6 +48,8 @@ public class MyCallScreeningService extends CallScreeningService {
     public void onScreenCall(Call.Details details) {
         String decode = Uri.decode(details.getHandle().toString());
         String phoneNumber = (decode == null || !decode.startsWith("tel:")) ? "" : decode.substring(decode.indexOf("tel:") + 4);
+        MyShare.saveActiveNumber(getApplicationContext(), phoneNumber);
+        Log.d(TAG, "📞 Stored active phone number in prefs: " + phoneNumber);
 
         Log.d(TAG, "==================== CALL SCREENING START ====================");
         Log.d(TAG, "Raw handle: " + details.getHandle().toString());
@@ -60,6 +62,32 @@ public class MyCallScreeningService extends CallScreeningService {
         if (callDirection == Call.Details.DIRECTION_OUTGOING) {
             Log.d(TAG, "Outgoing call detected - allowing without screening: " + phoneNumber);
             allowCall(details);
+
+            SharedPreferences prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+
+            String myNumber = prefs.getString("auth_phone", ""); // "auth_phone" is the key used in LoginActivity
+
+            if (!myNumber.isEmpty()) {
+                Log.d(TAG, "Phone number: " + myNumber);
+            } else {
+                Log.d(TAG, "Phone number not found in SharedPreferences");
+            }
+
+            try {
+                String callSessionId = myNumber + "_" + System.currentTimeMillis();
+                Log.d(TAG, "Generated call session ID: " + callSessionId);
+
+                Intent firebaseIntent = new Intent(getApplicationContext(), OutgoingCallService.class);
+                firebaseIntent.putExtra("callSessionId", callSessionId);
+                firebaseIntent.putExtra("myNumber", myNumber);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    getApplicationContext().startForegroundService(firebaseIntent);
+                } else {
+                    getApplicationContext().startService(firebaseIntent);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating call session or starting Firebase sync: " + e.getMessage());
+            }
             return;
         }
 
@@ -89,6 +117,8 @@ public class MyCallScreeningService extends CallScreeningService {
         boolean isWithinTime = false;
         boolean isAContact=false;
 
+        phoneNumber = phoneNumber.startsWith("+91") ? phoneNumber.substring(3) : phoneNumber;
+
         if (event != null) {
             isCallalinkUser = event.isCallalinkUser();
             isWithinTime = event.isWithinTime();
@@ -107,12 +137,14 @@ public class MyCallScreeningService extends CallScreeningService {
         intent.putExtra("IS_WITHIN_SCHEDULE", isWithinTime);
         intent.putExtra("USERNAME", displayName);
         intent.putExtra("IS_A_CONTACT",isAContact);
+        intent.putExtra("PHONE_NUMBER",phoneNumber);
 
         Log.d(TAG, "Launching incoming call popup ->username: " + displayName +
                 ", callMode: " + callMode +
                 ", isCallALinkUser: " + isCallalinkUser +
                 ", isWithinSchedule: " + isWithinTime +
-                ", isAContact: " + isAContact);
+                ", isAContact: " + isAContact +
+                ", phoneNumber: "+ phoneNumber);
 
         MyShare.saveCallInfo(getApplicationContext(), displayName);
 

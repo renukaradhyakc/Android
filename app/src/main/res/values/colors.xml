@@ -36,4 +36,13 @@
     <color name="yellow">#FFB800</color>
     <color name="red">#FF4D4D</color>
 
+    <color name="Green">#2EB62C</color>
+    <color name="lightGreen">#C5E8B7</color>
+    <color name="Red">#FF2400</color>
+    <color name="lightRed">#FF2400</color>
+    <color name="Yellow">#FFD400</color>
+    <color name="lightYellow">#FFFFB7</color>
+
+    <color name="chip_bg">#333333</color>
+
 </resources>

@@ -11,8 +11,15 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.thelinkphone.app.screen.ActionScreenResult;
 import com.thelinkphone.app.screen.BaseScreen;
 import com.thelinkphone.app.screen.ios.ViewScreenIos;
@@ -157,6 +164,32 @@ public class ActivityCall extends AppCompatActivity {
             @Override 
             public void onPadClick(String str) {
                 CallManager.getInstance().onKeyPad(str);
+            }
+
+            @Override
+            public void onAddMessage() {
+                // code when "+" button is clicked
+                BottomSheetDialog dialog = new BottomSheetDialog(ActivityCall.this);
+                View view = getLayoutInflater().inflate(R.layout.bottom_message_sheet, null);
+
+                EditText etMessage = view.findViewById(R.id.etMessage);
+                Button btnSend = view.findViewById(R.id.btnSend);
+
+                btnSend.setOnClickListener(v -> {
+                    String msg = etMessage.getText().toString().trim();
+                    if (msg.isEmpty()) {
+                        etMessage.setError("Enter a message");
+                        return;
+                    }
+
+                    // TODO -> send message logic
+                    Toast.makeText(ActivityCall.this, "Message Sent: " + msg, Toast.LENGTH_SHORT).show();
+
+                    dialog.dismiss();
+                });
+
+                dialog.setContentView(view);
+                dialog.show();
             }
         });
         this.baseScreen.updateStatus(CallManager.getInstance().getState());

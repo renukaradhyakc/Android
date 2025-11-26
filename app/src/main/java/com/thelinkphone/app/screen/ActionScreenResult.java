@@ -17,4 +17,6 @@ public interface ActionScreenResult {
     void onReject();
 
     void onSpeaker();
+
+    void onAddMessage();
 }

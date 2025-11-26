@@ -1,9 +1,11 @@
 package com.thelinkphone.app.screen.ios;
 
 import android.content.Context;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.screen.ActionScreenResult;
@@ -24,6 +26,7 @@ public class ViewCall extends RelativeLayout {
     private final ViewItemMode vMute;
     private final ViewItemMode vRec;
     private final ViewItemMode vSpeaker;
+//    private final ViewItemMode vAddMessage;
     private final int w;
 
     public ViewCall(Context context) {
@@ -40,8 +43,8 @@ public class ViewCall extends RelativeLayout {
         imageView.setImageResource(R.drawable.im_decline);
         imageView.setPivotX(i / 2.0f);
         imageView.setPivotY(i / 2.0f);
-        imageView.setOnClickListener(new OnClickListener() { 
-            @Override 
+        imageView.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view) {
                 ViewCall.this.m186xa25788de(view);
             }
@@ -70,9 +73,42 @@ public class ViewCall extends RelativeLayout {
         LayoutParams layoutParams4 = new LayoutParams(i2, i2);
         layoutParams4.addRule(13);
         relativeLayout.addView(view, layoutParams4);
+
+        // --------------------- Add Message Button ---------------------
+        TextView addMessageBtn = new TextView(context);
+        addMessageBtn.setId(200);
+        addMessageBtn.setText("Add Message");
+        addMessageBtn.setTextSize(16f);
+        addMessageBtn.setAllCaps(false);
+        addMessageBtn.setTextColor(0xFFFFFFFF);
+        addMessageBtn.setGravity(Gravity.CENTER);
+
+        // Match the frosted button background (same as ViewItemMode style)
+        addMessageBtn.setBackgroundResource(R.drawable.bg_mode_button_rect);
+
+        // Padding inside the button
+        int p = widthScreen / 28;
+        addMessageBtn.setPadding(p * 2, p, p * 2, p);
+
+        // Layout positioning
+        LayoutParams msgParams = new LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT);
+        msgParams.addRule(CENTER_HORIZONTAL);
+        msgParams.topMargin = w / 18;
+        msgParams.addRule(ABOVE, 101); // place above the Keypad button
+        msgParams.bottomMargin = widthScreen / 18;
+
+        relativeLayout.addView(addMessageBtn, msgParams);
+
+        // Handle click
+        addMessageBtn.setOnClickListener(v -> {
+            if(actionScreenResult != null) actionScreenResult.onAddMessage();
+        });
+
+
         ViewItemMode viewItemMode = new ViewItemMode(context);
-        viewItemMode.setOnClickListener(new OnClickListener() { 
-            @Override 
+        viewItemMode.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 ViewCall.this.m187xa38ddbbd(view2);
             }
@@ -86,8 +122,8 @@ public class ViewCall extends RelativeLayout {
         ViewItemMode viewItemMode2 = new ViewItemMode(context);
         this.vMute = viewItemMode2;
         viewItemMode2.setId(102);
-        viewItemMode2.setOnClickListener(new OnClickListener() { 
-            @Override 
+        viewItemMode2.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 ViewCall.this.m188xa4c42e9c(view2);
             }
@@ -100,8 +136,8 @@ public class ViewCall extends RelativeLayout {
         ViewItemMode viewItemMode3 = new ViewItemMode(context);
         this.vSpeaker = viewItemMode3;
         viewItemMode3.setId(103);
-        viewItemMode3.setOnClickListener(new OnClickListener() { 
-            @Override 
+        viewItemMode3.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 ViewCall.this.m189xa5fa817b(view2);
             }
@@ -114,8 +150,8 @@ public class ViewCall extends RelativeLayout {
         ViewItemMode viewItemMode4 = new ViewItemMode(context);
         this.vHold = viewItemMode4;
         viewItemMode4.setId(104);
-        viewItemMode4.setOnClickListener(new OnClickListener() { 
-            @Override 
+        viewItemMode4.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 ViewCall.this.m190xa730d45a(view2);
             }
@@ -126,8 +162,8 @@ public class ViewCall extends RelativeLayout {
         layoutParams8.addRule(3, view.getId());
         relativeLayout.addView(viewItemMode4, layoutParams8);
         ViewItemMode viewItemMode5 = new ViewItemMode(context);
-        viewItemMode5.setOnClickListener(new OnClickListener() { 
-            @Override 
+        viewItemMode5.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 ViewCall.this.m191xa8672739(view2);
             }
@@ -141,8 +177,8 @@ public class ViewCall extends RelativeLayout {
         ViewItemMode viewItemMode6 = new ViewItemMode(context);
         this.vRec = viewItemMode6;
         viewItemMode6.setId(106);
-        viewItemMode6.setOnClickListener(new OnClickListener() { 
-            @Override 
+        viewItemMode6.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 ViewCall.this.m192xa99d7a18(view2);
             }
@@ -152,16 +188,30 @@ public class ViewCall extends RelativeLayout {
         layoutParams10.addRule(3, view.getId());
         layoutParams10.addRule(16, viewItemMode.getId());
         relativeLayout.addView(viewItemMode6, layoutParams10);
-        padNum.setPadResult(new PadResult() { 
-            @Override 
+        padNum.setPadResult(new PadResult() {
+            @Override
             public final void onViewClick(boolean z, String str) {
                 ViewCall.this.m193xaad3ccf7(z, str);
             }
         });
+//        ViewItemMode viewItemMode7 = new ViewItemMode(context);
+//        this.vAddLinks = viewItemMode7;
+//        viewItemMode7.setId(107);
+//        viewItemMode7.setOnClickListener(new OnClickListener() {
+//            @Override
+//            public final void onClick(View view2) {
+//                ViewCall.this.m192xa99d7a18(view2);
+//            }
+//        });
+//        viewItemMode7.setMode(R.drawable.im_mode_add_links, R.string.add_links);
+//        LayoutParams layoutParams11 = new LayoutParams(-2, -2);
+//        layoutParams11.addRule(3, viewItemMode5.getId());
+//        layoutParams11.addRule(17, viewItemMode.getId());
+//        relativeLayout.addView(viewItemMode7, layoutParams11);
     }
 
-    
-    
+
+
     public  void m186xa25788de(View view) {
         android.util.Log.d("ViewCall", "End call button clicked in ViewCall");
         if (this.actionScreenResult != null) {
@@ -171,14 +221,14 @@ public class ViewCall extends RelativeLayout {
         }
     }
 
-    
-    
+
+
     public  void m187xa38ddbbd(View view) {
         onPadClick();
     }
 
-    
-    
+
+
     public  void m188xa4c42e9c(View view) {
         android.util.Log.d("ViewCall", "Mute button clicked in ViewCall");
         if (this.actionScreenResult != null) {
@@ -188,8 +238,8 @@ public class ViewCall extends RelativeLayout {
         }
     }
 
-    
-    
+
+
     public  void m189xa5fa817b(View view) {
         android.util.Log.d("ViewCall", "Speaker button clicked in ViewCall");
         if (this.actionScreenResult != null) {
@@ -199,8 +249,8 @@ public class ViewCall extends RelativeLayout {
         }
     }
 
-    
-    
+
+
     public  void m190xa730d45a(View view) {
         android.util.Log.d("ViewCall", "Hold button clicked in ViewCall");
         if (this.actionScreenResult != null) {
@@ -210,8 +260,8 @@ public class ViewCall extends RelativeLayout {
         }
     }
 
-    
-    
+
+
     public  void m191xa8672739(View view) {
         android.util.Log.d("ViewCall", "Contact button clicked in ViewCall");
         if (this.actionScreenResult != null) {
@@ -221,8 +271,8 @@ public class ViewCall extends RelativeLayout {
         }
     }
 
-    
-    
+
+
     public  void m192xa99d7a18(View view) {
         android.util.Log.d("ViewCall", "Record button clicked in ViewCall");
         if (this.actionScreenResult != null) {
@@ -232,8 +282,8 @@ public class ViewCall extends RelativeLayout {
         }
     }
 
-    
-    
+
+
     public  void m193xaad3ccf7(boolean z, String str) {
         if (z) {
             onPadClick();
@@ -284,8 +334,8 @@ public class ViewCall extends RelativeLayout {
             return;
         }
         long j2 = 400;
-        this.padNum.animate().alpha(0.0f).scaleX(0.0f).scaleY(0.0f).setDuration(j2).withEndAction(new Runnable() { 
-            @Override 
+        this.padNum.animate().alpha(0.0f).scaleX(0.0f).scaleY(0.0f).setDuration(j2).withEndAction(new Runnable() {
+            @Override
             public final void run() {
                 ViewCall.this.m194x38892628();
             }
@@ -293,8 +343,8 @@ public class ViewCall extends RelativeLayout {
         this.rlMode.animate().alpha(1.0f).scaleX(1.0f).scaleY(1.0f).setDuration(j2).start();
     }
 
-    
-    
+
+
     public  void m194x38892628() {
         this.padNum.setVisibility(View.GONE);
     }

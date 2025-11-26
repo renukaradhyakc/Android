@@ -31,6 +31,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.adapter.AdapterContextAndContent;
 import com.thelinkphone.app.model.ContextAndContent;
@@ -39,6 +41,7 @@ import com.thelinkphone.app.utils.MyShare;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class BlockedPopupService extends Service {
 
@@ -55,6 +58,7 @@ public class BlockedPopupService extends Service {
     public static final String USERNAME = "USERNAME";
     public static final String IS_MANUALLY_BLOCKED = "IS_MANUALLY_BLOCKED";
     public static final String PHONE_NUMBER="PHONE_NUMBER";
+    private String phoneNumber;
 
     public static void showPopup(Context context,int callMode,String username,boolean isManuallyBlocked,String phoneNumber) {
         Log.d(TAG, "Static showPopup called with username: " + username + ", callMode: " + callMode + ", isManuallyBlocked: " + isManuallyBlocked);
@@ -93,7 +97,7 @@ public class BlockedPopupService extends Service {
         String username = intent.getStringExtra(USERNAME);
         boolean isManuallyBlocked = intent.getBooleanExtra(IS_MANUALLY_BLOCKED, false);
         int callMode = intent.getIntExtra(CALL_MODE, MyShare.CALL_SETTING_UNRESTRICTED);
-        String phoneNumber=intent.getStringExtra(PHONE_NUMBER);
+        this.phoneNumber=intent.getStringExtra(PHONE_NUMBER);
         Log.d(TAG, "Received popup data -> username: " + username +
                 ", callMode: " + callMode +
                 ", isManuallyBlocked: " + isManuallyBlocked);
@@ -122,14 +126,14 @@ public class BlockedPopupService extends Service {
             windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
             Context themedContext = new ContextThemeWrapper(this, R.style.AppTheme);
             LayoutInflater inflater = LayoutInflater.from(themedContext);
-            popupView = inflater.inflate(R.layout.context_and_content_blocked, null);
+//            popupView = inflater.inflate(R.layout.context_and_content_blocked, null);
 
             try {
                 popupView = inflater.inflate(R.layout.context_and_content_blocked, null);
                 Log.d(TAG, "Successfully inflated activity_card_3");
             } catch (Exception e) {
                 Log.w(TAG, "activity_card_3 not found, using activity_card as fallback");
-                popupView = inflater.inflate(R.layout.activity_card, null);
+                popupView = inflater.inflate(R.layout.activity_card_3, null);
             }
 
             if (popupView == null) {
@@ -138,7 +142,7 @@ public class BlockedPopupService extends Service {
                 return;
             }
 
-            setupStoryCarousel(popupView);
+            setupStoryCarousel(popupView,phoneNumber);
 
             int layoutFlag = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                     ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -581,16 +585,18 @@ public class BlockedPopupService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "Service destroyed — cleaning up popup and carousel");
+        Log.d(TAG, "Service destroyed — hiding popup if visible");
 
         if (carouselManager != null) {
-            carouselManager.stopAutoScroll();
+            carouselManager.release();
             carouselManager = null;
         }
 
-        if (isVisible && popupView != null) {
+        if (isVisible && popupView!=null){
             hidePopup(popupView, windowManager, params);
         }
+
+        removeCallData(phoneNumber);
     }
 
 
@@ -599,30 +605,169 @@ public class BlockedPopupService extends Service {
         return null;
     }
 
-    private void setupStoryCarousel(View popupView) {
+    private void setupStoryCarousel(View popupView, String phoneNumber) {
         RecyclerView storiesRecycler = popupView.findViewById(R.id.stories_container);
         if (storiesRecycler == null) {
             Log.e(TAG, "RecyclerView stories_container not found in layout");
             return;
         }
 
-        List<ContextAndContent> storyList = new ArrayList<>();
-        storyList.add(new ContextAndContent(1, "X", "", "https://x.com/wojakcodes/status/1898356531822748053"));
-        storyList.add(new ContextAndContent(2, "Pinterest", "", "https://in.pinterest.com/pin/20547742047210017/"));
-        storyList.add(new ContextAndContent(3, "MyDrive", "", "https://docs.google.com/document/d/1A1toZSN0EOEWv1BkwVmv6PsH0vR8N4ERc60J7uKDIzw"));
-        storyList.add(new ContextAndContent(4, "TOI", "", "https://timesofindia.indiatimes.com/"));
-        storyList.add(new ContextAndContent(5, "Android", "", "https://developer.android.com"));
-        storyList.add(new ContextAndContent(6, "CallALink", "", "https://www.freepik.com/free-ai-image/anime-night-sky-illustration_249236808.htm"));
-        storyList.add(new ContextAndContent(7, "TheLinkPhone", "", "https://www.freepik.com/free-ai-image/japanese-samurai-rain_417436943.htm"));
-
-        if (storyList.isEmpty()) {
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            Log.e(TAG, "❌ Phone number is null or empty, cannot fetch stories");
             storiesRecycler.setVisibility(View.GONE);
             return;
-        } else {
-            storiesRecycler.setVisibility(View.VISIBLE);
         }
 
-        carouselManager = new ContextCarouselManager(this, storiesRecycler, storyList);
-        carouselManager.startAutoScroll();
+        Log.d(TAG, "🔍 Fetching call session for phone number: " + phoneNumber);
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        // Query for active call session matching the phone number
+        db.collection("call_sessions")
+                .whereEqualTo("myNumber", phoneNumber)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        Log.w(TAG, "⚠️ No active call session found for: " + phoneNumber);
+                        storiesRecycler.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    // Get the first (most recent) document
+                    DocumentSnapshot document = querySnapshot.getDocuments().get(0);
+                    String callSessionId = document.getId();
+                    Map<String, Object> data = document.getData();
+
+                    Log.d(TAG, "✅ Found call session: " + callSessionId);
+
+                    if (data == null) {
+                        Log.e(TAG, "❌ Document data is null");
+                        storiesRecycler.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    // Extract call session metadata
+                    String callerNumber = data.containsKey("phoneNumber") ? data.get("phoneNumber").toString() : phoneNumber;
+                    long timestamp = data.containsKey("timestamp") ? (long) data.get("timestamp") : System.currentTimeMillis();
+                    boolean active = "ongoing".equals(data.get("status"));
+
+                    Log.d(TAG, "📞 Call metadata - Caller: " + callerNumber + ", Timestamp: " + timestamp + ", Active: " + active);
+
+                    // Check if context_and_content exists
+                    if (!data.containsKey("context_and_content")) {
+                        Log.w(TAG, "⚠️ No context_and_content field found in document");
+                        storiesRecycler.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    // Parse the context_and_content map
+                    Object contextObj = data.get("context_and_content");
+                    if (!(contextObj instanceof Map)) {
+                        Log.e(TAG, "❌ context_and_content is not a Map");
+                        storiesRecycler.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    Map<String, Object> contextMap = (Map<String, Object>) contextObj;
+                    Log.d(TAG, "📦 Found " + contextMap.size() + " stories in context_and_content");
+
+                    List<ContextAndContent> storyList = new ArrayList<>();
+
+                    // Parse each story entry
+                    for (Map.Entry<String, Object> entry : contextMap.entrySet()) {
+                        try {
+                            String key = entry.getKey();
+                            Object value = entry.getValue();
+
+                            if (!(value instanceof Map)) {
+                                Log.w(TAG, "⚠️ Skipping entry " + key + " - not a Map");
+                                continue;
+                            }
+
+                            Map<String, Object> storyData = (Map<String, Object>) value;
+
+                            // Extract story fields
+                            String title = storyData.containsKey("title") ? storyData.get("title").toString() : "Untitled";
+                            String description = storyData.containsKey("description") ? storyData.get("description").toString() : "";
+                            String url = storyData.containsKey("url") ? storyData.get("url").toString() : "";
+                            String imageUrl = storyData.containsKey("imageUrl") ? storyData.get("imageUrl").toString() : "";
+
+                            // Parse numeric ID from key (e.g., "1", "2", "3")
+                            int id;
+                            try {
+                                id = Integer.parseInt(key);
+                            } catch (NumberFormatException e) {
+                                id = storyList.size() + 1; // Fallback to incremental ID
+                                Log.w(TAG, "⚠️ Could not parse ID from key '" + key + "', using: " + id);
+                            }
+
+                            // Create ContextAndContent object
+                            ContextAndContent story = new ContextAndContent(
+                                    callSessionId,
+                                    callerNumber,
+                                    "", // receiverNumber - not available in current schema
+                                    timestamp,
+                                    active,
+                                    id,
+                                    title,
+                                    imageUrl,
+                                    url
+                            );
+
+                            storyList.add(story);
+                            Log.d(TAG, "✅ Added story #" + id + ": " + title + " (" + url + ")");
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "⚠️ Error parsing story entry: " + e.getMessage(), e);
+                        }
+                    }
+
+                    // Sort stories by ID
+                    java.util.Collections.sort(storyList, new java.util.Comparator<ContextAndContent>() {
+                        @Override
+                        public int compare(ContextAndContent o1, ContextAndContent o2) {
+                            return Integer.compare(o1.getId(), o2.getId());
+                        }
+                    });
+
+                    if (storyList.isEmpty()) {
+                        Log.w(TAG, "⚠️ No valid stories parsed from Firestore");
+                        storiesRecycler.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    // Setup RecyclerView with carousel manager
+                    AdapterContextAndContent adapter = new AdapterContextAndContent(this,storyList);
+                    storiesRecycler.setAdapter(adapter);
+                    storiesRecycler.setVisibility(View.VISIBLE);
+                    carouselManager = new ContextCarouselManager(this, storiesRecycler, storyList);
+                    carouselManager.startAutoScroll();
+
+                    Log.d(TAG, "🎉 Successfully loaded " + storyList.size() + " stories from Firestore");
+
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "❌ Firestore query failed: " + e.getMessage(), e);
+                    storiesRecycler.setVisibility(View.GONE);
+                });
+    }
+
+
+    private void removeCallData(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isEmpty()) return;
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Delete call session document
+        db.collection("call_sessions")
+                .whereEqualTo("phoneNumber", phoneNumber)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        doc.getReference().delete();
+                        Log.d(TAG, "✅ Deleted call session: " + doc.getId());
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "❌ Failed to delete call session: " + e.getMessage(), e));
     }
 }

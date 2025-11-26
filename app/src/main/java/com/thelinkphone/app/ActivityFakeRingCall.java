@@ -270,6 +270,11 @@ public class ActivityFakeRingCall extends AppCompatActivity {
                     ActivityFakeRingCall.this.stopSoundAndVibrate();
                     ActivityFakeRingCall.this.finish();
                 }
+
+                @Override
+                public void onAddMessage() {
+                    // code when "+" button is clicked
+                }
             });
         }
 

@@ -1,7 +1,13 @@
 package com.thelinkphone.app.utils;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.telephony.TelephonyManager;
+
+import androidx.core.app.ActivityCompat;
+
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemFavorites;
 import com.thelinkphone.app.item.ItemNote;
@@ -216,4 +222,20 @@ public class MyShare {
                 .clear()
                 .apply();
     }
+
+    public static void saveActiveNumber(Context context, String phoneNumber) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_CALL_INFO, Context.MODE_PRIVATE);
+        prefs.edit().putString("KEY_ACTIVE_NUMBER", phoneNumber).apply();
+    }
+
+    public static String getActiveNumber(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_CALL_INFO, Context.MODE_PRIVATE);
+        return prefs.getString("KEY_ACTIVE_NUMBER", null);
+    }
+
+    public static void clearActiveNumber(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREF_CALL_INFO, Context.MODE_PRIVATE);
+        prefs.edit().remove("KEY_ACTIVE_NUMBER").apply();
+    }
+
 }

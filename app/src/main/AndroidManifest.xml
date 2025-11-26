@@ -202,6 +202,11 @@
             android:exported="false"
             android:foregroundServiceType="phoneCall" />
 
+        <service
+            android:name=".service.OutgoingCallService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
