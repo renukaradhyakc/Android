@@ -68,7 +68,7 @@
                 android:paddingTop="16dp"
                 android:paddingRight="20dp"
                 android:paddingBottom="16dp"
-                android:text="Phonelink Scheduled (Contacts + Events)"
+                android:text="CallALink Scheduled (Contacts + Events)"
                 android:textAlignment="textStart"
                 android:textColor="@color/text_primary"
                 android:textSize="16sp" />

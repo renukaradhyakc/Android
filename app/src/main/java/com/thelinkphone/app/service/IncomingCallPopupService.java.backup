@@ -7,12 +7,10 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
@@ -35,7 +33,6 @@ import com.thelinkphone.app.adapter.LinkPreviewAdapter;
 
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyShare;
-import com.thelinkphone.app.utils.OtherUtils;
 
 public class IncomingCallPopupService extends Service {
 
@@ -61,7 +58,7 @@ public class IncomingCallPopupService extends Service {
 
     /** Entry point to show popup safely from background **/
     public static void showPopup(Context context, int callMode, String username,
-            boolean isCallALinkUser, boolean isWithinSchedule, boolean isAContact) {
+                                 boolean isCallALinkUser, boolean isWithinSchedule, boolean isAContact) {
         Intent intent = new Intent(context, IncomingCallPopupService.class);
         intent.putExtra(CALL_MODE, callMode);
         intent.putExtra(USERNAME, username);
@@ -103,6 +100,7 @@ public class IncomingCallPopupService extends Service {
                 ", isAContact: " + isAContact +
                 ", phoneNumber: " + phoneNumber);
 
+
         // Show popup if not already visible
         if (!isVisible) {
             showPopupLayout(callMode, username, isCallALinkUser, isWithinSchedule, isAContact);
@@ -116,7 +114,7 @@ public class IncomingCallPopupService extends Service {
 
     @SuppressLint("ClickableViewAccessibility")
     private void showPopupLayout(int mode, String username,
-            boolean isCallALinkUser, boolean isWithinSchedule, boolean isAContact) {
+                                 boolean isCallALinkUser, boolean isWithinSchedule, boolean isAContact) {
         try {
             if (popupView != null && popupView.isAttachedToWindow()) {
                 Log.w(TAG, "Popup already attached, skipping duplicate addView");
@@ -150,11 +148,11 @@ public class IncomingCallPopupService extends Service {
                             | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                             | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                             | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON,
-                    PixelFormat.TRANSLUCENT);
+                    PixelFormat.TRANSLUCENT
+            );
             params.gravity = Gravity.CENTER;
 
-            // --- 2. Set Initial State (Invisible, Scaled, OFF-SCREEN RIGHT) BEFORE Adding
-            // ---
+            // --- 2. Set Initial State (Invisible, Scaled, OFF-SCREEN RIGHT) BEFORE Adding ---
 
             // Explicitly hide the view before adding it
             popupView.setVisibility(View.INVISIBLE);
@@ -206,8 +204,7 @@ public class IncomingCallPopupService extends Service {
                     try {
                         // Update the window position on every frame
                         windowManager.updateViewLayout(popupView, params);
-                    } catch (IllegalArgumentException e) {
-                    }
+                    } catch (IllegalArgumentException e) {}
                 });
 
                 xAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
@@ -215,7 +212,6 @@ public class IncomingCallPopupService extends Service {
                     public void onAnimationStart(android.animation.Animator animation) {
                         Log.d(TAG, "DEBUG 4B: Animation officially started (Sliding X).");
                     }
-
                     @Override
                     public void onAnimationEnd(android.animation.Animator animation) {
                         Log.d(TAG, "DEBUG 4C: Animation completed (Sliding X).");
@@ -223,8 +219,7 @@ public class IncomingCallPopupService extends Service {
                 });
                 xAnimator.start();
 
-                // --- B) Animate View Properties (Alpha and Scale) using ViewPropertyAnimator
-                // ---
+                // --- B) Animate View Properties (Alpha and Scale) using ViewPropertyAnimator ---
                 popupView.animate()
                         .alpha(1f)
                         .scaleX(1f)
@@ -235,32 +230,16 @@ public class IncomingCallPopupService extends Service {
 
             }, 10); // 10ms delay ensures addView is fully processed
 
+
         } catch (Exception e) {
             Log.e(TAG, "Error showing popup: " + e.getMessage(), e);
             stopSelf();
         }
     }
 
-    private void hidePopup(final View view, final WindowManager windowManager,
-            final WindowManager.LayoutParams params) {
-        if (view == null || windowManager == null)
-            return;
 
-        // Clear Firestore data when hiding popup
-        if (phoneNumber != null) {
-            // Use centralized phone number normalization utility
-            String cleanNumber = OtherUtils.normalizePhoneNumber(phoneNumber);
-            String sessionId = "call_" + cleanNumber;
-
-            FirebaseFirestore.getInstance().collection("call_links").document(sessionId).collection("links")
-                    .get().addOnSuccessListener(querySnapshot -> {
-                        com.google.firebase.firestore.WriteBatch batch = FirebaseFirestore.getInstance().batch();
-                        for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                            batch.delete(doc.getReference());
-                        }
-                        batch.commit();
-                    });
-        }
+    private void hidePopup(final View view, final WindowManager windowManager, final WindowManager.LayoutParams params) {
+        if (view == null || windowManager == null) return;
 
         // Get screen width (for horizontal movement)
         android.graphics.Point size = new android.graphics.Point();
@@ -282,8 +261,7 @@ public class IncomingCallPopupService extends Service {
                 params.x = params.x + (int) (screenWidth * 0.025 * direction);
                 try {
                     windowManager.updateViewLayout(view, params);
-                } catch (IllegalArgumentException ignored) {
-                }
+                } catch (IllegalArgumentException ignored) {}
             }
         });
 
@@ -292,13 +270,14 @@ public class IncomingCallPopupService extends Service {
             public void onAnimationEnd(android.animation.Animator animation) {
                 try {
                     windowManager.removeView(view);
-                } catch (IllegalArgumentException ignored) {
-                }
+                } catch (IllegalArgumentException ignored) {}
             }
         });
 
         animator.start();
     }
+
+
 
     public static void hidePopup(Context context) {
         if (context == null) {
@@ -315,9 +294,9 @@ public class IncomingCallPopupService extends Service {
         }
     }
 
+
     @SuppressLint("ClickableViewAccessibility")
-    private void makeDraggable(final View view, final WindowManager.LayoutParams params,
-            final WindowManager windowManager) {
+    private void makeDraggable(final View view, final WindowManager.LayoutParams params, final WindowManager windowManager) {
         final int SWIPE_THRESHOLD_X = (int) (windowManager.getDefaultDisplay().getWidth() * 0.10);
 
         view.setOnTouchListener(new View.OnTouchListener() {
@@ -418,13 +397,11 @@ public class IncomingCallPopupService extends Service {
                                 Log.d(TAG, "Checking double-tap: time=" + (currentTime - firstTapTime) +
                                         "ms, distance: X=" + tapDistanceX + ", Y=" + tapDistanceY);
 
-                                if (tapDistanceX < TAP_MOVEMENT_THRESHOLD * 2
-                                        && tapDistanceY < TAP_MOVEMENT_THRESHOLD * 2) {
+                                if (tapDistanceX < TAP_MOVEMENT_THRESHOLD * 2 && tapDistanceY < TAP_MOVEMENT_THRESHOLD * 2) {
                                     Log.d(TAG, "✅ DOUBLE TAP DETECTED - Launching ActivityCall");
 
                                     try {
-                                        Intent intent = new Intent(IncomingCallPopupService.this,
-                                                com.thelinkphone.app.ActivityCall.class);
+                                        Intent intent = new Intent(IncomingCallPopupService.this, com.thelinkphone.app.ActivityCall.class);
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                         startActivity(intent);
 
@@ -459,25 +436,22 @@ public class IncomingCallPopupService extends Service {
 
                             if (Math.abs(finalDeltaX) >= SWIPE_THRESHOLD_X) {
                                 Log.d(TAG, "Swipe threshold reached - dismissing popup");
-                                android.animation.ValueAnimator animator = android.animation.ValueAnimator
-                                        .ofFloat(view.getAlpha(), 0.0f);
+                                android.animation.ValueAnimator animator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 0.0f);
                                 animator.setDuration(800);
                                 final int direction = (int) Math.signum(finalDeltaX);
 
-                                animator.addUpdateListener(
-                                        new android.animation.ValueAnimator.AnimatorUpdateListener() {
-                                            @Override
-                                            public void onAnimationUpdate(android.animation.ValueAnimator animation) {
-                                                float animatedValue = (Float) animation.getAnimatedValue();
-                                                view.setAlpha(animatedValue);
+                                animator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+                                    @Override
+                                    public void onAnimationUpdate(android.animation.ValueAnimator animation) {
+                                        float animatedValue = (Float) animation.getAnimatedValue();
+                                        view.setAlpha(animatedValue);
 
-                                                params.x = params.x + (int) (screenWidth * 0.025 * direction);
-                                                try {
-                                                    windowManager.updateViewLayout(view, params);
-                                                } catch (IllegalArgumentException e) {
-                                                }
-                                            }
-                                        });
+                                        params.x = params.x + (int) (screenWidth * 0.025 * direction);
+                                        try {
+                                            windowManager.updateViewLayout(view, params);
+                                        } catch (IllegalArgumentException e) {}
+                                    }
+                                });
 
                                 animator.addListener(new android.animation.AnimatorListenerAdapter() {
                                     @Override
@@ -486,41 +460,35 @@ public class IncomingCallPopupService extends Service {
                                             windowManager.removeView(view);
                                             isVisible = false;
                                             stopSelf();
-                                        } catch (IllegalArgumentException e) {
-                                        }
+                                        } catch (IllegalArgumentException e) {}
                                     }
                                 });
                                 animator.start();
 
                             } else {
                                 Log.d(TAG, "Swipe cancelled - snapping back");
-                                android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator
-                                        .ofInt(params.x, initialX);
-                                android.animation.ValueAnimator alphaAnimator = android.animation.ValueAnimator
-                                        .ofFloat(view.getAlpha(), 1.0f);
+                                android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator.ofInt(params.x, initialX);
+                                android.animation.ValueAnimator alphaAnimator = android.animation.ValueAnimator.ofFloat(view.getAlpha(), 1.0f);
 
                                 xAnimator.setDuration(400);
                                 alphaAnimator.setDuration(400);
 
-                                xAnimator.addUpdateListener(
-                                        new android.animation.ValueAnimator.AnimatorUpdateListener() {
-                                            @Override
-                                            public void onAnimationUpdate(android.animation.ValueAnimator animation) {
-                                                params.x = (Integer) animation.getAnimatedValue();
-                                                try {
-                                                    windowManager.updateViewLayout(view, params);
-                                                } catch (IllegalArgumentException e) {
-                                                }
-                                            }
-                                        });
+                                xAnimator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+                                    @Override
+                                    public void onAnimationUpdate(android.animation.ValueAnimator animation) {
+                                        params.x = (Integer) animation.getAnimatedValue();
+                                        try {
+                                            windowManager.updateViewLayout(view, params);
+                                        } catch (IllegalArgumentException e) {}
+                                    }
+                                });
 
-                                alphaAnimator.addUpdateListener(
-                                        new android.animation.ValueAnimator.AnimatorUpdateListener() {
-                                            @Override
-                                            public void onAnimationUpdate(android.animation.ValueAnimator animation) {
-                                                view.setAlpha((Float) animation.getAnimatedValue());
-                                            }
-                                        });
+                                alphaAnimator.addUpdateListener(new android.animation.ValueAnimator.AnimatorUpdateListener() {
+                                    @Override
+                                    public void onAnimationUpdate(android.animation.ValueAnimator animation) {
+                                        view.setAlpha((Float) animation.getAnimatedValue());
+                                    }
+                                });
 
                                 alphaAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
                                     @Override
@@ -541,8 +509,8 @@ public class IncomingCallPopupService extends Service {
         });
     }
 
-    private void applyTheme(int mode, String username,
-            boolean isCallALinkUser, boolean isWithinSchedule, boolean isAContact) {
+    private void applyTheme( int mode,String username,
+                             boolean isCallALinkUser, boolean isWithinSchedule, boolean isAContact) {
 
         CardView mainCard = popupView.findViewById(R.id.main_card);
         View cardInnerLayout = popupView.findViewById(R.id.card_inner_layout);
@@ -557,8 +525,7 @@ public class IncomingCallPopupService extends Service {
             userName.setText(R.string.unknown_caller);
         }
 
-        // Add null safety check before accessing username.length()
-        if (username != null && username.length() > 0) {
+        if (username.length() > 0) {
             avatarText.setText(String.valueOf(Character.toUpperCase(username.charAt(0))));
         }
 
@@ -588,7 +555,7 @@ public class IncomingCallPopupService extends Service {
                 userName.setTextColor(ContextCompat.getColor(this, R.color.callalink_textcolor));
                 branding.setTextColor(ContextCompat.getColor(this, R.color.callalink_textcolor));
                 modeText.setText(R.string.callalink_mode_label);
-                modeText.setTextColor(ContextCompat.getColor(this, R.color.callalink_textcolor));
+                modeText.setTextColor(ContextCompat.getColor(this,R.color.callalink_textcolor));
                 break;
         }
     }
@@ -606,16 +573,17 @@ public class IncomingCallPopupService extends Service {
         }
     }
 
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     "Incoming Call Popup",
-                    NotificationManager.IMPORTANCE_LOW);
+                    NotificationManager.IMPORTANCE_LOW
+            );
             channel.setDescription("Shows incoming call popup overlays");
             NotificationManager manager = getSystemService(NotificationManager.class);
-            if (manager != null)
-                manager.createNotificationChannel(channel);
+            if (manager != null) manager.createNotificationChannel(channel);
         }
     }
 
@@ -628,87 +596,47 @@ public class IncomingCallPopupService extends Service {
                 .build();
     }
 
+
     private void setupLinkListener() {
-        Log.d(TAG, "=== setupLinkListener START ===");
-        Log.d(TAG, "Caller phoneNumber received: " + phoneNumber);
-
+        Log.d(TAG, "setupLinkListener called, phoneNumber: " + phoneNumber);
+        
         if (phoneNumber == null || phoneNumber.isEmpty()) {
-            Log.e(TAG, "Caller phone number not available - EXITING");
+            Log.e(TAG, "Phone number not available");
             return;
         }
-
-        /**
-         * FIRESTORE SESSION ARCHITECTURE (CORRECTED):
-         * - We listen to OUR OWN session (recipient's session)
-         * - The caller's ActivityCall saves links to OUR session
-         * - This creates bidirectional link sharing:
-         * * Caller saves to "call_<our number>" → we receive here
-         * * We save to "call_<caller number>" → caller receives
-         */
-
-        // Get OUR phone number (the recipient)
-        String ourPhoneNumber = getOwnPhoneNumber();
-
-        if (ourPhoneNumber == null || ourPhoneNumber.isEmpty()) {
-            Log.e(TAG, "Could not retrieve our own phone number - EXITING");
-            return;
-        }
-
-        Log.d(TAG, "Our phone number: " + ourPhoneNumber);
-
-        // Use centralized phone number normalization utility
-        String ourNumber = OtherUtils.normalizePhoneNumber(ourPhoneNumber);
-        String callerNumber = OtherUtils.normalizePhoneNumber(phoneNumber);
-
-        Log.d(TAG, "Normalized - Our number: " + ourNumber + ", Caller number: " + callerNumber);
+        
+        String sessionId = "call_" + phoneNumber.replaceAll("[^0-9]", "");
+        Log.d(TAG, "Session ID: " + sessionId);
 
         RecyclerView linksRecycler = popupView.findViewById(R.id.links_recycler);
         if (linksRecycler == null) {
             Log.e(TAG, "links_recycler not found!");
             return;
         }
-
+        
         linkAdapter = new LinkPreviewAdapter();
-        linkAdapter.clearLinks();
-
-        // Load locally stored links first
-        loadLocalLinks();
-
         linksRecycler.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         linksRecycler.setAdapter(linkAdapter);
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // Hide RecyclerView initially if no local links
-        if (linkAdapter.getItemCount() == 0) {
-            linksRecycler.setVisibility(View.GONE);
-            Log.d(TAG, "No local links, hiding RecyclerView");
-        }
-
-        // Listen to OUR session (where the caller stores links for us)
-        String ourSession = "call_" + ourNumber;
-        Log.d(TAG, "=== LISTENING TO OUR SESSION: " + ourSession + " ===");
-
         linkListener = db.collection("call_links")
-                .document(ourSession)
+                .document(sessionId)
                 .collection("links")
                 .addSnapshotListener((snapshots, error) -> {
-                    Log.d(TAG, "=== OUR SESSION LISTENER TRIGGERED ===");
                     if (error != null) {
-                        Log.e(TAG, "Our session listener error: " + error.getMessage());
+                        Log.e(TAG, "Listener error: " + error.getMessage());
                         return;
                     }
-
                     if (snapshots != null && !snapshots.isEmpty()) {
-                        Log.d(TAG, "Found " + snapshots.size() + " documents in our session");
                         for (com.google.firebase.firestore.DocumentChange dc : snapshots.getDocumentChanges()) {
                             if (dc.getType() == com.google.firebase.firestore.DocumentChange.Type.ADDED) {
                                 String link = dc.getDocument().getString("link");
                                 if (link != null) {
                                     linksRecycler.setVisibility(View.VISIBLE);
                                     linkAdapter.addLink(link);
-                                    Log.d(TAG, "✅ Link received from caller in our session: " + link);
-
+                                    Log.d(TAG, "Link added: " + link);
+                                    
+                                    // Show popup if it was hidden
                                     if (popupView != null && popupView.getVisibility() != View.VISIBLE) {
                                         popupView.setVisibility(View.VISIBLE);
                                         popupView.setAlpha(1f);
@@ -717,60 +645,16 @@ public class IncomingCallPopupService extends Service {
                                 }
                             }
                         }
-                    } else {
-                        Log.d(TAG, "No documents in our session yet");
                     }
                 });
-
-        Log.d(TAG, "=== setupLinkListener COMPLETE ===");
-    }
-
-    /**
-     * Retrieves our own phone number (the recipient's number).
-     * Uses the phone number from login API response stored in SharedPreferences.
-     * 
-     * @return Our phone number, or null if unavailable
-     */
-    @SuppressLint("HardwareIds")
-    private String getOwnPhoneNumber() {
-        // Get phone number from login API (stored in SharedPreferences)
-        // This is saved by LoginActivity.saveToken() after successful login
-        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        String phoneNumber = prefs.getString("auth_phone", null);
-
-        if (phoneNumber != null && !phoneNumber.isEmpty()) {
-            Log.d(TAG, "Retrieved our number from login API: " + phoneNumber);
-            return phoneNumber;
-        }
-
-        Log.w(TAG, "Could not retrieve our phone number from SharedPreferences");
-        Log.w(TAG, "Make sure user is logged in and phone_number is returned from login API");
-        return null;
-    }
-
-    private void loadLocalLinks() {
-        android.content.SharedPreferences prefs = getSharedPreferences("call_links", MODE_PRIVATE);
-        java.util.Set<String> storedLinks = prefs.getStringSet("shared_links", new java.util.HashSet<>());
-
-        RecyclerView linksRecycler = popupView.findViewById(R.id.links_recycler);
-        if (!storedLinks.isEmpty()) {
-            linksRecycler.setVisibility(View.VISIBLE);
-            for (String link : storedLinks) {
-                linkAdapter.addLink(link);
-                Log.d(TAG, "Local link loaded: " + link);
-            }
-        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Service destroyed — hiding popup if visible");
-        if (linkListener != null)
-            linkListener.remove();
-        if (linkAdapter != null)
-            linkAdapter.clearLinks();
-        if (isVisible) {
+        if (linkListener != null) linkListener.remove();
+        if (isVisible){
             hidePopup(popupView, windowManager, params);
         }
     }

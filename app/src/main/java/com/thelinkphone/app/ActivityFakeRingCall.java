@@ -265,6 +265,10 @@ public class ActivityFakeRingCall extends AppCompatActivity {
                 public void onSpeaker() {
                 }
 
+                @Override
+                public void onAddMessage() {
+                }
+
                 @Override 
                 public void onReject() {
                     ActivityFakeRingCall.this.stopSoundAndVibrate();

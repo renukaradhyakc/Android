@@ -34,7 +34,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.core.app.ActivityCompat;
 
-
 import com.thelinkphone.app.R;
 
 import java.io.File;
@@ -43,7 +42,6 @@ import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.Calendar;
 
-
 public class OtherUtils {
     public static boolean checkPer(Context context, String str) {
         return ActivityCompat.checkSelfPermission(context, str) == 0;
@@ -51,11 +49,15 @@ public class OtherUtils {
 
     public static boolean checkPer(Activity activity) {
         TelecomManager telecomManager = (TelecomManager) activity.getSystemService(Context.TELECOM_SERVICE);
-        return (telecomManager == null || activity.getPackageName().equals(telecomManager.getDefaultDialerPackage())) ? false : true;
+        return (telecomManager == null || activity.getPackageName().equals(telecomManager.getDefaultDialerPackage()))
+                ? false
+                : true;
     }
 
     public static boolean checkPermission(Context context) {
-        String[] strArr = {"android.permission.READ_CONTACTS", "android.permission.CALL_PHONE", "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.READ_PHONE_STATE"};
+        String[] strArr = { "android.permission.READ_CONTACTS", "android.permission.CALL_PHONE",
+                "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG",
+                "android.permission.READ_PHONE_STATE" };
         for (int i = 0; i < 5; i++) {
             if (!checkPer(context, strArr[i])) {
                 return false;
@@ -71,7 +73,8 @@ public class OtherUtils {
         }
         if (Build.VERSION.SDK_INT >= 29) {
             RoleManager roleManager = (RoleManager) activity.getSystemService(RoleManager.class);
-            if (roleManager.isRoleAvailable("android.app.role.DIALER") && !roleManager.isRoleHeld("android.app.role.DIALER")) {
+            if (roleManager.isRoleAvailable("android.app.role.DIALER")
+                    && !roleManager.isRoleHeld("android.app.role.DIALER")) {
                 activityResultLauncher.launch(roleManager.createRequestRoleIntent("android.app.role.DIALER"));
                 return;
             }
@@ -87,17 +90,19 @@ public class OtherUtils {
     }
 
     public static int getWidthScreen(Context context) {
-        return Math.min(context.getResources().getDisplayMetrics().widthPixels, context.getResources().getDisplayMetrics().heightPixels);
+        return Math.min(context.getResources().getDisplayMetrics().widthPixels,
+                context.getResources().getDisplayMetrics().heightPixels);
     }
 
     public static int getHeightScreen(Context context) {
-        return Math.max(context.getResources().getDisplayMetrics().widthPixels, context.getResources().getDisplayMetrics().heightPixels) + MyShare.getSizeNotification(context);
+        return Math.max(context.getResources().getDisplayMetrics().widthPixels,
+                context.getResources().getDisplayMetrics().heightPixels) + MyShare.getSizeNotification(context);
     }
 
     public static GradientDrawable bgMain(int i, float f) {
         GradientDrawable gradientDrawable = new GradientDrawable();
         gradientDrawable.setShape(GradientDrawable.RECTANGLE);
-        gradientDrawable.setCornerRadii(new float[]{f, f, f, f, 0.0f, 0.0f, 0.0f, 0.0f});
+        gradientDrawable.setCornerRadii(new float[] { f, f, f, f, 0.0f, 0.0f, 0.0f, 0.0f });
         gradientDrawable.setColor(i);
         return gradientDrawable;
     }
@@ -120,7 +125,7 @@ public class OtherUtils {
     public static StateListDrawable selNum(String str, String str2) {
         StateListDrawable stateListDrawable = new StateListDrawable();
         stateListDrawable.setExitFadeDuration(400);
-        stateListDrawable.addState(new int[]{16842919}, bgOval(Color.parseColor(str2)));
+        stateListDrawable.addState(new int[] { 16842919 }, bgOval(Color.parseColor(str2)));
         stateListDrawable.addState(new int[0], bgOval(Color.parseColor(str)));
         return stateListDrawable;
     }
@@ -128,7 +133,7 @@ public class OtherUtils {
     public static StateListDrawable selLayout(String str, String str2) {
         StateListDrawable stateListDrawable = new StateListDrawable();
         stateListDrawable.setExitFadeDuration(400);
-        stateListDrawable.addState(new int[]{16842919}, bgIcon(Color.parseColor(str2), 1000.0f));
+        stateListDrawable.addState(new int[] { 16842919 }, bgIcon(Color.parseColor(str2), 1000.0f));
         stateListDrawable.addState(new int[0], bgIcon(Color.parseColor(str), 1000.0f));
         return stateListDrawable;
     }
@@ -142,7 +147,8 @@ public class OtherUtils {
         paint.setTextAlign(align);
         Rect rect2 = new Rect();
         paint.getTextBounds(str, 0, str.length(), rect2);
-        paint.setTextSize(Math.min(((rect.width() * 0.95f) / rect2.width()) * 100.0f, ((rect.height() * 0.95f) / rect2.height()) * 100.0f));
+        paint.setTextSize(Math.min(((rect.width() * 0.95f) / rect2.width()) * 100.0f,
+                ((rect.height() * 0.95f) / rect2.height()) * 100.0f));
         paint.getTextBounds(str, 0, str.length(), rect2);
         float height = rect.top + (rect.height() / 2.0f) + (rect2.height() / 2.0f);
         float f = rect.left;
@@ -332,7 +338,8 @@ public class OtherUtils {
         }
         try {
             int log10 = (int) (Math.log10(j) / Math.log10(1024.0d));
-            return new DecimalFormat("#,##0.#").format(d / Math.pow(1024.0d, log10)) + " " + new String[]{"B", "KB", "MB", "GB", "TB"}[log10];
+            return new DecimalFormat("#,##0.#").format(d / Math.pow(1024.0d, log10)) + " "
+                    + new String[] { "B", "KB", "MB", "GB", "TB" }[log10];
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -358,7 +365,8 @@ public class OtherUtils {
             return;
         }
         vibrator(context);
-        ((ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("number", str));
+        ((ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE))
+                .setPrimaryClip(ClipData.newPlainText("number", str));
         Toast.makeText(context, (int) R.string.copy, Toast.LENGTH_SHORT).show();
     }
 
@@ -366,7 +374,7 @@ public class OtherUtils {
         if (str == null || str.isEmpty()) {
             return;
         }
-        String join = TextUtils.join(";", new String[]{str});
+        String join = TextUtils.join(";", new String[] { str });
         Intent intent = new Intent("android.intent.action.SENDTO");
         intent.setData(Uri.fromParts("smsto", join, null));
         context.startActivity(intent);
@@ -374,12 +382,14 @@ public class OtherUtils {
 
     public static void call(Context context, String str, PhoneAccountHandle phoneAccountHandle) {
         android.util.Log.d("OtherUtils", "Attempting to place call to: " + str);
-        android.util.Log.d("OtherUtils", "PhoneAccountHandle: " + (phoneAccountHandle != null ? phoneAccountHandle.toString() : "null"));
-        
+        android.util.Log.d("OtherUtils",
+                "PhoneAccountHandle: " + (phoneAccountHandle != null ? phoneAccountHandle.toString() : "null"));
+
         // Check if we have CALL_PHONE permission
-        boolean hasCallPermission = context.checkSelfPermission("android.permission.CALL_PHONE") == PackageManager.PERMISSION_GRANTED;
+        boolean hasCallPermission = context
+                .checkSelfPermission("android.permission.CALL_PHONE") == PackageManager.PERMISSION_GRANTED;
         android.util.Log.d("OtherUtils", "Has CALL_PHONE permission: " + hasCallPermission);
-        
+
         // Check if app is set as default dialer
         TelecomManager telecomManager = (TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
         if (telecomManager != null) {
@@ -389,28 +399,30 @@ public class OtherUtils {
             android.util.Log.d("OtherUtils", "Default dialer: " + defaultDialer);
             android.util.Log.d("OtherUtils", "Current package: " + currentPackage);
             android.util.Log.d("OtherUtils", "Is default dialer: " + isDefaultDialer);
-            
+
             if (!isDefaultDialer) {
                 android.util.Log.w("OtherUtils", "App is not set as default dialer - this may cause call failures");
-                Toast.makeText(context, "Please set this app as your default dialer to make calls", Toast.LENGTH_LONG).show();
+                Toast.makeText(context, "Please set this app as your default dialer to make calls", Toast.LENGTH_LONG)
+                        .show();
             }
         }
-        
+
         Intent callIntentForEmergencyNumber;
         Uri callUri = getCallUri(str);
         android.util.Log.d("OtherUtils", "Call URI: " + callUri.toString());
-        
+
         if (!hasCallPermission) {
             android.util.Log.d("OtherUtils", "No CALL_PHONE permission, using DIAL intent");
             callIntentForEmergencyNumber = getCallIntentForEmergencyNumber(callUri);
         } else {
             boolean isEmergency = PhoneNumberUtils.isEmergencyNumber(str);
             android.util.Log.d("OtherUtils", "Is emergency number: " + isEmergency);
-            callIntentForEmergencyNumber = isEmergency ? getCallIntentForEmergencyNumber(callUri) : getCallIntent(callUri);
+            callIntentForEmergencyNumber = isEmergency ? getCallIntentForEmergencyNumber(callUri)
+                    : getCallIntent(callUri);
         }
-        
+
         android.util.Log.d("OtherUtils", "Call intent action: " + callIntentForEmergencyNumber.getAction());
-        
+
         try {
             callIntentForEmergencyNumber.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
             callIntentForEmergencyNumber.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -418,21 +430,22 @@ public class OtherUtils {
                 callIntentForEmergencyNumber.putExtra("android.telecom.extra.PHONE_ACCOUNT_HANDLE", phoneAccountHandle);
                 android.util.Log.d("OtherUtils", "Added PhoneAccountHandle to intent");
             }
-            
+
             if (telecomManager != null) {
                 android.util.Log.d("OtherUtils", "Placing call via TelecomManager");
-                telecomManager.placeCall(callIntentForEmergencyNumber.getData(), callIntentForEmergencyNumber.getExtras());
+                telecomManager.placeCall(callIntentForEmergencyNumber.getData(),
+                        callIntentForEmergencyNumber.getExtras());
                 android.util.Log.d("OtherUtils", "Call placed successfully");
             } else {
                 android.util.Log.e("OtherUtils", "TelecomManager is null");
                 Toast.makeText(context, "Unable to access phone service", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
+
             // Start the call activity
             context.startActivity(callIntentForEmergencyNumber);
             android.util.Log.d("OtherUtils", "Call activity started");
-            
+
         } catch (SecurityException e) {
             android.util.Log.e("OtherUtils", "SecurityException placing call: " + e.getMessage());
             Toast.makeText(context, "Permission denied to place call", Toast.LENGTH_SHORT).show();
@@ -463,16 +476,16 @@ public class OtherUtils {
     }
 
     private static void anim(final View view, Animation animation, final boolean z) {
-        animation.setAnimationListener(new Animation.AnimationListener() { 
-            @Override 
+        animation.setAnimationListener(new Animation.AnimationListener() {
+            @Override
             public void onAnimationRepeat(Animation animation2) {
             }
 
-            @Override 
+            @Override
             public void onAnimationStart(Animation animation2) {
             }
 
-            @Override 
+            @Override
             public void onAnimationEnd(Animation animation2) {
                 if (z) {
                     view.setVisibility(View.INVISIBLE);
@@ -485,16 +498,15 @@ public class OtherUtils {
     }
 
     public static void deleteFile(final String str) {
-        new Thread(new Runnable() { 
-            @Override 
+        new Thread(new Runnable() {
+            @Override
             public final void run() {
                 OtherUtils.lambda$deleteFile$0(str);
             }
         }).start();
     }
 
-    
-    public static  void lambda$deleteFile$0(String str) {
+    public static void lambda$deleteFile$0(String str) {
         File file = new File(str);
         if (file.exists()) {
             file.delete();
@@ -502,16 +514,15 @@ public class OtherUtils {
     }
 
     public static void deleteAllFileInFolder(final String str, final boolean z) {
-        new Thread(new Runnable() { 
-            @Override 
+        new Thread(new Runnable() {
+            @Override
             public final void run() {
                 OtherUtils.lambda$deleteAllFileInFolder$1(str, z);
             }
         }).start();
     }
 
-    
-    public static  void lambda$deleteAllFileInFolder$1(String str, boolean z) {
+    public static void lambda$deleteAllFileInFolder$1(String str, boolean z) {
         deleteFolder(str);
         if (z) {
             new File(str).delete();
@@ -532,8 +543,9 @@ public class OtherUtils {
     }
 
     public static void pickImage(ActivityResultLauncher<Intent> activityResultLauncher) {
-        Intent addCategory = new Intent("android.intent.action.OPEN_DOCUMENT").setType("image/*").addCategory("android.intent.category.OPENABLE");
-        addCategory.putExtra("android.intent.extra.MIME_TYPES", new String[]{"image/jpeg", "image/png"});
+        Intent addCategory = new Intent("android.intent.action.OPEN_DOCUMENT").setType("image/*")
+                .addCategory("android.intent.category.OPENABLE");
+        addCategory.putExtra("android.intent.extra.MIME_TYPES", new String[] { "image/jpeg", "image/png" });
         activityResultLauncher.launch(addCategory);
     }
 
@@ -559,5 +571,34 @@ public class OtherUtils {
 
     public static String[] arrAlphaB() {
         return "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
+    }
+
+    /**
+     * Normalizes a phone number by removing non-numeric characters and country
+     * codes.
+     * Handles Indian country code (91) and ensures 10-digit numbers.
+     * 
+     * @param phoneNumber The phone number to normalize (can be null)
+     * @return Normalized phone number string, or empty string if input is null
+     */
+    public static String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || phoneNumber.isEmpty()) {
+            return "";
+        }
+
+        // Remove all non-numeric characters
+        String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
+
+        // Remove Indian country code if present (91 prefix with 12 total digits)
+        if (cleanNumber.startsWith("91") && cleanNumber.length() == 12) {
+            return cleanNumber.substring(2);
+        }
+
+        // If number is longer than 10 digits, take last 10
+        if (cleanNumber.length() > 10) {
+            return cleanNumber.substring(cleanNumber.length() - 10);
+        }
+
+        return cleanNumber;
     }
 }

@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_gray">
+
+    <!-- SCROLL AREA -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:layout_marginBottom="120dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:padding="20dp">
+
+            <!-- LOGO -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/callalink_logo"
+                    android:scaleType="centerInside"
+                    android:padding="16dp"/>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- SUBTITLE -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Unlock all of our exclusive features by subscribing to\nCallaLink Premium"
+                android:textAlignment="center"
+                android:textSize="15sp"
+                android:lineHeight="22dp"
+                android:textColor="@color/paywall_text_primary"
+                android:paddingBottom="24dp"
+                android:fontFamily="sans-serif"
+                android:letterSpacing="0"/>
+
+            <!-- PLAN SELECTION CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:id="@+id/packages_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- PLAN ITEM: Annual (Selected) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardAnnual"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardBackgroundColor="@color/selected_plan_background"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="2dp"
+                        app:strokeColor="@color/primary_purple">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <RadioButton
+                                android:id="@+id/rbAnnual"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:buttonTint="@color/primary_purple"/>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_weight="1"
+                                android:paddingEnd="12dp">
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvTitleAnnual"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Annual"
+                                        android:textStyle="bold"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/paywall_text_primary"/>
+
+                                    <TextView
+                                        android:id="@+id/discount"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="19%"
+                                        android:textSize="10sp"
+                                        android:textColor="#FFFFFF"
+                                        android:background="@drawable/bg_discount_badge"
+                                        android:paddingStart="6dp"
+                                        android:paddingEnd="6dp"
+                                        android:paddingTop="2dp"
+                                        android:paddingBottom="2dp"
+                                        android:layout_marginStart="8dp"/>
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/price_per_month"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Only $0.82/mo"
+                                    android:textSize="13sp"
+                                    android:textColor="@color/paywall_text_secondary"
+                                    android:layout_marginTop="2dp"/>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvPriceAnnual"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$9.99"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- PLAN ITEM: Half-Yearly -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardHalfYearly"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardBackgroundColor="@color/selected_plan_background"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/selected_plan_background"
+                        app:strokeWidth="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <RadioButton
+                                android:id="@+id/rbHalfYearly"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="@color/radiobutton_unselected"/>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_weight="1"
+                                android:paddingEnd="12dp">
+
+                                <TextView
+                                    android:id="@+id/tvTitleHalfYearly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Half-Yearly"
+                                    android:textStyle="bold"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/paywall_text_primary"/>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvPriceHalfYearly"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$5.99"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- PLAN ITEM: Quarterly -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardQuarterly"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardBackgroundColor="@color/selected_plan_background"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/selected_plan_background"
+                        app:strokeWidth="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <RadioButton
+                                android:id="@+id/rbQuarterly"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="@color/radiobutton_unselected"/>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_weight="1"
+                                android:paddingEnd="12dp">
+
+                                <TextView
+                                    android:id="@+id/tvTitleQuarterly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Quarterly"
+                                    android:textStyle="bold"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/paywall_text_primary"/>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvPriceQuarterly"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$2.99"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- PLAN ITEM: Monthly -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardMonthly"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardCornerRadius="12dp"
+                        app:cardBackgroundColor="@color/selected_plan_background"
+                        app:cardElevation="0dp"
+                        app:strokeColor="@color/selected_plan_background"
+                        app:strokeWidth="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:gravity="center_vertical">
+
+                            <RadioButton
+                                android:id="@+id/rbMonthly"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="@color/radiobutton_unselected"/>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:layout_weight="1"
+                                android:paddingEnd="12dp">
+
+                                <TextView
+                                    android:id="@+id/tvTitleMonthly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Monthly"
+                                    android:textStyle="bold"
+                                    android:textSize="16sp"
+                                    android:textColor="@color/paywall_text_primary"/>
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvPriceMonthly"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$0.99"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"/>
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- FEATURES LIST -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:id="@+id/features_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="WHAT'S INCLUDED"
+                        android:textStyle="bold"
+                        android:textSize="12sp"
+                        android:textColor="@color/paywall_text_secondary"
+                        android:letterSpacing="0.05"
+                        android:paddingBottom="16dp"/>
+
+                    <!-- Feature 1: QR Code Calling -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingBottom="20dp"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/primary_purple">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_qr_code_scanner_24"
+                                android:layout_gravity="center"
+                                app:tint="#FFFFFF"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="QR Code Calling"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"
+                                android:paddingBottom="4dp"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Share your personal QR code and let anyone call you instantly and effortlessly-no typing or saving numbers."
+                                android:textSize="13sp"
+                                android:textColor="@color/paywall_text_secondary"
+                                android:lineHeight="20dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Feature 2: Smart Call Links -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingBottom="20dp"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/primary_purple">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_link"
+                                android:layout_gravity="center"
+                                app:tint="#FFFFFF"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Smart Call Links"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"
+                                android:paddingBottom="4dp"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Create a unique call link that connects people to you with a single tap; perfect for quick sharing anywhere."
+                                android:textSize="13sp"
+                                android:textColor="@color/paywall_text_secondary"
+                                android:lineHeight="20dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Feature 3: Advanced Scheduling Suite -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingBottom="20dp"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/primary_purple">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_calendar_month_24"
+                                android:layout_gravity="center"
+                                app:tint="#FFFFFF"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Advanced Scheduling Suite"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"
+                                android:paddingBottom="4dp"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Set availability, create events and let callers book time with smart timezone handling and automatic reminders."
+                                android:textSize="13sp"
+                                android:textColor="@color/paywall_text_secondary"
+                                android:lineHeight="20dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Feature 4: Privacy-First Scheduling -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingBottom="20dp"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/primary_purple">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_shield_24"
+                                android:layout_gravity="center"
+                                app:tint="#FFFFFF"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Privacy-First Schedulig"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"
+                                android:paddingBottom="4dp"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Connect without revealing your phone number. All calls are encrypted and your data stays private."
+                                android:textSize="13sp"
+                                android:textColor="@color/paywall_text_secondary"
+                                android:lineHeight="20dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Feature 5: Unified Call Dashboard -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingBottom="20dp"
+                        android:gravity="top">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/primary_purple">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/baseline_calendar_month_24"
+                                android:layout_gravity="center"
+                                app:tint="#FFFFFF"/>
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_weight="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Unified Call Dashboard"
+                                android:textStyle="bold"
+                                android:textSize="16sp"
+                                android:textColor="@color/paywall_text_primary"
+                                android:paddingBottom="4dp"/>
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Manage all QR calls, link calls and schedules from a single, clean, professional interface."
+                                android:textSize="13sp"
+                                android:textColor="@color/paywall_text_secondary"
+                                android:lineHeight="20dp"/>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- BOTTOM BAR -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#FFFFFF"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="20dp"
+        android:layout_gravity="bottom"
+        android:elevation="20dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Continue"
+            android:textSize="17sp"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium"
+            app:cornerRadius="14dp"
+            app:backgroundTint="@color/primary_purple"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingTop="12dp">
+
+            <TextView
+                android:id="@+id/tvTerms"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Terms"
+                android:textSize="12sp"
+                android:textColor="@color/paywall_text_secondary"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  |  "
+                android:textSize="12sp"
+                android:textColor="@color/paywall_text_secondary"/>
+
+            <TextView
+                android:id="@+id/tvRestore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Restore purchases"
+                android:textSize="12sp"
+                android:textColor="@color/paywall_text_secondary"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  |  "
+                android:textSize="12sp"
+                android:textColor="@color/paywall_text_secondary"/>
+
+            <TextView
+                android:id="@+id/tvPrivacy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Privacy"
+                android:textSize="12sp"
+                android:textColor="@color/paywall_text_secondary"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

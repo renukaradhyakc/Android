@@ -15,6 +15,7 @@ public interface ActionScreenResult {
     void onRecorder();
 
     void onReject();
-
+    
+    void onAddMessage();
     void onSpeaker();
 }

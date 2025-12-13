@@ -1,7 +1,9 @@
 package com.thelinkphone.app.screen.mate;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.View;
+import android.widget.Button;
 
 import com.thelinkphone.app.screen.ActionAcceptResult;
 import com.thelinkphone.app.screen.ActionScreenResult;
@@ -15,6 +17,7 @@ public class ViewScreenMate extends BaseScreen {
 
     public ViewScreenMate(Context context) {
         super(context);
+        android.util.Log.d("CallScreen", "Using ViewScreenMate layout");
         int widthScreen = OtherUtils.getWidthScreen(context);
         int i = widthScreen / 70;
         int i2 = (widthScreen * 5) / 12;
@@ -28,6 +31,30 @@ public class ViewScreenMate extends BaseScreen {
         layoutParams2.addRule(14);
         layoutParams2.addRule(2, view.getId());
         addView(this.tvStatus, layoutParams2);
+        
+        android.widget.TextView btnAddMessage = new android.widget.TextView(context);
+        btnAddMessage.setText("Add Message");
+        btnAddMessage.setTextColor(Color.WHITE);
+        btnAddMessage.setTextSize(16);
+        btnAddMessage.setGravity(17);
+        btnAddMessage.setPadding(widthScreen / 10, widthScreen / 40, widthScreen / 10, widthScreen / 40);
+        android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+        drawable.setColor(Color.parseColor("#4D000000"));
+        drawable.setCornerRadius(widthScreen / 15);
+        drawable.setStroke(2, Color.parseColor("#80FFFFFF"));
+        btnAddMessage.setBackground(drawable);
+        btnAddMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ViewScreenMate.this.actionScreenResult.onAddMessage();
+            }
+        });
+        LayoutParams btnParams = new LayoutParams(-2, -2);
+        btnParams.addRule(14);
+        btnParams.addRule(2, ViewScreenMate.this.tvStatus.getId());
+        btnParams.setMargins(0, i, 0, 0);
+        addView(btnAddMessage, btnParams);
+        
         LayoutParams layoutParams3 = new LayoutParams(-2, -2);
         layoutParams3.addRule(14);
         layoutParams3.addRule(2, this.tvStatus.getId());

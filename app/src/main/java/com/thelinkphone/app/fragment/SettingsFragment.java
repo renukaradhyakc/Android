@@ -3,7 +3,6 @@ package com.thelinkphone.app.fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
@@ -14,7 +13,7 @@ import android.view.ViewGroup;
 
 import com.thelinkphone.app.ActivityHome;
 import com.thelinkphone.app.CallBlockActivity;
-import com.thelinkphone.app.LoginActivity;
+import com.thelinkphone.app.ActivityPaywall;
 import com.thelinkphone.app.PrivacyPolicyActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.ViewMyQRAct;
@@ -26,7 +25,7 @@ import com.thelinkphone.app.utils.SpamProtectionManager;
 public class SettingsFragment extends Fragment {
 
     private static final String TAG = "SettingsFragment";
-    ConstraintLayout mCallsBtn, mQRBtn, mPrivacyBtn, mRecordBtn, mBlockBtn;
+    ConstraintLayout mCallsBtn, mQRBtn, mPrivacyBtn, mRecordBtn, mBlockBtn, mProBtn;
     private SpamProtectionManager spamProtectionManager;
 
     public SettingsFragment() {
@@ -34,11 +33,9 @@ public class SettingsFragment extends Fragment {
     }
 
 
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
     }
 
     @Override
@@ -52,6 +49,7 @@ public class SettingsFragment extends Fragment {
         mPrivacyBtn = view.findViewById(R.id.Settings_Privacy);
         mBlockBtn = view.findViewById(R.id.Settings_Block);
         mRecordBtn = view.findViewById(R.id.Settings_Recording);
+        mProBtn = view.findViewById(R.id.Settings_PRO);
 
         // Initialize spam protection manager
         spamProtectionManager = new SpamProtectionManager(getContext());
@@ -111,6 +109,14 @@ public class SettingsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Intent toQRAct = new Intent(getContext(), ViewMyQRAct.class);
+                startActivity(toQRAct);
+            }
+        });
+
+        mProBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent toQRAct = new Intent(getContext(), ActivityPaywall.class);
                 startActivity(toQRAct);
             }
         });

@@ -97,7 +97,7 @@ public class CallsDialogFragment extends androidx.fragment.app.DialogFragment {
             if (selectedSetting == MyShare.CALL_SETTING_UNRESTRICTED) {
                 message = "Call setting changed to Unrestricted - All calls allowed, TrueCaller/spam apps can show popups";
             } else {
-                message = "Call setting changed to Phonelink Scheduled - Privacy protection enabled, spam apps blocked";
+                message = "Call setting changed to CallALink Scheduled - Privacy protection enabled, spam apps blocked";
             }
 
             Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();

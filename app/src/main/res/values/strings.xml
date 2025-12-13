@@ -44,7 +44,7 @@
     <string name="custom_lock">Customizable Lock</string>
     <string name="dark_themes">Dark Themes</string>
     <string name="decline">Decline</string>
-    <string name="default_content">TheLinkPhone can only start &amp; receive calls if it\'s your default phone app</string>
+    <string name="default_content">CallALink can only start &amp; receive calls if it\'s your default phone app</string>
     <string name="default_phone_app_prompt">Please make this app the default Phone app</string>
     <string name="delete">Delete</string>
     <string name="delete_all_recents">Delete all recent calls?</string>
@@ -121,7 +121,7 @@
     <string name="outgoing_call">Outgoing call</string>
     <string name="per_content">The app needs the following permissions to work: Read contacts, Read call logs, Call phone</string>
     <string name="permission">Permission</string>
-    <string name="phone_default">Set TheLinkPhone as default</string>
+    <string name="phone_default">Set CallALink as default</string>
     <string name="play">Play</string>
     <string name="policy">Privacy Policy</string>
     <string name="premium">Premium</string>

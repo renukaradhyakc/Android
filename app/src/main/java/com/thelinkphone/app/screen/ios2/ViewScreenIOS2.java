@@ -1,6 +1,9 @@
 package com.thelinkphone.app.screen.ios2;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 
 import com.thelinkphone.app.screen.ActionAcceptResult;
@@ -17,6 +20,7 @@ public class ViewScreenIOS2 extends BaseScreen {
 
     public ViewScreenIOS2(Context context) {
         super(context);
+        android.util.Log.d("CallScreen", "Using ViewScreenIOS2 layout");
         int widthScreen = OtherUtils.getWidthScreen(context);
         int i = widthScreen / 25;
         int i2 = (widthScreen * 18) / 100;
@@ -38,6 +42,29 @@ public class ViewScreenIOS2 extends BaseScreen {
         LinearLayout.LayoutParams layoutParams3 = new LinearLayout.LayoutParams(-1, -2);
         layoutParams3.setMargins(0, widthScreen / 200, 0, 0);
         linearLayout.addView(this.tvStatus, layoutParams3);
+        
+        android.widget.TextView btnAddMessage = new android.widget.TextView(context);
+        btnAddMessage.setText("Add Message");
+        btnAddMessage.setTextColor(Color.WHITE);
+        btnAddMessage.setTextSize(16);
+        btnAddMessage.setGravity(17);
+        btnAddMessage.setPadding(widthScreen / 10, widthScreen / 40, widthScreen / 10, widthScreen / 40);
+        android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+        drawable.setColor(Color.parseColor("#4D000000"));
+        drawable.setCornerRadius(widthScreen / 15);
+        drawable.setStroke(2, Color.parseColor("#80FFFFFF"));
+        btnAddMessage.setBackground(drawable);
+        btnAddMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ViewScreenIOS2.this.actionScreenResult.onAddMessage();
+            }
+        });
+        LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(-2, -2);
+        btnParams.setMargins(0, widthScreen / 50, 0, 0);
+        btnParams.gravity = 1;
+        linearLayout.addView(btnAddMessage, btnParams);
+        
         ViewAddCallIOS viewAddCallIOS = new ViewAddCallIOS(context, this);
         this.viewAddCallIOS = viewAddCallIOS;
         viewAddCallIOS.setActionScreenResult(new ActionAcceptResult() { 

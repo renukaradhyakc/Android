@@ -191,18 +191,15 @@
 
             <TextView
                 android:id="@+id/model_label"
+                android:layout_marginTop="16dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Unrestricted Mode"
                 android:textColor="#1E3A8A"
                 android:textSize="12sp"
-                android:textStyle="bold"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/text_branding"
-                app:layout_constraintHorizontal_bias="0.064"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/stats_row"
-                app:layout_constraintVertical_bias="0.941" />
+                app:layout_constraintTop_toBottomOf="@id/stats_row"
+                android:textStyle="bold"/>
 
             <TextView
                 android:id="@+id/text_branding"
@@ -216,6 +213,22 @@
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/stats_row" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/links_recycler"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                android:paddingVertical="8dp"
+                android:visibility="gone"
+                android:orientation="horizontal"
+                app:layout_constraintTop_toBottomOf="@id/model_label"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>

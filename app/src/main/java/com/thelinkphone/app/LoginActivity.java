@@ -1,8 +1,10 @@
 package com.thelinkphone.app;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
@@ -11,6 +13,10 @@ import android.widget.EditText;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.interfaces.LogInCallback;
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.thelinkphone.app.model.LoginResponse;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
@@ -37,6 +43,8 @@ public class LoginActivity extends AppCompatActivity {
     private static final String PHONE_KEY = "auth_phone";
     private static final String EMAIL_KEY = "user_email";
     private static final String PASSWORD_KEY = "user_password";
+    private static final String ENTITLEMENT_ID = "CallALink Premium";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +81,7 @@ public class LoginActivity extends AppCompatActivity {
                         saveToken(loginResponse.getToken(),loginResponse.getDomain_url(), loginResponse.getPhone_number());
                         saveUserCredentials(email, password);
                         Log.d(TAG, "User logged in successfully - Email: " + email.substring(0, Math.min(3, email.length())) + "***");
-                        finish();
+                        onLoginSuccess(email);
                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
 
 
@@ -118,4 +126,52 @@ public class LoginActivity extends AppCompatActivity {
         editor.apply();
         Log.d(TAG, "User credentials saved for API use");
     }
+
+    private void onLoginSuccess(String email) {
+        Purchases.getSharedInstance().logIn(email, new LogInCallback() {
+            @Override
+            public void onReceived(@NonNull CustomerInfo customerInfo, boolean created) {
+                Log.d(TAG, "RevenueCat identified user: " + email);
+                Log.d(TAG, "User created in RevenueCat: " + created);
+                Log.d(TAG, "Active entitlements: " + customerInfo.getEntitlements().getAll().keySet().toString());
+
+                com.revenuecat.purchases.EntitlementInfo entitlement =
+                        customerInfo.getEntitlements().get(ENTITLEMENT_ID);
+
+                boolean isSubscribed = entitlement != null && entitlement.isActive();
+
+                if (isSubscribed) {
+                    Log.d(TAG, "User has active subscription, going to main activity");
+                    goToMainActivity();
+                } else {
+                    Log.d(TAG, "User does not have active subscription, showing paywall");
+                    showPaywall();
+                }
+            }
+
+            @Override
+            public void onError(@NonNull com.revenuecat.purchases.PurchasesError error) {
+                Log.e(TAG, "RevenueCat identify error: " + error.getMessage());
+                Toast.makeText(LoginActivity.this,
+                        "Error checking subscription status",
+                        Toast.LENGTH_SHORT).show();
+
+                // Fallback: show paywall on error
+                showPaywall();
+            }
+        });
+    }
+
+    private void goToMainActivity() {
+        Intent intent = new Intent(LoginActivity.this, ActivityHome.class);
+        startActivity(intent);
+        finish();
+    }
+
+    private void showPaywall() {
+        Intent intent = new Intent(LoginActivity.this, ActivityPaywall.class);
+        startActivity(intent);
+        finish();
+    }
+
 }

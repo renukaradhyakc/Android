@@ -3,6 +3,8 @@ package com.thelinkphone.app.screen.ios;
 import android.content.Context;
 import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.Button;
+import android.graphics.Color;
 
 import com.thelinkphone.app.screen.ActionAcceptResult;
 import com.thelinkphone.app.screen.ActionScreenResult;
@@ -16,9 +18,11 @@ import com.thelinkphone.app.utils.ReadContact;
 public class ViewScreenIos extends BaseScreen {
     private final ViewCall viewCall;
     private final ViewInComingIOS viewInComing;
+    private android.widget.TextView btnAddMessage;
 
     public ViewScreenIos(Context context) {
         super(context);
+        android.util.Log.d("CallScreen", "Using ViewScreenIos layout");
         int widthScreen = OtherUtils.getWidthScreen(context);
         int i = widthScreen / 25;
         int i2 = (widthScreen * 18) / 100;
@@ -30,17 +34,18 @@ public class ViewScreenIos extends BaseScreen {
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setId(456456);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
-        linearLayout.setGravity(16);
+        linearLayout.setGravity(17);
         linearLayout.setPadding(i, 0, i, 0);
-        LayoutParams layoutParams2 = new LayoutParams(-1, i2);
-        layoutParams2.setMargins(0, MyShare.getSizeNotification(context) + i3, 0, 0);
-        layoutParams2.addRule(16, this.imAvatar.getId());
+        LayoutParams layoutParams2 = new LayoutParams(-2, -2);
+        layoutParams2.setMargins(0, MyShare.getSizeNotification(context) + (widthScreen / 4), 0, 0);
+        layoutParams2.addRule(14);
         addView(linearLayout, layoutParams2);
         // Add the stylish TheLinkPhone branding (privacy-focused)
         linearLayout.addView(this.tvName, -1, -2);
         LinearLayout.LayoutParams layoutParams3 = new LinearLayout.LayoutParams(-1, -2);
         layoutParams3.setMargins(0, widthScreen / 200, 0, 0);
         linearLayout.addView(this.tvStatus, layoutParams3);
+        
         ViewInComingIOS viewInComingIOS = new ViewInComingIOS(context);
         this.viewInComing = viewInComingIOS;
         viewInComingIOS.setViewRoot(this);
@@ -62,11 +67,40 @@ public class ViewScreenIos extends BaseScreen {
         int i4 = widthScreen / 8;
         layoutParams4.setMargins(i4, 0, i4, MyShare.getSizeNavigation(context) + (widthScreen / 7));
         addView(viewInComingIOS, layoutParams4);
+        
         ViewCall viewCall = new ViewCall(context);
         this.viewCall = viewCall;
+        viewCall.setId(888999);
         LayoutParams layoutParams5 = new LayoutParams(-1, -1);
         layoutParams5.addRule(3, linearLayout.getId());
         addView(viewCall, layoutParams5);
+        
+        android.widget.TextView btnAddMessage = new android.widget.TextView(context);
+        this.btnAddMessage = btnAddMessage; // Store reference
+        btnAddMessage.setText("Add Message");
+        btnAddMessage.setTextColor(Color.WHITE);
+        btnAddMessage.setTextSize(16);
+        btnAddMessage.setGravity(17);
+        btnAddMessage.setVisibility(View.GONE); // Hide initially
+        int padding = widthScreen / 25;
+        btnAddMessage.setPadding(padding * 2, padding, padding * 2, padding);
+        btnAddMessage.setMinHeight(widthScreen / 12);
+        android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+        drawable.setColor(Color.parseColor("#50000000"));
+        drawable.setCornerRadius(widthScreen / 12);
+        drawable.setStroke(3, Color.parseColor("#AAFFFFFF"));
+        btnAddMessage.setBackground(drawable);
+        btnAddMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ViewScreenIos.this.actionScreenResult.onAddMessage();
+            }
+        });
+        LayoutParams btnParams = new LayoutParams(-2, -2);
+        btnParams.addRule(14);
+        btnParams.addRule(3, linearLayout.getId());
+        btnParams.setMargins(0, widthScreen / 6, 0, 0);
+        addView(btnAddMessage, btnParams);
     }
 
     @Override 
@@ -127,5 +161,18 @@ public class ViewScreenIos extends BaseScreen {
     @Override 
     public void updateViewMode() {
         this.viewCall.updateUI(this.isMute, this.isSpeaker, this.isHold, this.isRec);
+    }
+
+    @Override
+    public void updateStatus(int status) {
+        super.updateStatus(status);
+        // Show Add Message button only when call is active/connected
+        if (btnAddMessage != null) {
+            if (status == 4) { // Call.STATE_ACTIVE
+                btnAddMessage.setVisibility(View.VISIBLE);
+            } else {
+                btnAddMessage.setVisibility(View.GONE);
+            }
+        }
     }
 }

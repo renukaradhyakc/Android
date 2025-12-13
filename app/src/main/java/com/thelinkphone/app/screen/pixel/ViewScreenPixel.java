@@ -1,7 +1,9 @@
 package com.thelinkphone.app.screen.pixel;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.View;
+import android.widget.Button;
 
 import com.thelinkphone.app.screen.ActionAcceptResult;
 import com.thelinkphone.app.screen.ActionScreenResult;
@@ -16,6 +18,7 @@ public class ViewScreenPixel extends BaseScreen {
 
     public ViewScreenPixel(Context context) {
         super(context);
+        android.util.Log.d("CallScreen", "Using ViewScreenPixel layout");
         int widthScreen = OtherUtils.getWidthScreen(context);
         int i = widthScreen / 25;
         int i2 = (widthScreen * 5) / 12;
@@ -34,6 +37,30 @@ public class ViewScreenPixel extends BaseScreen {
         layoutParams3.addRule(2, this.imAvatar.getId());
         layoutParams3.setMargins(i, i, i, i * 3);
         addView(this.tvStatus, layoutParams3);
+        
+        android.widget.TextView btnAddMessage = new android.widget.TextView(context);
+        btnAddMessage.setText("Add Message");
+        btnAddMessage.setTextColor(Color.WHITE);
+        btnAddMessage.setTextSize(16);
+        btnAddMessage.setGravity(17);
+        btnAddMessage.setPadding(widthScreen / 10, widthScreen / 40, widthScreen / 10, widthScreen / 40);
+        android.graphics.drawable.GradientDrawable drawable = new android.graphics.drawable.GradientDrawable();
+        drawable.setColor(Color.parseColor("#4D000000"));
+        drawable.setCornerRadius(widthScreen / 15);
+        drawable.setStroke(2, Color.parseColor("#80FFFFFF"));
+        btnAddMessage.setBackground(drawable);
+        btnAddMessage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ViewScreenPixel.this.actionScreenResult.onAddMessage();
+            }
+        });
+        LayoutParams btnParams = new LayoutParams(-2, -2);
+        btnParams.addRule(14);
+        btnParams.addRule(2, ViewScreenPixel.this.tvStatus.getId());
+        btnParams.setMargins(0, i, 0, 0);
+        addView(btnAddMessage, btnParams);
+        
         LayoutParams layoutParams4 = new LayoutParams(-2, -2);
         layoutParams4.addRule(14);
         layoutParams4.addRule(2, this.tvStatus.getId());

@@ -3,7 +3,7 @@ package com.thelinkphone.app.screen.other;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
-import android.widget.ImageView;
+import android.widget.Button;import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
@@ -71,14 +71,17 @@ public class ViewCallOther extends RelativeLayout {
         layoutParams3.addRule(6, imageView.getId());
         layoutParams3.addRule(17, imageView.getId());
         addView(makeIm2, layoutParams3);
+        
         LinearLayout linearLayout = new LinearLayout(context);
         this.llMode = linearLayout;
         linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+        linearLayout.setId(5554);
         linearLayout.setGravity(1);
         LayoutParams layoutParams4 = new LayoutParams(-1, i);
         layoutParams4.addRule(2, imageView.getId());
         addView(linearLayout, layoutParams4);
         linearLayout.addView(new View(context), new LinearLayout.LayoutParams(0, -1, 1.0f));
+        
         ImageView makeIm3 = makeIm(121, R.drawable.im_mode_mute_on, new OnClickListener() { 
             @Override 
             public final void onClick(View view) {

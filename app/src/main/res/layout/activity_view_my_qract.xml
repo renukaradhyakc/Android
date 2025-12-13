@@ -70,7 +70,7 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
         android:layout_marginEnd="24dp"
-        android:text="Share this QR code with others to allow them to call you using the PhoneLink app"
+        android:text="Share this QR code with others to allow them to call you using the CallALink app"
         android:textAlignment="center"
         android:textColor="@color/text_secondary"
         android:textSize="16sp"

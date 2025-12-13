@@ -100,7 +100,7 @@ public class ViewMyQRAct extends AppCompatActivity {
                                 public void run() {
                                     shareButton.setEnabled(true);
                                     shareButton.setText("SHARE QR CODE");
-                                    descriptionText.setText("Share this QR code with others to allow them to call you using the PhoneLink app");
+                                    descriptionText.setText("Share this QR code with others to allow them to call you using the CallALink app");
                                     progressBar.setVisibility(android.view.View.GONE);
                                 }
                             });
@@ -131,7 +131,7 @@ public class ViewMyQRAct extends AppCompatActivity {
                         Log.d(TAG, "QR generation callback didn't fire, enabling button anyway");
                         shareButton.setEnabled(true);
                         shareButton.setText("SHARE QR CODE");
-                        descriptionText.setText("Share this QR code with others to allow them to call you using the PhoneLink app");
+                        descriptionText.setText("Share this QR code with others to allow them to call you using the CallALink app");
                         progressBar.setVisibility(android.view.View.GONE);
                         // Try to get bitmap from QRView directly
                         qrView.buildDrawingCache();
@@ -360,10 +360,10 @@ public class ViewMyQRAct extends AppCompatActivity {
         }
 
         // Create a clickable HTTPS URL using the existing app.thelinkphone.com domain
-        String clickableLinkUrl = "https://app.thelinkphone.com/call/" + mDomainQR;
+        String clickableLinkUrl = "https://app.callalink.com/call/" + mDomainQR;
         
         // Also create the direct app link for manual copying
-        String directAppLink = "linkphone://call?user=" + mDomainQR;
+        String directAppLink = "callalink://call?user=" + mDomainQR;
         
         Log.d(TAG, "Generated clickable LinkPhone URL: " + clickableLinkUrl);
         Log.d(TAG, "Generated direct app link: " + directAppLink);

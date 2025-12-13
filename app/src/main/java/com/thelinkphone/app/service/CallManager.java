@@ -77,7 +77,7 @@ public class CallManager {
             e.printStackTrace();
         }
         int state = getState(call);
-        if (state == Call.STATE_RINGING) {
+        Log.d("CallManager", "Call state detected: " + state + " (1=DIALING, 2=RINGING, 4=ACTIVE)");        if (state == Call.STATE_RINGING) {
             Log.d("CallManager", "Incoming call detected — triggering popup");
 
             int callMode = 0;
@@ -100,8 +100,33 @@ public class CallManager {
                 e.printStackTrace();
             }
         }
-    }
+        
+        // Also trigger popup for outgoing calls
+        if (state == Call.STATE_DIALING || state == 9) {
+            Log.d("CallManager", "Outgoing/Active call detected — triggering popup");
 
+            int callMode = 0;
+            String username = getPhoneCall(); // callee number
+            boolean isCallalinkUser = false;
+            boolean isWithinSchedule = true;
+            boolean isAContact = false;
+
+            try {
+                IncomingCallPopupService.showPopup(
+                        inCallService,
+                        callMode,
+                        username,
+                        isCallalinkUser,
+                        isWithinSchedule,
+                        isAContact
+                );
+            } catch (Exception e) {
+                Log.e("CallManager", "Error launching IncomingCallPopupService for outgoing call: " + e.getMessage());
+                e.printStackTrace();
+            }
+            
+        }
+    }
     public void onRemoveCall(Call call) {
         Log.d("CallManager", "Removing call from CallManager");
         Call call2 = this.call;

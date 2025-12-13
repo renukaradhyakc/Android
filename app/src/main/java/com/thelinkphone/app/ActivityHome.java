@@ -105,8 +105,8 @@ public class ActivityHome extends AppCompatActivity {
             Log.d("ActivityHome", "Deep link scheme: " + scheme + ", host: " + host);
 
             // Handle LinkPhone deep links
-            if ("linkphone".equals(scheme) ||
-                ("https".equals(scheme) && "app.thelinkphone.com".equals(host))) {
+            if ("callalink".equals(scheme) ||
+                ("https".equals(scheme) && "app.callalink.com".equals(host))) {
 
                 String userParam = null;
 

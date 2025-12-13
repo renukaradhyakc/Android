@@ -257,10 +257,10 @@ public class SpamProtectionManager {
             String message;
             if (isDefault && isPhonelinkScheduled) {
                 if (installedSpamApps.length > 0) {
-                    message = "Privacy protection ACTIVE (Phonelink Scheduled mode). Detected " + installedSpamApps.length +
+                    message = "Privacy protection ACTIVE (CallALink Scheduled mode). Detected " + installedSpamApps.length +
                              " spam detection apps - their popups are blocked during calls.";
                 } else {
-                    message = "Privacy protection ACTIVE (Phonelink Scheduled mode). No spam detection apps found.";
+                    message = "Privacy protection ACTIVE (CallALink Scheduled mode). No spam detection apps found.";
                 }
             } else if (isDefault && !isPhonelinkScheduled) {
                 message = "Privacy protection DISABLED (Unrestricted mode). TrueCaller and other spam apps can show popups.";

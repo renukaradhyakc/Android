@@ -23,7 +23,7 @@ import com.thelinkphone.app.utils.OtherUtils;
 public class ActivityRequestPermission extends BaseActivity {
     private boolean onDone;
     private ViewPer viewPer;
-    private final String[] per = {"android.permission.READ_CONTACTS", "android.permission.CALL_PHONE", "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.READ_PHONE_STATE"};
+    private final String[] per = {"android.permission.READ_CONTACTS", "android.permission.CALL_PHONE", "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.READ_PHONE_STATE", "android.permission.READ_PHONE_NUMBERS"};
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
         public final void onActivityResult(Object obj) {

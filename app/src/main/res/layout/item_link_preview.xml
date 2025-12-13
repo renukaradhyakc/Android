@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackground">
+
+    <ImageView
+        android:id="@+id/favicon"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:background="@drawable/circle_avatar_background"
+        android:padding="12dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_link" />
+
+    <TextView
+        android:id="@+id/domain"
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="google1.com"
+        android:textSize="10sp"
+        android:textColor="#1E3A8A"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLength="12" />
+
+</LinearLayout>

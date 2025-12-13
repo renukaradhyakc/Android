@@ -1,5 +1,5 @@
 apply plugin: 'com.android.application'
-
+apply plugin: 'com.google.gms.google-services'
 android {
     compileSdkVersion 35
     namespace 'com.thelinkphone.app'
@@ -7,8 +7,8 @@ android {
         applicationId "com.thelinkphone.app"
         minSdkVersion 24
         targetSdkVersion 35
-        versionCode 10007
-        versionName "1.0.7"
+        versionCode 10009
+        versionName "1.0.9"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
@@ -66,6 +66,13 @@ dependencies {
     implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     implementation 'com.github.chtgupta:QRUtils-Android:0.1.0'
     
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
     // Add Kotlin stdlib with compatible version
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.7.1"
+
+    //RevenueCat
+    implementation 'com.revenuecat.purchases:purchases:9.15.2'
+    implementation 'com.revenuecat.purchases:purchases-ui:9.15.2'
 }
