@@ -117,7 +117,7 @@
                                         android:textColor="@color/paywall_text_primary"/>
 
                                     <TextView
-                                        android:id="@+id/discount"
+                                        android:id="@+id/discount_yearly"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:text="19%"
@@ -132,7 +132,7 @@
                                 </LinearLayout>
 
                                 <TextView
-                                    android:id="@+id/price_per_month"
+                                    android:id="@+id/price_per_month_yearly"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Only $0.82/mo"
@@ -168,7 +168,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:padding="16dp"
+                            android:padding="12dp"
                             android:gravity="center_vertical">
 
                             <RadioButton
@@ -184,14 +184,43 @@
                                 android:layout_weight="1"
                                 android:paddingEnd="12dp">
 
-                                <TextView
-                                    android:id="@+id/tvTitleHalfYearly"
+                                <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Half-Yearly"
-                                    android:textStyle="bold"
-                                    android:textSize="16sp"
-                                    android:textColor="@color/paywall_text_primary"/>
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvTitleHalfYearly"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Half-Yearly"
+                                        android:textStyle="bold"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/paywall_text_primary"/>
+
+                                    <TextView
+                                        android:id="@+id/discount_halfyearly"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="19%"
+                                        android:textSize="10sp"
+                                        android:textColor="#FFFFFF"
+                                        android:background="@drawable/bg_discount_badge"
+                                        android:paddingStart="6dp"
+                                        android:paddingEnd="6dp"
+                                        android:paddingTop="2dp"
+                                        android:paddingBottom="2dp"
+                                        android:layout_marginStart="8dp"/>
+                                </LinearLayout>
+                                <TextView
+                                    android:id="@+id/price_per_month_halfyearly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Only $0.82/mo"
+                                    android:textSize="13sp"
+                                    android:textColor="@color/paywall_text_secondary"
+                                    android:layout_marginTop="2dp"/>
                             </LinearLayout>
 
                             <TextView
@@ -237,14 +266,44 @@
                                 android:layout_weight="1"
                                 android:paddingEnd="12dp">
 
-                                <TextView
-                                    android:id="@+id/tvTitleQuarterly"
+                                <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Quarterly"
-                                    android:textStyle="bold"
-                                    android:textSize="16sp"
-                                    android:textColor="@color/paywall_text_primary"/>
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvTitleQuarterly"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Quarterly"
+                                        android:textStyle="bold"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/paywall_text_primary"/>
+
+                                    <TextView
+                                        android:id="@+id/discount_quarterly"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="19%"
+                                        android:textSize="10sp"
+                                        android:textColor="#FFFFFF"
+                                        android:background="@drawable/bg_discount_badge"
+                                        android:paddingStart="6dp"
+                                        android:paddingEnd="6dp"
+                                        android:paddingTop="2dp"
+                                        android:paddingBottom="2dp"
+                                        android:layout_marginStart="8dp"/>
+
+                                </LinearLayout>
+                                <TextView
+                                    android:id="@+id/price_per_month_quarterly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Only $0.82/mo"
+                                    android:textSize="13sp"
+                                    android:textColor="@color/paywall_text_secondary"
+                                    android:layout_marginTop="2dp"/>
                             </LinearLayout>
 
                             <TextView
@@ -289,14 +348,43 @@
                                 android:layout_weight="1"
                                 android:paddingEnd="12dp">
 
-                                <TextView
-                                    android:id="@+id/tvTitleMonthly"
+                                <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Monthly"
-                                    android:textStyle="bold"
-                                    android:textSize="16sp"
-                                    android:textColor="@color/paywall_text_primary"/>
+                                    android:orientation="horizontal"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvTitleMonthly"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Monthly"
+                                        android:textStyle="bold"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/paywall_text_primary"/>
+
+                                    <TextView
+                                        android:id="@+id/discount_monthly"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="19%"
+                                        android:textSize="10sp"
+                                        android:textColor="#FFFFFF"
+                                        android:background="@drawable/bg_discount_badge"
+                                        android:paddingStart="6dp"
+                                        android:paddingEnd="6dp"
+                                        android:paddingTop="2dp"
+                                        android:paddingBottom="2dp"
+                                        android:layout_marginStart="8dp"/>
+                                </LinearLayout>
+                                <TextView
+                                    android:id="@+id/price_per_month_monthly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Only $0.82/mo"
+                                    android:textSize="13sp"
+                                    android:textColor="@color/paywall_text_secondary"
+                                    android:layout_marginTop="2dp"/>
                             </LinearLayout>
 
                             <TextView

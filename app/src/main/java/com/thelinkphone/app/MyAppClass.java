@@ -10,7 +10,7 @@ import com.revenuecat.purchases.api.BuildConfig;
 
 public class MyAppClass extends Application {
 
-    private static final String REVENUECAT_API_KEY = "test_TCJkbbMtWseVAtJtTZAEMCYWMTw";
+    private static final String REVENUECAT_API_KEY = "goog_QkslWhIJlNRCDNKKLfalUpxWjZV";
 
     public static Context myContext;
     @Override

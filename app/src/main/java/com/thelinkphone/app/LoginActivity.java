@@ -170,8 +170,14 @@ public class LoginActivity extends AppCompatActivity {
 
     private void showPaywall() {
         Intent intent = new Intent(LoginActivity.this, ActivityPaywall.class);
+        intent.putExtra("ENTRY_SOURCE", "LOGIN");
         startActivity(intent);
         finish();
     }
 
+    @SuppressWarnings("MissingSuperCall")
+    @Override
+    public void onBackPressed() {
+        moveTaskToBack(true);
+    }
 }

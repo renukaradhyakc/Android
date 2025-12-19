@@ -116,8 +116,9 @@ public class SettingsFragment extends Fragment {
         mProBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent toQRAct = new Intent(getContext(), ActivityPaywall.class);
-                startActivity(toQRAct);
+                Intent toPaywallAct = new Intent(getContext(), ActivityPaywall.class);
+                toPaywallAct.putExtra("ENTRY_SOURCE", "SETTINGS");
+                startActivity(toPaywallAct);
             }
         });
 

@@ -116,7 +116,7 @@ public class ActivityHome extends AppCompatActivity {
                     Log.d("ActivityHome", "HTTPS deep link user from path: " + userParam);
                 }
                 // Handle custom scheme URLs like: linkphone://call?user=codpr1044p
-                else if ("linkphone".equals(scheme)) {
+                else if ("callalink".equals(scheme)) {
                     userParam = data.getQueryParameter("user");
                     Log.d("ActivityHome", "Custom scheme deep link user parameter: " + userParam);
                 }

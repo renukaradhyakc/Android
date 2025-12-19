@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import android.os.Environment;
@@ -41,6 +42,11 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.PurchasesError;
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
+import com.thelinkphone.app.ActivityPaywall;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
 
@@ -151,7 +157,7 @@ public class EventsFragment extends Fragment {
             //For Android 5.0+
             public boolean onShowFileChooser(
                     WebView webView, ValueCallback<Uri[]> filePathCallback,
-                    WebChromeClient.FileChooserParams fileChooserParams){
+                    FileChooserParams fileChooserParams){
                 if(mUMA != null){
                     mUMA.onReceiveValue(null);
                 }
@@ -238,19 +244,41 @@ public class EventsFragment extends Fragment {
 
 
         //  webview.reload(); app.thelinkphone.com
-        if(mIsloggedIn != null)
-        {
-            Log.d(TAG, "onCreateView: "+mIsloggedIn);
-            /*String urlToLoad = "https://www.app.thelinkphone.com/events";
-            webview.loadUrl(urlToLoad + "?token=" + mIsloggedIn);*/
-            webview.loadUrl("http://app.callalink.com/events");
-        }
-        else
-        {
+        if (mIsloggedIn != null) {
+            Purchases.getSharedInstance().getCustomerInfo(new com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback() {
+                @Override
+                public void onReceived(@NonNull com.revenuecat.purchases.CustomerInfo customerInfo) {
+                    com.revenuecat.purchases.EntitlementInfo entitlement =
+                            customerInfo.getEntitlements().get("CallALink Premium");
+
+                    boolean isSubscribed = entitlement != null && entitlement.isActive();
+
+                    if (isSubscribed) {
+                        // Load WebView
+                        webview.loadUrl("http://app.callalink.com/events");
+                    } else {
+                        // Redirect to Paywall
+                        Intent intent = new Intent(getContext(), ActivityPaywall.class);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }
+                }
+
+                @Override
+                public void onError(@NonNull com.revenuecat.purchases.PurchasesError error) {
+                    // Redirect to Paywall on error
+                    Intent intent = new Intent(getContext(), ActivityPaywall.class);
+                    startActivity(intent);
+                    getActivity().finish();
+                }
+            });
+        } else {
             Intent toLoginAct = new Intent(getContext(), LoginActivity.class);
             startActivity(toLoginAct);
+            getActivity().finish();
         }
-       // webview.setWebViewClient(new WebViewClient());
+
+        // webview.setWebViewClient(new WebViewClient());
 
         webview.setWebViewClient(new WebViewClient() {
             @Override

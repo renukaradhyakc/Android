@@ -16,6 +16,7 @@ import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -34,8 +35,11 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 
+import java.text.NumberFormat;
+import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class ActivityPaywall extends AppCompatActivity {
@@ -45,20 +49,25 @@ public class ActivityPaywall extends AppCompatActivity {
     private Map<String, Package> planPackageMap = new HashMap<>();
     private Package selectedPackage = null;
 
-    private TextView tvAnnualName, tvAnnualPrice, discountPercentage, pricePerMonth;
-    private TextView tvHalfYearlyName, tvHalfYearlyPrice;
-    private TextView tvQuarterlyName, tvQuarterlyPrice;
-    private TextView tvMonthlyName, tvMonthlyPrice;
+    private TextView tvAnnualName, tvAnnualPrice, discountPercentageYearly, pricePerMonthYearly;
+    private TextView tvHalfYearlyName, tvHalfYearlyPrice, discountPercentageHalfYearly, pricePerMonthHalfYearly;
+    private TextView tvQuarterlyName, tvQuarterlyPrice, discountPercentageQuarterly, pricePerMonthQuarterly;
+    private TextView tvMonthlyName, tvMonthlyPrice, discountPercentageMonthly, pricePerMonthMonthly;
     private TextView tvPrivacy, tvTerms;
 
     private Map<String, RadioButton> radioButtonMap = new HashMap<>();
     private Map<String, MaterialCardView> planCardMap = new HashMap<>();
     private RadioButton rbAnnual, rbHalfYearly, rbQuarterly, rbMonthly;
+    private StoreProduct monthlyProduct,quarterlyProduct,halfyearlyProduct,annualProduct;
 
     private static final String TAG = "ActivityPaywall";
     private static final String ENTITLEMENT_ID = "CallALink Premium";
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String EMAIL_KEY = "user_email";
+
+    private static final String EXTRA_ENTRY_SOURCE = "ENTRY_SOURCE";
+    private static final String SOURCE_LOGIN = "LOGIN";
+    private static final String SOURCE_SETTINGS = "SETTINGS";
 
     private SharedPreferences sharedPreferences;
 
@@ -66,6 +75,19 @@ public class ActivityPaywall extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_paywall);
+
+        String entrySource = getIntent().getStringExtra(EXTRA_ENTRY_SOURCE);
+        boolean isFromLogin = SOURCE_LOGIN.equals(entrySource);
+
+        if (isFromLogin) {
+            getOnBackPressedDispatcher().addCallback(this,
+                    new OnBackPressedCallback(true) {
+                        @Override
+                        public void handleOnBackPressed() {
+                        }
+                    }
+            );
+        }
 
         sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -77,17 +99,23 @@ public class ActivityPaywall extends AppCompatActivity {
         // Plan TextViews
         tvAnnualName = findViewById(R.id.cardAnnual).findViewById(R.id.tvTitleAnnual);
         tvAnnualPrice = findViewById(R.id.cardAnnual).findViewById(R.id.tvPriceAnnual);
-        discountPercentage = findViewById(R.id.cardAnnual).findViewById(R.id.discount);
-        pricePerMonth = findViewById(R.id.cardAnnual).findViewById(R.id.price_per_month);
+        discountPercentageYearly = findViewById(R.id.cardAnnual).findViewById(R.id.discount_yearly);
+        pricePerMonthYearly = findViewById(R.id.cardAnnual).findViewById(R.id.price_per_month_yearly);
 
         tvHalfYearlyName = findViewById(R.id.cardHalfYearly).findViewById(R.id.tvTitleHalfYearly);
         tvHalfYearlyPrice = findViewById(R.id.cardHalfYearly).findViewById(R.id.tvPriceHalfYearly);
+        discountPercentageHalfYearly = findViewById(R.id.cardHalfYearly).findViewById(R.id.discount_halfyearly);
+        pricePerMonthHalfYearly = findViewById(R.id.cardHalfYearly).findViewById(R.id.price_per_month_halfyearly);
 
         tvQuarterlyName = findViewById(R.id.cardQuarterly).findViewById(R.id.tvTitleQuarterly);
         tvQuarterlyPrice = findViewById(R.id.cardQuarterly).findViewById(R.id.tvPriceQuarterly);
+        discountPercentageQuarterly = findViewById(R.id.cardQuarterly).findViewById(R.id.discount_quarterly);
+        pricePerMonthQuarterly = findViewById(R.id.cardQuarterly).findViewById(R.id.price_per_month_quarterly);
 
         tvMonthlyName = findViewById(R.id.cardMonthly).findViewById(R.id.tvTitleMonthly);
         tvMonthlyPrice = findViewById(R.id.cardMonthly).findViewById(R.id.tvPriceMonthly);
+        discountPercentageMonthly = findViewById(R.id.cardMonthly).findViewById(R.id.discount_monthly);
+        pricePerMonthMonthly = findViewById(R.id.cardMonthly).findViewById(R.id.price_per_month_monthly);
 
         rbAnnual = findViewById(R.id.rbAnnual);
         rbHalfYearly = findViewById(R.id.rbHalfYearly);
@@ -201,28 +229,36 @@ public class ActivityPaywall extends AppCompatActivity {
 
                         // Map RevenueCat identifiers to our plan keys dynamically
                         if (identifier.equals("$rc_monthly")) {
-                            key = "monthly";
+                            monthlyProduct=product;
+                            planPackageMap.put("monthly",pkg);
                             tvMonthlyName.setText("Monthly Premium");
                             tvMonthlyPrice.setText(product.getPrice().getFormatted());
                         } else if (identifier.equals("$rc_three_month")) {
-                            key = "quarterly";
+                            quarterlyProduct=product;
+                            planPackageMap.put("quarterly",pkg);
                             tvQuarterlyName.setText("Quarterly Premium");
                             tvQuarterlyPrice.setText(product.getPrice().getFormatted());
                         } else if (identifier.equals("$rc_six_month")){
-                            key = "half_yearly";
+                            halfyearlyProduct=product;
+                            planPackageMap.put("half_yearly",pkg);
                             tvHalfYearlyName.setText("Half-Yearly Premium");
                             tvHalfYearlyPrice.setText(product.getPrice().getFormatted());
                         } else if (identifier.equals("$rc_annual")) {
-                            key = "annual";
+                            annualProduct=product;
+                            planPackageMap.put("annual",pkg);
                             tvAnnualName.setText("Annual Premium");
                             tvAnnualPrice.setText(product.getPrice().getFormatted());
-                            setPlanMonthlyPrice(product, discountPercentage, pricePerMonth, 12);
                         }
+                    }
 
-                        if (key != null) {
-                            planPackageMap.put(key, pkg);
-                            Log.d("TAG", "Mapped package to key: " + key);
-                        }
+                    if (monthlyProduct != null) {
+                        if (annualProduct != null)
+                            setPlanMonthlyPrice(annualProduct, monthlyProduct, discountPercentageYearly, pricePerMonthYearly,12);
+                        if (halfyearlyProduct != null)
+                            setPlanMonthlyPrice(halfyearlyProduct, monthlyProduct, discountPercentageHalfYearly, pricePerMonthHalfYearly,6);
+                        if (quarterlyProduct != null)
+                            setPlanMonthlyPrice(quarterlyProduct, monthlyProduct, discountPercentageQuarterly, pricePerMonthQuarterly,3);
+                        setPlanMonthlyPrice(monthlyProduct, monthlyProduct, discountPercentageMonthly, pricePerMonthMonthly,1);
                     }
 
                     // Set default selection AFTER packages loaded
@@ -324,18 +360,47 @@ public class ActivityPaywall extends AppCompatActivity {
     }
 
 
-    private void setPlanMonthlyPrice(StoreProduct product, TextView discount, TextView pricePerMonth, int months) {
-        double totalPrice = product.getPrice().getAmountMicros() / 1_000_000.0;
-        double monthlyPrice = totalPrice / months;
-
-        if (pricePerMonth != null) {
-            pricePerMonth.setText(String.format("$%.2f/mo", monthlyPrice));
+    private void setPlanMonthlyPrice(StoreProduct product,StoreProduct monthlyProduct,TextView discount, TextView pricePerMonth,int months) {
+        if (discount == null || pricePerMonth == null) {
+            return;
         }
 
-        if (discount != null) {
-            double regularPrice = months; // Example: assume $1 per month normal price
-            double discountPercent = ((regularPrice - totalPrice) / regularPrice) * 100;
-            discount.setText(String.format("%.0f%%", discountPercent));
+        if (product == null || monthlyProduct == null || product.getPrice() == null || monthlyProduct.getPrice() == null) {
+            discount.setVisibility(View.GONE);
+            pricePerMonth.setText("");
+            return;
+        }
+
+        double monthlyPrice =
+                monthlyProduct.getPrice().getAmountMicros() / 1_000_000.0;
+
+        double productPrice =
+                product.getPrice().getAmountMicros() / 1_000_000.0;
+
+        double monthlyEquivalent = productPrice / months;
+
+        NumberFormat currencyFormatter =
+                NumberFormat.getCurrencyInstance(Locale.getDefault());
+        currencyFormatter.setCurrency(
+                Currency.getInstance(product.getPrice().getCurrencyCode())
+        );
+
+        pricePerMonth.setText(
+                currencyFormatter.format(monthlyEquivalent) + "/month"
+        );
+
+        double regularAnnualPrice = monthlyPrice * months;
+
+        double discountPercent =
+                ((regularAnnualPrice - productPrice) / regularAnnualPrice) * 100;
+
+        if (discountPercent > 0) {
+            discount.setVisibility(View.VISIBLE);
+            discount.setText(
+                    String.format(Locale.getDefault(), "%.0f%% OFF", discountPercent)
+            );
+        } else {
+            discount.setVisibility(View.GONE);
         }
     }
 

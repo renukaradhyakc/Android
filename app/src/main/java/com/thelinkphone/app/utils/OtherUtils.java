@@ -586,15 +586,12 @@ public class OtherUtils {
             return "";
         }
 
-        // Remove all non-numeric characters
         String cleanNumber = phoneNumber.replaceAll("[^0-9]", "");
 
-        // Remove Indian country code if present (91 prefix with 12 total digits)
         if (cleanNumber.startsWith("91") && cleanNumber.length() == 12) {
             return cleanNumber.substring(2);
         }
 
-        // If number is longer than 10 digits, take last 10
         if (cleanNumber.length() > 10) {
             return cleanNumber.substring(cleanNumber.length() - 10);
         }
