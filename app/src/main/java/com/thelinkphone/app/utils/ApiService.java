@@ -1,5 +1,6 @@
 package com.thelinkphone.app.utils;
 
+import com.google.gson.JsonObject;
 import com.thelinkphone.app.model.Event;
 import com.thelinkphone.app.model.EventResponse;
 import com.thelinkphone.app.model.LoginResponse;
@@ -10,6 +11,8 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
+import retrofit2.http.Header;
 import retrofit2.http.POST;
 
 public interface ApiService {
@@ -29,4 +32,10 @@ public interface ApiService {
     @POST("check-event")
     Call<Event> checkEvent(@Field("email") String email, @Field("password") String password,
                            @Field("caller_number") String callerNumber);
+
+    @GET("trial/status")
+    Call<JsonObject> getTrialStatus(
+            @Header("Authorization") String token
+    );
+
 }

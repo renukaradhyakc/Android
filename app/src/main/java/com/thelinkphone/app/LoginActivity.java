@@ -81,7 +81,8 @@ public class LoginActivity extends AppCompatActivity {
                         saveToken(loginResponse.getToken(),loginResponse.getDomain_url(), loginResponse.getPhone_number());
                         saveUserCredentials(email, password);
                         Log.d(TAG, "User logged in successfully - Email: " + email.substring(0, Math.min(3, email.length())) + "***");
-                        onLoginSuccess(email);
+                        String token = loginResponse.getToken();
+                        checkTrialAndNavigate(token);
                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
 
 
@@ -180,4 +181,77 @@ public class LoginActivity extends AppCompatActivity {
     public void onBackPressed() {
         moveTaskToBack(true);
     }
+
+    private void checkTrialAndNavigate(String token) {
+
+        Log.d(TAG, "checkTrialAndNavigate() called");
+        Log.d(TAG, "Using token: Bearer " + token.substring(0, 10) + "...");
+
+        apiService.getTrialStatus("Bearer " + token)
+        .enqueue(new Callback<JsonObject>() {
+
+            @Override
+            public void onResponse(
+                    Call<JsonObject> call,
+                    Response<JsonObject> response
+            ) {
+                Log.d(TAG, "Trial API response code: " + response.code());
+
+                if (response.isSuccessful() && response.body() != null) {
+
+                    Log.d(TAG, "Trial API success");
+                    Log.d(TAG, "Raw response: " + response.body().toString());
+
+                    JsonObject body = response.body();
+
+                    boolean hasTrial =
+                            body.has("has_trial") && body.get("has_trial").getAsBoolean();
+
+                    boolean consumed =
+                            body.has("consumed") && body.get("consumed").getAsBoolean();
+
+                    boolean active =
+                            body.has("active") && body.get("active").getAsBoolean();
+
+                    Log.d(TAG, "Parsed values:");
+                    Log.d(TAG, "has_trial = " + hasTrial);
+                    Log.d(TAG, "consumed = " + consumed);
+                    Log.d(TAG, "active = " + active);
+
+                    if (consumed) {
+                        Log.d(TAG, "Trial already used → navigating to PAYWALL");
+                        showPaywall();
+                    } else {
+                        Log.d(TAG, "Trial available → navigating to HOME");
+                        goToMainActivity();
+                    }
+
+                } else {
+                    Log.e(TAG, "Trial API failed");
+                    Log.e(TAG, "Response code: " + response.code());
+
+                    try {
+                        if (response.errorBody() != null) {
+                            Log.e(TAG, "Error body: " + response.errorBody().string());
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error reading errorBody", e);
+                    }
+
+                    // Fail-safe
+                    showPaywall();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                Log.e(TAG, "Trial API call FAILED");
+                Log.e(TAG, "Throwable: ", t);
+
+                // Fail-safe
+                showPaywall();
+            }
+        });
+    }
+
 }
