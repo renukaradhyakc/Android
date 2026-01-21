@@ -16,7 +16,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
 
-import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import android.os.Environment;
@@ -42,10 +41,7 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.revenuecat.purchases.CustomerInfo;
-import com.revenuecat.purchases.Purchases;
-import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
+import com.thelinkphone.app.AccessManager;
 import com.thelinkphone.app.ActivityPaywall;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
@@ -75,6 +71,8 @@ public class EventsFragment extends Fragment {
     private SharedPreferences sharedPreferences;
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
+    private static final String EMAIL_KEY = "user_email";
+
 
     public EventsFragment() {
         // Required empty public constructor
@@ -104,6 +102,7 @@ public class EventsFragment extends Fragment {
         sharedPreferences = getContext().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
         webview = (WebView) view.findViewById(R.id.webview);
+        webview.setWebViewClient(new WebViewClient());
 
         webview.setBackgroundColor(Color.WHITE);
         webview.getSettings().setJavaScriptEnabled(true);
@@ -119,12 +118,12 @@ public class EventsFragment extends Fragment {
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setAllowContentAccess(true);
-        
+
         // Disable autofill to prevent crashes during activity transitions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             webview.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
         }
-        
+
         // Additional WebView stability settings
         webview.getSettings().setSaveFormData(false);
         webview.getSettings().setSavePassword(false);
@@ -157,7 +156,7 @@ public class EventsFragment extends Fragment {
             //For Android 5.0+
             public boolean onShowFileChooser(
                     WebView webView, ValueCallback<Uri[]> filePathCallback,
-                    FileChooserParams fileChooserParams){
+                    WebChromeClient.FileChooserParams fileChooserParams){
                 if(mUMA != null){
                     mUMA.onReceiveValue(null);
                 }
@@ -244,52 +243,64 @@ public class EventsFragment extends Fragment {
 
 
         //  webview.reload(); app.thelinkphone.com
-        if (mIsloggedIn != null) {
-            Purchases.getSharedInstance().getCustomerInfo(new com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback() {
-                @Override
-                public void onReceived(@NonNull com.revenuecat.purchases.CustomerInfo customerInfo) {
-                    com.revenuecat.purchases.EntitlementInfo entitlement =
-                            customerInfo.getEntitlements().get("CallALink Premium");
+//        if(mIsloggedIn != null)
+//        {
+//            Log.d(TAG, "onCreateView: "+mIsloggedIn);
+//            /*String urlToLoad = "https://www.app.thelinkphone.com/events";
+//            webview.loadUrl(urlToLoad + "?token=" + mIsloggedIn);*/
+//            webview.loadUrl("https://app.callalink.com/events");
+//        }
+//        else
+//        {
+//            Intent toLoginAct = new Intent(getContext(), LoginActivity.class);
+//            startActivity(toLoginAct);
+//        }
 
-                    boolean isSubscribed = entitlement != null && entitlement.isActive();
+        /* ---------- EXISTING LOGIN CHECK (UNCHANGED) ---------- */
+//        if (mIsloggedIn == null) {
+//            redirectToLogin();
+//            return view;
+//        }
+//
+//        /* ---------- ACCESS CHECK (ADDED) ---------- */
+//        String email = sharedPreferences.getString(EMAIL_KEY, null);
+//
+//        if (email == null || email.trim().isEmpty()) {
+//            Log.e(TAG, "Email missing → redirect login");
+//            redirectToLogin();
+//            return view;
+//        }
+//
+//        AccessManager.checkAccess(requireActivity(), email, new AccessManager.AccessCallback() {
+//            @Override
+//            public void onAccessGranted() {
+//                if(isAdded()) {
+//                    loadWebView();
+//                }// only load WebView if access granted
+//            }
+//            @Override
+//            public void onAccessDenied(String reason) {
+//                if (isAdded()){
+//                    Intent intent = new Intent(getActivity(), ActivityPaywall.class);
+//                    intent.putExtra("ENTRY_SOURCE", reason);
+//                    startActivity(intent);
+//                }
+//            }
+//        });
+//
+//        /* ---------- EXISTING WEBVIEW LOAD (UNCHANGED) ---------- */
+       loadWebView();
 
-                    if (isSubscribed) {
-                        // Load WebView
-                        webview.loadUrl("http://app.callalink.com/events");
-                    } else {
-                        // Redirect to Paywall
-                        Intent intent = new Intent(getContext(), ActivityPaywall.class);
-                        startActivity(intent);
-                        getActivity().finish();
-                    }
-                }
-
-                @Override
-                public void onError(@NonNull com.revenuecat.purchases.PurchasesError error) {
-                    // Redirect to Paywall on error
-                    Intent intent = new Intent(getContext(), ActivityPaywall.class);
-                    startActivity(intent);
-                    getActivity().finish();
-                }
-            });
-        } else {
-            Intent toLoginAct = new Intent(getContext(), LoginActivity.class);
-            startActivity(toLoginAct);
-            getActivity().finish();
-        }
-
-        // webview.setWebViewClient(new WebViewClient());
-
-        webview.setWebViewClient(new WebViewClient() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                // Modify the request to include the authorization header
-                Map<String, String> requestHeaders = new HashMap<>(request.getRequestHeaders());
-                requestHeaders.put("Authorization", mIsloggedIn);
-
-                return super.shouldInterceptRequest(view, request);
-            }
-        });
+//        webview.setWebViewClient(new WebViewClient() {
+//            @Override
+//            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+//                // Modify the request to include the authorization header
+//                Map<String, String> requestHeaders = new HashMap<>(request.getRequestHeaders());
+//                requestHeaders.put("Authorization", mIsloggedIn);
+//
+//                return super.shouldInterceptRequest(view, request);
+//            }
+//        });
 
         webview.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -499,10 +510,47 @@ public class EventsFragment extends Fragment {
 
     @Override
     public void onResume() {
-        if (webview != null) {
-            webview.onResume();
-        }
         super.onResume();
+
+//        if (!isAdded()) return;
+//
+//        getToken(requireContext());
+//
+//        if (webview != null) {
+//            webview.onResume();
+//        }
+//
+//        // LOGIN CHECK
+//        if (mIsloggedIn == null) {
+//            redirectToLogin();
+//            return;
+//        }
+//
+//        String email = sharedPreferences.getString(EMAIL_KEY, null);
+//        if (email == null || email.trim().isEmpty()) {
+//            redirectToLogin();
+//            return;
+//        }
+//
+//        // ACCESS CHECK — RUNS EVERY TIME YOU RETURN
+//        AccessManager.checkAccess(requireActivity(), email, new AccessManager.AccessCallback() {
+//            @Override
+//            public void onAccessGranted() {
+//                if (isAdded()) {
+//                    loadWebView();
+//                }
+//            }
+//
+//            @Override
+//            public void onAccessDenied(String reason) {
+//                if (isAdded()) {
+//                    Intent intent =
+//                            new Intent(getActivity(), ActivityPaywall.class);
+//                    intent.putExtra("ENTRY_SOURCE", reason);
+//                    startActivity(intent);
+//                }
+//            }
+//        });
     }
 
     @Override
@@ -539,4 +587,14 @@ public class EventsFragment extends Fragment {
         }
         super.onDestroyView();
     }
+
+    private void redirectToLogin() {
+        startActivity(new Intent(getContext(), LoginActivity.class));
+    }
+    private void loadWebView() {
+        if (webview != null) {
+            webview.loadUrl("https://app.callalink.com/events");
+        }
+    }
+
 }

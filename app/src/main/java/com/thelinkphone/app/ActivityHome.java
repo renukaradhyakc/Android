@@ -3,6 +3,7 @@ package com.thelinkphone.app;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -53,6 +54,7 @@ import java.util.Iterator;
 
 
 public class ActivityHome extends AppCompatActivity {
+    private static final String TAG = "ActivityHome";
     private ArrayList<ItemContact> arrAllContact;
     private final ContactResult contactResult = new AnonymousClass1();
     private FragmentContact fragmentContact;
@@ -61,7 +63,7 @@ public class ActivityHome extends AppCompatActivity {
     private FragmentRecents fragmentRecents;
     private ScanFrag fragmentScan;
 
-    ScheduledEventsFrag scheduledEventsFrag;
+    private ScheduledEventsFrag scheduledEventsFrag;
     private EventsFragment eventsFragment;
     private FragmentSetting fragmentSetting;
     private SettingsFragment mSettingsFrag;
@@ -73,10 +75,19 @@ public class ActivityHome extends AppCompatActivity {
     private RelativeLayout rlMain;
     private boolean showAdsFist;
 
+    private SharedPreferences sharedPreferences;
+    private String token;
+    private String email;
+
+    private boolean isAccessChecked = false;
+    private boolean hasAccess = false;
+
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_home);
+
+        initializeSession();
         getDataCall();
         handleDeepLink(); // Handle deep links for LinkPhone calls
         initContact();
@@ -84,6 +95,15 @@ public class ActivityHome extends AppCompatActivity {
         /*AdAdmob adAdmob = new AdAdmob( this);
         adAdmob.FullscreenAd( this);*/
 
+    }
+
+    private void initializeSession() {
+        sharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+        token = sharedPreferences.getString("auth_token", null);
+        email = sharedPreferences.getString("user_email", null);
+
+        Log.d(TAG, "Session initialized - Token: " + (token != null ? "present" : "null") +
+                ", Email: " + (email != null ? "present" : "null"));
     }
 
     private void handleDeepLink() {
@@ -95,14 +115,14 @@ public class ActivityHome extends AppCompatActivity {
         String action = intent.getAction();
         Uri data = intent.getData();
 
-        Log.d("ActivityHome", "Intent action: " + action);
-        Log.d("ActivityHome", "Intent data: " + (data != null ? data.toString() : "null"));
+        Log.d(TAG, "Intent action: " + action);
+        Log.d(TAG, "Intent data: " + (data != null ? data.toString() : "null"));
 
         if (Intent.ACTION_VIEW.equals(action) && data != null) {
             String scheme = data.getScheme();
             String host = data.getHost();
 
-            Log.d("ActivityHome", "Deep link scheme: " + scheme + ", host: " + host);
+            Log.d(TAG, "Deep link scheme: " + scheme + ", host: " + host);
 
             // Handle LinkPhone deep links
             if ("callalink".equals(scheme) ||
@@ -113,12 +133,12 @@ public class ActivityHome extends AppCompatActivity {
                 // Handle HTTPS URLs like: https://www.app.thelinkphone.com/call/codpr1044p
                 if ("https".equals(scheme) && data.getPath() != null && data.getPath().startsWith("/call/")) {
                     userParam = data.getPath().substring("/call/".length());
-                    Log.d("ActivityHome", "HTTPS deep link user from path: " + userParam);
+                    Log.d(TAG, "HTTPS deep link user from path: " + userParam);
                 }
                 // Handle custom scheme URLs like: linkphone://call?user=codpr1044p
                 else if ("callalink".equals(scheme)) {
                     userParam = data.getQueryParameter("user");
-                    Log.d("ActivityHome", "Custom scheme deep link user parameter: " + userParam);
+                    Log.d(TAG, "Custom scheme deep link user parameter: " + userParam);
                 }
 
                 if (userParam != null && !userParam.isEmpty()) {
@@ -131,49 +151,55 @@ public class ActivityHome extends AppCompatActivity {
     }
 
     private void processLinkPhoneDeepLink(String userParam) {
-        Log.d("ActivityHome", "Processing LinkPhone deep link for user: " + userParam);
+        Log.d(TAG, "Processing LinkPhone deep link for user: " + userParam);
 
         // Show a toast to indicate deep link processing
-        Toast.makeText(this, "Processing LinkPhone call link...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Processing CallALink call link...", Toast.LENGTH_SHORT).show();
 
         // Use the same API call as QR scanning to get the phone number
-        com.thelinkphone.app.utils.ApiService apiService = com.thelinkphone.app.utils.ApiClient.getClient().create(com.thelinkphone.app.utils.ApiService.class);
-        com.thelinkphone.app.model.QrRequest qrRequest = new com.thelinkphone.app.model.QrRequest(userParam);
+        com.thelinkphone.app.utils.ApiService apiService =
+                com.thelinkphone.app.utils.ApiClient.getClient().
+                        create(com.thelinkphone.app.utils.ApiService.class);
+        com.thelinkphone.app.model.QrRequest qrRequest =
+                new com.thelinkphone.app.model.QrRequest(userParam);
 
-        apiService.scanQr(qrRequest).enqueue(new retrofit2.Callback<com.thelinkphone.app.model.QRResponse>() {
+        apiService.scanQr(qrRequest).enqueue(
+                new retrofit2.Callback<com.thelinkphone.app.model.QRResponse>() {
             @Override
-            public void onResponse(retrofit2.Call<com.thelinkphone.app.model.QRResponse> call, retrofit2.Response<com.thelinkphone.app.model.QRResponse> response) {
+            public void onResponse(
+                    retrofit2.Call<com.thelinkphone.app.model.QRResponse> call,
+                    retrofit2.Response<com.thelinkphone.app.model.QRResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     String phoneNumber = response.body().getPhoneNumber();
-                    Log.d("ActivityHome", "Deep link resolved to phone number: " + phoneNumber);
+                    Log.d(TAG, "Deep link resolved to phone number: " + phoneNumber);
 
-                    // Store the username for display during the call
+
                     com.thelinkphone.app.utils.CallerInfoManager.storeLinkPhoneUsername(
                         ActivityHome.this, phoneNumber, userParam);
 
-                    // Place the call using the same logic as QR scanning
                     placeCallFromDeepLink(phoneNumber);
                 } else {
-                    Log.e("ActivityHome", "Deep link user not found");
-                    Toast.makeText(ActivityHome.this, "User not found for this LinkPhone link", Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Deep link user not found");
+                    Toast.makeText(ActivityHome.this, "User not found for this CallALink link", Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
-            public void onFailure(retrofit2.Call<com.thelinkphone.app.model.QRResponse> call, Throwable t) {
-                Log.e("ActivityHome", "Deep link API call failed: " + t.getMessage());
-                Toast.makeText(ActivityHome.this, "Failed to process LinkPhone link", Toast.LENGTH_LONG).show();
+            public void onFailure(
+                    retrofit2.Call<com.thelinkphone.app.model.QRResponse> call,
+                    Throwable t) {
+                Log.e(TAG, "Deep link API call failed: " + t.getMessage());
+                Toast.makeText(ActivityHome.this, "Failed to process CallALink link", Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void placeCallFromDeepLink(String phoneNumber) {
-        // Use the same call placement logic as ScanFrag
         ArrayList<com.thelinkphone.app.item.ItemSimInfo> arrSim = com.thelinkphone.app.utils.SimUtils.getAvailableSIMCardLabels(this);
         int posSim = MyShare.getPosSim(this);
 
         if (phoneNumber == null || phoneNumber.isEmpty()) {
-            Toast.makeText(this, "Invalid phone number from LinkPhone link", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Invalid phone number from CallALink link", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -191,19 +217,18 @@ public class ActivityHome extends AppCompatActivity {
 
         final String finalPhoneNumber = phoneNumber;
 
-        // Add a small delay to ensure any UI operations complete before making the call
         new android.os.Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                 try {
-                    Log.d("ActivityHome", "Placing call from deep link to: " + finalPhoneNumber);
+                    Log.d(TAG, "Placing call from deep link to: " + finalPhoneNumber);
                     OtherUtils.call(ActivityHome.this, finalPhoneNumber, finalPhoneAccountHandle);
                 } catch (Exception e) {
-                    Log.e("ActivityHome", "Error making call from deep link: " + e.getMessage());
+                    Log.e(TAG, "Error making call from deep link: " + e.getMessage());
                     Toast.makeText(ActivityHome.this, "Failed to make call", Toast.LENGTH_SHORT).show();
                 }
             }
-        }, 500); // 500ms delay
+        }, 500);
     }
 
     private void getDataCall() {
@@ -316,14 +341,14 @@ public class ActivityHome extends AppCompatActivity {
                     boolean isDefaultDialer = spamProtectionManager.isDefaultDialer();
 
                     if (isDefaultDialer && isPhonelinkScheduled) {
-                        Log.d("ActivityHome", "Privacy protection ACTIVE - Phonelink Scheduled mode blocks spam apps");
+                        Log.d(TAG, "Privacy protection ACTIVE - Phonelink Scheduled mode blocks spam apps");
                     } else if (isDefaultDialer && !isPhonelinkScheduled) {
-                        Log.d("ActivityHome", "Privacy protection INACTIVE - Unrestricted mode allows spam apps");
+                        Log.d(TAG, "Privacy protection INACTIVE - Unrestricted mode allows spam apps");
                     } else {
-                        Log.w("ActivityHome", "Privacy protection LIMITED - app is not default dialer");
+                        Log.w(TAG, "Privacy protection LIMITED - app is not default dialer");
                     }
                 } catch (Exception e) {
-                    Log.e("ActivityHome", "Error initializing privacy protection: " + e.getMessage());
+                    Log.e(TAG, "Error initializing privacy protection: " + e.getMessage());
                 }
             }
         }).start();
@@ -447,7 +472,7 @@ public class ActivityHome extends AppCompatActivity {
         try {
             beginTransaction.commitAllowingStateLoss(); // Use commitAllowingStateLoss to prevent IllegalStateException
         } catch (Exception e) {
-            Log.e("ActivityHome", "Error committing fragment transaction: " + e.getMessage());
+            Log.e(TAG, "Error committing fragment transaction: " + e.getMessage());
             Toast.makeText(this, (int) R.string.error, Toast.LENGTH_SHORT).show();
         }
     }
@@ -594,6 +619,59 @@ public class ActivityHome extends AppCompatActivity {
             startActivity(new Intent(this, ActivityRequestPermission.class));
             finish();
         }
+
+        String currentToken = sharedPreferences.getString("auth_token", null);
+        String currentEmail = sharedPreferences.getString("user_email", null);
+
+        if (currentToken == null || currentEmail == null || currentEmail.trim().isEmpty()) {
+            startActivity(new Intent(this, LoginActivity.class));
+            return;
+        }
+
+        if (!currentToken.equals(token) || !currentEmail.equals(email)) {
+            token = currentToken;
+            email = currentEmail;
+//            isAccessChecked = false; // Force recheck
+            Log.d(TAG, "Session credentials changed, forcing access recheck");
+        }
+
+        if (!isAccessChecked) {
+            performAccessCheck();
+        } else if (hasAccess) {
+            Log.d(TAG, "Access already verified, skipping check");
+        } else {
+            // Access was denied before, check again
+            performAccessCheck();
+        }
+    }
+
+    private void performAccessCheck() {
+        Log.d(TAG, "Performing access check for: " + email);
+
+        AccessManager.checkAccess(this, email, new AccessManager.AccessCallback() {
+            @Override
+            public void onAccessGranted() {
+                isAccessChecked = true;
+                hasAccess = true;
+                Log.d(TAG, "Access granted - normal flow");
+            }
+
+            @Override
+            public void onAccessDenied(String reason) {
+                isAccessChecked = true;
+                hasAccess = false;
+                Log.d(TAG, "Access denied: " + reason);
+
+                Intent intent = new Intent(ActivityHome.this, ActivityPaywall.class);
+                intent.putExtra("ENTRY_SOURCE", reason);
+
+                if ("TRIAL_CONSUMED".equals(reason)) {
+                    intent.putExtra("DISABLE_BACK", true);
+                }
+
+                startActivity(intent);
+            }
+        });
     }
 
 
@@ -606,9 +684,6 @@ public class ActivityHome extends AppCompatActivity {
     @Override
 
     protected void onDestroy() {
-
         super.onDestroy();
     }
-
-
 }

@@ -1,50 +1,36 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
 
 android {
-    compileSdkVersion 35
-    namespace 'com.thelinkphone.app'
+    namespace "com.thelinkphone.app"
+    compileSdk 35
+
     defaultConfig {
         applicationId "com.thelinkphone.app"
-        minSdkVersion 24
-        targetSdkVersion 35
+        minSdk 24
+        targetSdk 35
         versionCode 10011
         versionName "1.1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
-    }
-
-    lintOptions {
-        checkReleaseBuilds false
-        abortOnError false
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            debuggable false
             minifyEnabled true
             shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile(
+                    "proguard-android-optimize.txt"
+            ), "proguard-rules.pro"
         }
-
         debug {
-            debuggable true
             minifyEnabled false
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-        encoding = 'UTF-8'
-    }
-
-    // Add Java toolchain configuration
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
-        }
     }
 }
 
@@ -65,7 +51,7 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
     implementation 'com.github.chtgupta:QRUtils-Android:0.1.0'
-    
+
     implementation platform('com.google.firebase:firebase-bom:32.7.0')
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'

@@ -147,6 +147,7 @@ public class MyShare {
     public static final int CALL_SETTING_UNRESTRICTED = 0;
     public static final int CALL_SETTING_PHONELINK_SCHEDULED = 1;
     private static final String PREF_CALL_INFO = "CALL_INFO";
+    private static final String KEY_USER_EMAIL = "user_email";
 
     public static void putCallSetting(Context context, int callSetting) {
         share(context).edit().putInt("call_setting", callSetting).apply();
@@ -215,5 +216,13 @@ public class MyShare {
                 .edit()
                 .clear()
                 .apply();
+    }
+
+    public static void putUserEmail(Context context, String email) {
+        share(context).edit().putString(KEY_USER_EMAIL, email).apply();
+    }
+
+    public static String getUserEmail(Context context) {
+        return share(context).getString(KEY_USER_EMAIL, null);
     }
 }

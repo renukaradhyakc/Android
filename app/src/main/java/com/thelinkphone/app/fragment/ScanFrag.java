@@ -1,6 +1,7 @@
 package com.thelinkphone.app.fragment;
 
 import android.app.Activity;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -84,8 +85,27 @@ public class ScanFrag extends BaseFragment {
 
     private void GetPhoneNumber(String text)
     {
+        String domain;
+
+        try {
+            if (text.startsWith("http")) {
+                Uri uri = Uri.parse(text);
+                domain = uri.getLastPathSegment(); // renukaradhyakc
+            } else {
+                domain = text; // fallback if raw domain QR
+            }
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Invalid QR code", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (domain == null || domain.isEmpty()) {
+            Toast.makeText(getContext(), "Invalid QR code", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
-        QrRequest qrRequest = new QrRequest(text);
+        QrRequest qrRequest = new QrRequest(domain);
 
         apiService.scanQr(qrRequest).enqueue(new Callback<QRResponse>() {
             @Override

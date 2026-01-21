@@ -2,7 +2,9 @@ package com.thelinkphone.app;
 
 import android.app.Application;
 import android.content.Context;
+import android.util.Log;
 
+import com.google.firebase.FirebaseApp;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.LogLevel;

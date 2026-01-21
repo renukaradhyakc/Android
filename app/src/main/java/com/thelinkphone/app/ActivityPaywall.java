@@ -68,25 +68,49 @@ public class ActivityPaywall extends AppCompatActivity {
     private static final String EXTRA_ENTRY_SOURCE = "ENTRY_SOURCE";
     private static final String SOURCE_LOGIN = "LOGIN";
     private static final String SOURCE_SETTINGS = "SETTINGS";
-
     private SharedPreferences sharedPreferences;
+    private static final String PREFS_ACCESS = "access_cache";
+    private static final String KEY_SUBSCRIPTION_ACTIVE = "subscription_active";
+    private static final String KEY_SUBSCRIPTION_LAST_SYNC = "subscription_last_sync";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_paywall);
+
+        SharedPreferences accessPrefs = getSharedPreferences(PREFS_ACCESS, MODE_PRIVATE);
+
+        boolean subscribed = accessPrefs.getBoolean(KEY_SUBSCRIPTION_ACTIVE, false);
+
+        long lastSync = accessPrefs.getLong(KEY_SUBSCRIPTION_LAST_SYNC, 0);
+
+        boolean cacheValid = lastSync > 0 && (System.currentTimeMillis() - lastSync) < (6 * 60 * 60 * 1000);
 
         String entrySource = getIntent().getStringExtra(EXTRA_ENTRY_SOURCE);
-        boolean isFromLogin = SOURCE_LOGIN.equals(entrySource);
+        boolean openedFromSettings = SOURCE_SETTINGS.equals(entrySource);
 
-        if (isFromLogin) {
+        if (!openedFromSettings && cacheValid && subscribed) {
+            Log.d(TAG, "Subscribed user → skipping paywall");
+            goToMainActivity();
+            return;
+        }
+
+        setContentView(R.layout.activity_paywall);
+
+        boolean disableBack = getIntent().getBooleanExtra("DISABLE_BACK", false);
+
+        if (disableBack || SOURCE_LOGIN.equals(entrySource) || "TRIAL_CONSUMED".equals(entrySource)) {
+            Log.d(TAG, "Back button disabled - reason: " + entrySource);
             getOnBackPressedDispatcher().addCallback(this,
                     new OnBackPressedCallback(true) {
                         @Override
                         public void handleOnBackPressed() {
+                            // Do nothing - back button disabled
                         }
                     }
             );
+        } else {
+            Log.d(TAG, "Back button enabled - user can return and try again");
         }
 
         sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
@@ -299,8 +323,9 @@ public class ActivityPaywall extends AppCompatActivity {
                 Log.d(TAG, "Active entitlements: " + customerInfo.getEntitlements().getAll().keySet().toString());
 
                 if (entitlement != null && entitlement.isActive()) {
+                    saveSubscriptionToPrefs(true);
                     unlockPremiumContent();
-                    finish();
+                    goToMainActivity();
                 } else {
                     Log.e(TAG, "Entitlement not active after purchase");
                     Toast.makeText(ActivityPaywall.this,
@@ -334,7 +359,9 @@ public class ActivityPaywall extends AppCompatActivity {
 
                 if (entitlement != null && entitlement.isActive()) {
                     Log.d(TAG, "Active subscription found during restore");
+                    saveSubscriptionToPrefs(true);
                     unlockPremiumContent();
+                    goToMainActivity();
 
                     Toast.makeText(ActivityPaywall.this,
                             "Subscription restored successfully!",
@@ -457,6 +484,14 @@ public class ActivityPaywall extends AppCompatActivity {
         spannable.setSpan(clickableSpan, 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         textView.setText(spannable);
         textView.setMovementMethod(LinkMovementMethod.getInstance());
+    }
+
+    private void saveSubscriptionToPrefs(boolean active) {
+        getSharedPreferences(PREFS_ACCESS, MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_SUBSCRIPTION_ACTIVE, active)
+                .putLong(KEY_SUBSCRIPTION_LAST_SYNC, System.currentTimeMillis())
+                .apply();
     }
 
 

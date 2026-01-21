@@ -39,7 +39,7 @@
     <application
         android:name=".MyAppClass"
         android:allowBackup="true"
-        android:hardwareAccelerated="false"
+        android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
@@ -119,7 +119,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https"
                     android:host="app.callalink.com"
-                    android:pathPrefix="/call/" />
+                    android:pathPrefix="/call" />
             </intent-filter>
             <!-- Custom scheme fallback for LinkPhone deep links -->
             <intent-filter>
@@ -127,6 +127,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="linkphone" />
+                <data android:scheme="callalink" />
             </intent-filter>
         </activity>
         <activity

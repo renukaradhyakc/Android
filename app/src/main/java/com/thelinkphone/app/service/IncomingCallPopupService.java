@@ -29,6 +29,8 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.thelinkphone.app.adapter.LinkPreviewAdapter;
@@ -75,6 +77,7 @@ public class IncomingCallPopupService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        ensureFirebaseInitialized();
         createNotificationChannel();
         startForeground(NOTIFICATION_ID, buildNotification());
     }
@@ -728,7 +731,7 @@ public class IncomingCallPopupService extends Service {
     /**
      * Retrieves our own phone number (the recipient's number).
      * Uses the phone number from login API response stored in SharedPreferences.
-     * 
+     *
      * @return Our phone number, or null if unavailable
      */
     @SuppressLint("HardwareIds")
@@ -774,6 +777,20 @@ public class IncomingCallPopupService extends Service {
             hidePopup(popupView, windowManager, params);
         }
     }
+
+    private boolean ensureFirebaseInitialized() {
+        try {
+            if (FirebaseApp.getApps(this).isEmpty()) {
+                FirebaseApp.initializeApp(this);
+                Log.d(TAG, "Firebase initialized safely");
+            }
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Firebase init failed", e);
+            return false;
+        }
+    }
+
 
     @Override
     public IBinder onBind(Intent intent) {

@@ -1,10 +1,9 @@
 package com.thelinkphone.app;
 
-import androidx.annotation.NonNull;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
@@ -13,10 +12,6 @@ import android.widget.EditText;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.revenuecat.purchases.CustomerInfo;
-import com.revenuecat.purchases.Purchases;
-import com.revenuecat.purchases.interfaces.LogInCallback;
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.thelinkphone.app.model.LoginResponse;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
@@ -43,13 +38,18 @@ public class LoginActivity extends AppCompatActivity {
     private static final String PHONE_KEY = "auth_phone";
     private static final String EMAIL_KEY = "user_email";
     private static final String PASSWORD_KEY = "user_password";
-    private static final String ENTITLEMENT_ID = "CallALink Premium";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+//        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+//            @Override
+//            public void handleOnBackPressed() {
+//                // Do nothing (back button disabled)
+//            }
+//        });
 
         emailEditText = findViewById(R.id.email);
         passwordEditText = findViewById(R.id.password);
@@ -77,12 +77,11 @@ public class LoginActivity extends AppCompatActivity {
                     LoginResponse loginResponse = response.body();
                     if (loginResponse.getToken() != null) {
                         // Login successful, proceed with WebView loading
-                     //   loadWebView(loginResponse.getToken());
+                        //   loadWebView(loginResponse.getToken());
                         saveToken(loginResponse.getToken(),loginResponse.getDomain_url(), loginResponse.getPhone_number());
                         saveUserCredentials(email, password);
                         Log.d(TAG, "User logged in successfully - Email: " + email.substring(0, Math.min(3, email.length())) + "***");
-                        String token = loginResponse.getToken();
-                        checkTrialAndNavigate(token);
+                        finish();
                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
 
 
@@ -127,131 +126,4 @@ public class LoginActivity extends AppCompatActivity {
         editor.apply();
         Log.d(TAG, "User credentials saved for API use");
     }
-
-    private void onLoginSuccess(String email) {
-        Purchases.getSharedInstance().logIn(email, new LogInCallback() {
-            @Override
-            public void onReceived(@NonNull CustomerInfo customerInfo, boolean created) {
-                Log.d(TAG, "RevenueCat identified user: " + email);
-                Log.d(TAG, "User created in RevenueCat: " + created);
-                Log.d(TAG, "Active entitlements: " + customerInfo.getEntitlements().getAll().keySet().toString());
-
-                com.revenuecat.purchases.EntitlementInfo entitlement =
-                        customerInfo.getEntitlements().get(ENTITLEMENT_ID);
-
-                boolean isSubscribed = entitlement != null && entitlement.isActive();
-
-                if (isSubscribed) {
-                    Log.d(TAG, "User has active subscription, going to main activity");
-                    goToMainActivity();
-                } else {
-                    Log.d(TAG, "User does not have active subscription, showing paywall");
-                    showPaywall();
-                }
-            }
-
-            @Override
-            public void onError(@NonNull com.revenuecat.purchases.PurchasesError error) {
-                Log.e(TAG, "RevenueCat identify error: " + error.getMessage());
-                Toast.makeText(LoginActivity.this,
-                        "Error checking subscription status",
-                        Toast.LENGTH_SHORT).show();
-
-                // Fallback: show paywall on error
-                showPaywall();
-            }
-        });
-    }
-
-    private void goToMainActivity() {
-        Intent intent = new Intent(LoginActivity.this, ActivityHome.class);
-        startActivity(intent);
-        finish();
-    }
-
-    private void showPaywall() {
-        Intent intent = new Intent(LoginActivity.this, ActivityPaywall.class);
-        intent.putExtra("ENTRY_SOURCE", "LOGIN");
-        startActivity(intent);
-        finish();
-    }
-
-    @SuppressWarnings("MissingSuperCall")
-    @Override
-    public void onBackPressed() {
-        moveTaskToBack(true);
-    }
-
-    private void checkTrialAndNavigate(String token) {
-
-        Log.d(TAG, "checkTrialAndNavigate() called");
-        Log.d(TAG, "Using token: Bearer " + token.substring(0, 10) + "...");
-
-        apiService.getTrialStatus("Bearer " + token)
-        .enqueue(new Callback<JsonObject>() {
-
-            @Override
-            public void onResponse(
-                    Call<JsonObject> call,
-                    Response<JsonObject> response
-            ) {
-                Log.d(TAG, "Trial API response code: " + response.code());
-
-                if (response.isSuccessful() && response.body() != null) {
-
-                    Log.d(TAG, "Trial API success");
-                    Log.d(TAG, "Raw response: " + response.body().toString());
-
-                    JsonObject body = response.body();
-
-                    boolean hasTrial =
-                            body.has("has_trial") && body.get("has_trial").getAsBoolean();
-
-                    boolean consumed =
-                            body.has("consumed") && body.get("consumed").getAsBoolean();
-
-                    boolean active =
-                            body.has("active") && body.get("active").getAsBoolean();
-
-                    Log.d(TAG, "Parsed values:");
-                    Log.d(TAG, "has_trial = " + hasTrial);
-                    Log.d(TAG, "consumed = " + consumed);
-                    Log.d(TAG, "active = " + active);
-
-                    if (consumed) {
-                        Log.d(TAG, "Trial already used → navigating to PAYWALL");
-                        showPaywall();
-                    } else {
-                        Log.d(TAG, "Trial available → navigating to HOME");
-                        goToMainActivity();
-                    }
-
-                } else {
-                    Log.e(TAG, "Trial API failed");
-                    Log.e(TAG, "Response code: " + response.code());
-
-                    try {
-                        if (response.errorBody() != null) {
-                            Log.e(TAG, "Error body: " + response.errorBody().string());
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error reading errorBody", e);
-                    }
-
-                    // Fail-safe
-                    showPaywall();
-                }
-            }
-
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable t) {
-                Log.e(TAG, "Trial API call FAILED");
-                Log.e(TAG, "Throwable: ", t);
-
-                // Fail-safe
-                showPaywall();
-            }
-        });
-    }
-
 }

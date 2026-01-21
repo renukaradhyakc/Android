@@ -156,7 +156,7 @@ public class ViewMyQRAct extends AppCompatActivity {
 
     private void getDomain()
     {
-        mDomainQR = sharedPreferences.getString(DOMAIN_KEY, null);
+        mDomainQR = "https://app.callalink.com/call/"+sharedPreferences.getString(DOMAIN_KEY, null);
         mPhoneNumber = sharedPreferences.getString(PHONE_KEY, null);
         Log.d(TAG, "Domain QR: " + mDomainQR);
         Log.d(TAG, "Phone Number: " + (mPhoneNumber != null ? mPhoneNumber.substring(0, Math.min(3, mPhoneNumber.length())) + "***" : "null"));
@@ -271,7 +271,7 @@ public class ViewMyQRAct extends AppCompatActivity {
                 shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
                 shareIntent.putExtra(Intent.EXTRA_SUBJECT, "My LinkPhone QR Code");
-                shareIntent.putExtra(Intent.EXTRA_TEXT, "Scan this QR code to call me using LinkPhone app!\n\n📱 LinkPhone - Easy calling with QR codes");
+                shareIntent.putExtra(Intent.EXTRA_TEXT, "Scan this QR code to call me using CallALink app!\n\n📱 CallALink - Easy calling with QR codes");
                 shareIntent.setType("image/png");
 
                 Log.d(TAG, "Starting share intent");
@@ -355,12 +355,12 @@ public class ViewMyQRAct extends AppCompatActivity {
         Log.d(TAG, "Share LinkPhone link requested");
         
         if (mDomainQR == null || mDomainQR.isEmpty()) {
-            Toast.makeText(this, "Please login first to share your LinkPhone link", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Please login first to share your CallALink link", Toast.LENGTH_LONG).show();
             return;
         }
 
         // Create a clickable HTTPS URL using the existing app.thelinkphone.com domain
-        String clickableLinkUrl = "https://app.callalink.com/call/" + mDomainQR;
+        String clickableLinkUrl = mDomainQR;
         
         // Also create the direct app link for manual copying
         String directAppLink = "callalink://call?user=" + mDomainQR;
@@ -374,11 +374,11 @@ public class ViewMyQRAct extends AppCompatActivity {
         shareIntent.setType("text/plain");
         shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Call me using LinkPhone");
         
-        String shareText = "Hi! You can call me directly using LinkPhone app.\n\n" +
+        String shareText = "Hi! You can call me directly using CallALink app.\n\n" +
                 "🔗 Click this link to call me: " + clickableLinkUrl + "\n\n" +
                 "If the link doesn't work, copy and paste this in your browser: " + directAppLink + "\n\n" +
-                "Make sure you have LinkPhone app installed first!\n\n" +
-                "📱 LinkPhone - Easy calling with QR codes and links!";
+                "Make sure you have CallALink app installed first!\n\n" +
+                "📱 CallALink - Easy calling with QR codes and links!";
         
         shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
 

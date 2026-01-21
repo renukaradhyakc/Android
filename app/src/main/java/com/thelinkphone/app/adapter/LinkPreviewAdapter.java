@@ -29,9 +29,14 @@ public class LinkPreviewAdapter extends RecyclerView.Adapter<LinkPreviewAdapter.
         }
         
         private static String normalizeUrl(String url) {
+            if (url == null || url.isEmpty()) return "";
+            url = url.trim();
+            url = url.replaceAll("^(https?:\\/\\/)+", "https://");
+
             if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                return "https://" + url;
+                url = "https://" + url;
             }
+
             return url;
         }
         

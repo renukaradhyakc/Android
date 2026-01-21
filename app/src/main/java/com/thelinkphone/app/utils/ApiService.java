@@ -6,6 +6,7 @@ import com.thelinkphone.app.model.EventResponse;
 import com.thelinkphone.app.model.LoginResponse;
 import com.thelinkphone.app.model.QRResponse;
 import com.thelinkphone.app.model.QrRequest;
+import com.thelinkphone.app.model.TrialStatusResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -14,6 +15,7 @@ import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.Query;
 
 public interface ApiService {
     @FormUrlEncoded
@@ -34,8 +36,14 @@ public interface ApiService {
                            @Field("caller_number") String callerNumber);
 
     @GET("trial/status")
-    Call<JsonObject> getTrialStatus(
-            @Header("Authorization") String token
+    Call<TrialStatusResponse> getTrialStatus(
+            @Query("email") String email
+    );
+
+    @FormUrlEncoded
+    @POST("trial/start")
+    Call<Object> startTrial(
+            @Field("email") String email
     );
 
 }
