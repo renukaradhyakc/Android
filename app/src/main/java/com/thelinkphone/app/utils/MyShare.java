@@ -154,7 +154,7 @@ public class MyShare {
     }
 
     public static int getCallSetting(Context context) {
-        return share(context).getInt("call_setting", CALL_SETTING_PHONELINK_SCHEDULED);
+        return share(context).getInt("call_setting", CALL_SETTING_UNRESTRICTED);
     }
 
     public static boolean isCallSettingUnrestricted(Context context) {

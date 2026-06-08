@@ -45,6 +45,7 @@ import com.thelinkphone.app.AccessManager;
 import com.thelinkphone.app.ActivityPaywall;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
+import com.thelinkphone.app.utils.MyConst;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class EventsFragment extends Fragment {
     private String mCM;
     private ValueCallback mUM;
     private ValueCallback<Uri[]> mUMA;
-    private final static int FCR=1;
+    private final static int FCR = 1;
     private boolean multiple_files = true;
 
     String mIsloggedIn;
@@ -72,12 +73,12 @@ public class EventsFragment extends Fragment {
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
     private static final String EMAIL_KEY = "user_email";
+    public static String billUrl = null;
 
 
     public EventsFragment() {
         // Required empty public constructor
     }
-
 
 
     @Override
@@ -96,7 +97,7 @@ public class EventsFragment extends Fragment {
             getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
         }
 
-        relativeLayout_1=(RelativeLayout) view.findViewById(R.id.relativeLayout_1);
+        relativeLayout_1 = (RelativeLayout) view.findViewById(R.id.relativeLayout_1);
         relativeLayout_1.setVisibility(View.GONE);
 
         sharedPreferences = getContext().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
@@ -156,37 +157,37 @@ public class EventsFragment extends Fragment {
             //For Android 5.0+
             public boolean onShowFileChooser(
                     WebView webView, ValueCallback<Uri[]> filePathCallback,
-                    WebChromeClient.FileChooserParams fileChooserParams){
-                if(mUMA != null){
+                    WebChromeClient.FileChooserParams fileChooserParams) {
+                if (mUMA != null) {
                     mUMA.onReceiveValue(null);
                 }
                 mUMA = filePathCallback;
                 Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                if(takePictureIntent.resolveActivity(getContext().getPackageManager()) != null){
+                if (takePictureIntent.resolveActivity(getContext().getPackageManager()) != null) {
                     File photoFile = null;
-                    try{
+                    try {
                         photoFile = createImageFile();
                         takePictureIntent.putExtra("PhotoPath", mCM);
-                    }catch(IOException ex){
+                    } catch (IOException ex) {
                         Log.e(TAG, "File creation failed", ex);
                     }
-                    if(photoFile != null){
+                    if (photoFile != null) {
                         mCM = "file:" + photoFile.getAbsolutePath();
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
-                    }else{
+                    } else {
                         takePictureIntent = null;
                     }
                 }
                 Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
                 contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
                 contentSelectionIntent.setType("*/*");
-                if(multiple_files) {
+                if (multiple_files) {
                     contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 }
                 Intent[] intentArray;
-                if(takePictureIntent != null){
+                if (takePictureIntent != null) {
                     intentArray = new Intent[]{takePictureIntent};
-                }else{
+                } else {
                     intentArray = new Intent[0];
                 }
 
@@ -194,7 +195,7 @@ public class EventsFragment extends Fragment {
                 chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
                 chooserIntent.putExtra(Intent.EXTRA_TITLE, "Choose File");
                 chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
-                if(multiple_files && Build.VERSION.SDK_INT >= 18) {
+                if (multiple_files && Build.VERSION.SDK_INT >= 18) {
                     chooserIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                 }
                 startActivityForResult(chooserIntent, FCR);
@@ -229,12 +230,12 @@ public class EventsFragment extends Fragment {
         });
 
         WebSettings webSettings = webview.getSettings();
-        if(Build.VERSION.SDK_INT >= 21){
+        if (Build.VERSION.SDK_INT >= 21) {
             webSettings.setMixedContentMode(0);
             webview.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        }else if(Build.VERSION.SDK_INT >= 19){
+        } else if (Build.VERSION.SDK_INT >= 19) {
             webview.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        }else {
+        } else {
             webview.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         }
 
@@ -289,7 +290,7 @@ public class EventsFragment extends Fragment {
 //        });
 //
 //        /* ---------- EXISTING WEBVIEW LOAD (UNCHANGED) ---------- */
-       loadWebView();
+        loadWebView();
 
 //        webview.setWebViewClient(new WebViewClient() {
 //            @Override
@@ -310,18 +311,19 @@ public class EventsFragment extends Fragment {
         });
         webview.setLongClickable(false);
 
-        Handler handler = new Handler(){
+        Handler handler = new Handler() {
             @Override
             public void handleMessage(Message message) {
                 switch (message.what) {
-                    case 1:{
+                    case 1: {
                         webViewGoBack();
-                    }break;
+                    }
+                    break;
                 }
             }
         };
 
-        webview.setOnKeyListener(new View.OnKeyListener(){
+        webview.setOnKeyListener(new View.OnKeyListener() {
 
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if (keyCode == KeyEvent.KEYCODE_BACK
@@ -338,24 +340,24 @@ public class EventsFragment extends Fragment {
 
         return view;
     }
-    private void getToken(Context context)
-    {
+
+    private void getToken(Context context) {
         mIsloggedIn = sharedPreferences.getString(TOKEN_KEY, null);
 
     }
+
     private File createImageFile() throws IOException {
         @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "img_"+timeStamp+"_";
+        String imageFileName = "img_" + timeStamp + "_";
         File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        return File.createTempFile(imageFileName,".jpg",storageDir);
+        return File.createTempFile(imageFileName, ".jpg", storageDir);
     }
 
-    private void webViewGoBack(){
+    private void webViewGoBack() {
         webview.goBack();
     }
 
-    public class WebViewClient extends android.webkit.WebViewClient
-    {
+    public class WebViewClient extends android.webkit.WebViewClient {
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -364,15 +366,11 @@ public class EventsFragment extends Fragment {
                 Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
                 startActivity(intent);
                 return true;
-            }
-
-            else if (url.startsWith("mailto:")){
+            } else if (url.startsWith("mailto:")) {
                 Intent i = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
                 startActivity(i);
                 return true;
-            }
-
-            else if (Uri.parse(url).getScheme().equals("market")) {
+            } else if (Uri.parse(url).getScheme().equals("market")) {
                 try {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setData(Uri.parse(url));
@@ -384,9 +382,7 @@ public class EventsFragment extends Fragment {
                     view.loadUrl("http://play.google.com/store/apps/" + uri.getHost() + "?" + uri.getQuery());
                     return false;
                 }
-            }
-
-            else if(url != null && url.startsWith("whatsapp://")) {
+            } else if (url != null && url.startsWith("whatsapp://")) {
                 view.getContext().startActivity(
                         new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
 
@@ -418,7 +414,8 @@ public class EventsFragment extends Fragment {
 
     private class MyChrome extends WebChromeClient {
 
-        MyChrome() {}
+        MyChrome() {
+        }
 
         @Override
         public boolean onCreateWindow(WebView view, boolean isDialog,
@@ -463,27 +460,27 @@ public class EventsFragment extends Fragment {
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent intent){
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        if(Build.VERSION.SDK_INT >= 21){
+        if (Build.VERSION.SDK_INT >= 21) {
             Uri[] results = null;
             //Check if response is positive
-            if(resultCode== RESULT_OK){
-                if(requestCode == FCR){
-                    if(null == mUMA){
+            if (resultCode == RESULT_OK) {
+                if (requestCode == FCR) {
+                    if (null == mUMA) {
                         return;
                     }
-                    if(intent == null || intent.getData() == null){
+                    if (intent == null || intent.getData() == null) {
                         //Capture Photo if no image available
-                        if(mCM != null){
+                        if (mCM != null) {
                             results = new Uri[]{Uri.parse(mCM)};
                         }
-                    }else{
+                    } else {
                         String dataString = intent.getDataString();
-                        if(dataString != null){
+                        if (dataString != null) {
                             results = new Uri[]{Uri.parse(dataString)};
                         } else {
-                            if(multiple_files) {
+                            if (multiple_files) {
                                 if (intent.getClipData() != null) {
                                     final int numSelectedFiles = intent.getClipData().getItemCount();
                                     results = new Uri[numSelectedFiles];
@@ -498,9 +495,9 @@ public class EventsFragment extends Fragment {
             }
             mUMA.onReceiveValue(results);
             mUMA = null;
-        }else{
-            if(requestCode == FCR){
-                if(null == mUM) return;
+        } else {
+            if (requestCode == FCR) {
+                if (null == mUM) return;
                 Uri result = intent == null || resultCode != RESULT_OK ? null : intent.getData();
                 mUM.onReceiveValue(result);
                 mUM = null;
@@ -591,9 +588,22 @@ public class EventsFragment extends Fragment {
     private void redirectToLogin() {
         startActivity(new Intent(getContext(), LoginActivity.class));
     }
+
     private void loadWebView() {
-        if (webview != null) {
-            webview.loadUrl("https://app.callalink.com/events");
+
+        if (webview == null) {
+            return;
+        }
+
+        Log.d("BillFlow", "Loading url = " + billUrl);
+
+        if (billUrl != null) {
+            webview.loadUrl(billUrl);
+            billUrl = null;
+        }
+
+        else {
+            webview.loadUrl(MyConst.WEB_BASE_URL + "events");
         }
     }
 

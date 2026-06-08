@@ -188,4 +188,6 @@
     <string name="blocked_call_message">This call was automatically blocked</string>
     <string name="action_automatically_blocked">BLOCKED</string>
     <string name="close_popup">Close</string>
+
+    <string name="capture_bill">Capture bill image</string>
 </resources>

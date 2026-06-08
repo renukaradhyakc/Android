@@ -42,4 +42,14 @@
     <color name="paywall_text_secondary">#8E8E93</color>
     <color name="background_gray">#F5F5F7</color>
     <color name="radiobutton_unselected">#C7C7CC</color>
+
+    <color name="Green">#2EB62C</color>
+    <color name="lightGreen">#C5E8B7</color>
+    <color name="Red">#FF2400</color>
+    <color name="lightRed">#FF2400</color>
+    <color name="Yellow">#FFD400</color>
+    <color name="lightYellow">#FFFFB7</color>
+
+    <color name="chip_bg">#333333</color>
+    <color name="crop_dim">#CC000000</color>
 </resources>

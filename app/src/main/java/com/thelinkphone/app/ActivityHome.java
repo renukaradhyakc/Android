@@ -42,6 +42,7 @@ import com.thelinkphone.app.fragment.SettingsFragment;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.service.IncomingCallPopupService;
+import com.thelinkphone.app.utils.MyConst;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -81,6 +82,7 @@ public class ActivityHome extends AppCompatActivity {
 
     private boolean isAccessChecked = false;
     private boolean hasAccess = false;
+    private ViewTabMode viewTabMode;
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -92,6 +94,7 @@ public class ActivityHome extends AppCompatActivity {
         handleDeepLink(); // Handle deep links for LinkPhone calls
         initContact();
         initView();
+        handleBillNavigation();
         /*AdAdmob adAdmob = new AdAdmob( this);
         adAdmob.FullscreenAd( this);*/
 
@@ -125,7 +128,7 @@ public class ActivityHome extends AppCompatActivity {
             Log.d(TAG, "Deep link scheme: " + scheme + ", host: " + host);
 
             // Handle LinkPhone deep links
-            if ("callalink".equals(scheme) ||
+            if ("linkphone".equals(scheme) ||"callalink".equals(scheme) ||
                 ("https".equals(scheme) && "app.callalink.com".equals(host))) {
 
                 String userParam = null;
@@ -136,7 +139,7 @@ public class ActivityHome extends AppCompatActivity {
                     Log.d(TAG, "HTTPS deep link user from path: " + userParam);
                 }
                 // Handle custom scheme URLs like: linkphone://call?user=codpr1044p
-                else if ("callalink".equals(scheme)) {
+                else if ("callalink".equals(scheme) || "linkphone".equals(scheme)) {
                     userParam = data.getQueryParameter("user");
                     Log.d(TAG, "Custom scheme deep link user parameter: " + userParam);
                 }
@@ -305,7 +308,7 @@ public class ActivityHome extends AppCompatActivity {
         */  //  getWindow().getDecorView().setSystemUiVisibility(1024);
             this.llFragment.setBackground(OtherUtils.bgMain(Color.parseColor("#2C2C2C"), widthScreen / 50.0f));
         }
-        ViewTabMode viewTabMode = (ViewTabMode) findViewById(R.id.v_tab);
+        viewTabMode = (ViewTabMode) findViewById(R.id.v_tab);
         FragmentManager fragmentManager = getSupportFragmentManager();
         viewTabMode.setFragmentManager(fragmentManager,R.id.frame);
         viewTabMode.setTabResult(new ViewTabMode.TabResult() {
@@ -398,6 +401,7 @@ public class ActivityHome extends AppCompatActivity {
 
 
     public void showTab() {
+        Log.d("BillFlow", "showTab position = " + pos);
         MyShare.putLayout(this, this.pos);
         int i = this.pos;
         if (i == 0) {
@@ -672,6 +676,20 @@ public class ActivityHome extends AppCompatActivity {
                 startActivity(intent);
             }
         });
+    }
+
+    private void handleBillNavigation() {
+
+        boolean openBill = getIntent().getBooleanExtra("OPEN_BILL", false);
+        Log.d("BillFlow", "OPEN_BILL=" + openBill + " BILL_ID=" + getIntent().getLongExtra("BILL_ID", 0));
+        if (!openBill) {
+            return;
+        }
+        long billId = getIntent().getLongExtra("BILL_ID", 0);
+        EventsFragment.billUrl = MyConst.WEB_BASE_URL + "bills/" + billId;
+
+        Log.d("BillFlow", "billUrl set to " + EventsFragment.billUrl);
+        viewTabMode.setTabDefault(2);
     }
 
 

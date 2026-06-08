@@ -41,6 +41,7 @@ import android.widget.Toast;
 
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
+import com.thelinkphone.app.utils.MyConst;
 
 import java.io.File;
 import java.io.IOException;
@@ -216,7 +217,7 @@ public class ScheduledEventsFrag extends Fragment {
         // int index = random.nextInt(kfclinks.length);
         if(mIsloggedIn != null)
         {
-            webview.loadUrl("http://app.callalink.com/scheduled-events");
+            webview.loadUrl(MyConst.WEB_BASE_URL + "scheduled-events");
         }
         else
         {

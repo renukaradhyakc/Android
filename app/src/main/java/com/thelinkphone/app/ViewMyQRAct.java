@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
+import com.thelinkphone.app.utils.MyConst;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -156,7 +157,7 @@ public class ViewMyQRAct extends AppCompatActivity {
 
     private void getDomain()
     {
-        mDomainQR = "https://app.callalink.com/call/"+sharedPreferences.getString(DOMAIN_KEY, null);
+        mDomainQR =  MyConst.CALL_URL+sharedPreferences.getString(DOMAIN_KEY, null);
         mPhoneNumber = sharedPreferences.getString(PHONE_KEY, null);
         Log.d(TAG, "Domain QR: " + mDomainQR);
         Log.d(TAG, "Phone Number: " + (mPhoneNumber != null ? mPhoneNumber.substring(0, Math.min(3, mPhoneNumber.length())) + "***" : "null"));

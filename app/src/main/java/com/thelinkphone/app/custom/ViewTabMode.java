@@ -2,6 +2,7 @@ package com.thelinkphone.app.custom;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 
@@ -223,6 +224,7 @@ public class ViewTabMode extends LinearLayout {
         onTabClick(null, i);
     }*/
     public void setTabDefault(int i) {
+        Log.d("BillFlow", "setTabDefault = " + i);
         // Explicitly reset all tabs to unselected state
         if (this.vFar != null) this.vFar.setChoose(false);
         if (this.vRec != null) this.vRec.setChoose(false);

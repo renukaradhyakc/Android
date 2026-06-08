@@ -16,7 +16,7 @@ import androidx.appcompat.widget.Toolbar;
 
 public class PrivacyPolicyActivity extends AppCompatActivity {
 
-    private static final String PRIVACY_POLICY_URL = "https://www.termsfeed.com/live/c409f25d-a714-4509-ba76-0b3e36ce987a";
+    private static final String PRIVACY_POLICY_URL = "https://www.termsfeed.com/live/dc6768be-8856-4124-a689-3aac885707ae";
 
     private WebView webView;
     private ProgressBar progressBar;

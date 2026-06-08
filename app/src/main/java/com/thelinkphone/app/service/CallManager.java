@@ -102,30 +102,30 @@ public class CallManager {
         }
         
         // Also trigger popup for outgoing calls
-        if (state == Call.STATE_DIALING || state == 9) {
-            Log.d("CallManager", "Outgoing/Active call detected — triggering popup");
-
-            int callMode = 0;
-            String username = getPhoneCall(); // callee number
-            boolean isCallalinkUser = false;
-            boolean isWithinSchedule = true;
-            boolean isAContact = false;
-
-            try {
-                IncomingCallPopupService.showPopup(
-                        inCallService,
-                        callMode,
-                        username,
-                        isCallalinkUser,
-                        isWithinSchedule,
-                        isAContact
-                );
-            } catch (Exception e) {
-                Log.e("CallManager", "Error launching IncomingCallPopupService for outgoing call: " + e.getMessage());
-                e.printStackTrace();
-            }
-            
-        }
+//        if (state == Call.STATE_DIALING || state == 9) {
+//            Log.d("CallManager", "Outgoing/Active call detected — triggering popup");
+//
+//            int callMode = 0;
+//            String username = getPhoneCall(); // callee number
+//            boolean isCallalinkUser = false;
+//            boolean isWithinSchedule = true;
+//            boolean isAContact = false;
+//
+//            try {
+//                IncomingCallPopupService.showPopup(
+//                        inCallService,
+//                        callMode,
+//                        username,
+//                        isCallalinkUser,
+//                        isWithinSchedule,
+//                        isAContact
+//                );
+//            } catch (Exception e) {
+//                Log.e("CallManager", "Error launching IncomingCallPopupService for outgoing call: " + e.getMessage());
+//                e.printStackTrace();
+//            }
+//
+//        }
     }
     public void onRemoveCall(Call call) {
         Log.d("CallManager", "Removing call from CallManager");

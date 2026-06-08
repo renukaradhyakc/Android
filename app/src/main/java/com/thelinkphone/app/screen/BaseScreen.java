@@ -145,7 +145,7 @@ public abstract class BaseScreen extends RelativeLayout {
         } catch (Exception e) {
             android.util.Log.e("BaseScreen", "Error displaying caller info: " + e.getMessage());
             // Fallback to default display
-            this.tvName.setText("📱 TheLinkPhone");
+            this.tvName.setText(getContext().getString(R.string.unknown_caller));
             this.tvName.setTextColor(android.graphics.Color.WHITE);
         }
     }

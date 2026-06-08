@@ -582,6 +582,7 @@ public class IncomingCallPopupService extends Service {
                 userName.setTextColor(ContextCompat.getColor(this, R.color.unrestricted_textcolor));
                 branding.setTextColor(ContextCompat.getColor(this, R.color.unrestricted_textcolor));
                 modeText.setText(R.string.unrestricted_mode_label);
+                modeText.setTextColor(ContextCompat.getColor(this,R.color.unrestricted_textcolor));
                 break;
 
             case MyShare.CALL_SETTING_PHONELINK_SCHEDULED:

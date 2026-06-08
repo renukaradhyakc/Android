@@ -39,8 +39,6 @@ public class ScanFrag extends BaseFragment {
     private CodeScanner mCodeScanner;
     CodeScannerView scannerView;
 
-    private static final String BASE_URL = "https://app.thelinkphone.com/api/";
-
     public ScanFrag() {
         // Required empty public constructor
     }

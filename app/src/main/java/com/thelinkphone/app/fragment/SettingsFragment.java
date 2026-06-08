@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.thelinkphone.app.ActivityHome;
+import com.thelinkphone.app.BillCaptureActivity;
 import com.thelinkphone.app.CallBlockActivity;
 import com.thelinkphone.app.ActivityPaywall;
 import com.thelinkphone.app.PrivacyPolicyActivity;
@@ -25,7 +26,7 @@ import com.thelinkphone.app.utils.SpamProtectionManager;
 public class SettingsFragment extends Fragment {
 
     private static final String TAG = "SettingsFragment";
-    ConstraintLayout mCallsBtn, mQRBtn, mPrivacyBtn, mRecordBtn, mBlockBtn, mProBtn;
+    ConstraintLayout mCallsBtn, mQRBtn, mPrivacyBtn, mRecordBtn, mBlockBtn, mProBtn, mBillBtn;
     private SpamProtectionManager spamProtectionManager;
 
     public SettingsFragment() {
@@ -50,6 +51,7 @@ public class SettingsFragment extends Fragment {
         mBlockBtn = view.findViewById(R.id.Settings_Block);
         mRecordBtn = view.findViewById(R.id.Settings_Recording);
         mProBtn = view.findViewById(R.id.Settings_PRO);
+        mBillBtn = view.findViewById(R.id.Settings_Bill);
 
         // Initialize spam protection manager
         spamProtectionManager = new SpamProtectionManager(getContext());
@@ -120,6 +122,11 @@ public class SettingsFragment extends Fragment {
                 toPaywallAct.putExtra("ENTRY_SOURCE", "SETTINGS");
                 startActivity(toPaywallAct);
             }
+        });
+
+        mBillBtn.setOnClickListener(v -> {
+            Intent intent = new Intent(getContext(), BillCaptureActivity.class);
+            startActivity(intent);
         });
 
        /* mThemeBtn.setOnClickListener(new View.OnClickListener() {
