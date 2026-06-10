@@ -23,7 +23,7 @@ public class ApiClient {
                                 .build();
                         return chain.proceed(request);
                     })
-                    .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                    .connectTimeout(5, java.util.concurrent.TimeUnit.SECONDS)
                     .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
                     .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
                     .build();

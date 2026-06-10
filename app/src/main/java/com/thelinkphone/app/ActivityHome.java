@@ -28,6 +28,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.thelinkphone.app.custom.LayoutChooseContact;
 import com.thelinkphone.app.custom.ViewTabMode;
 import com.thelinkphone.app.dialog.FavResult;
+import com.thelinkphone.app.fragment.BillCaptureFragment;
 import com.thelinkphone.app.fragment.ContactResult;
 import com.thelinkphone.app.fragment.EventsFragment;
 import com.thelinkphone.app.fragment.FragmentContact;
@@ -83,6 +84,7 @@ public class ActivityHome extends AppCompatActivity {
     private boolean isAccessChecked = false;
     private boolean hasAccess = false;
     private ViewTabMode viewTabMode;
+    private boolean billMode = true;
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -407,8 +409,9 @@ public class ActivityHome extends AppCompatActivity {
         if (i == 0) {
             // Replace FragmentFavorites with ScanFrag
             if (this.fragmentScan == null) {
-                ScanFrag scanFrag = new ScanFrag();
-                this.fragmentScan = scanFrag;
+//                ScanFrag scanFrag = new ScanFrag();
+//                this.fragmentScan = scanFrag;
+                showFragment(new BillCaptureFragment(), false);
                 // Set any necessary parameters for ScanFrag
             }
             showFragment(this.fragmentScan, false);
@@ -697,6 +700,17 @@ public class ActivityHome extends AppCompatActivity {
     public void onPause() {
         super.onPause();
 
+    }
+
+    private void openScanFrag(int mode) {
+        ScanFrag frag = new ScanFrag();
+
+        Bundle b = new Bundle();
+        b.putInt("mode", mode);
+        frag.setArguments(b);
+
+        fragmentScan = frag;
+        showFragment(frag, false);
     }
 
     @Override

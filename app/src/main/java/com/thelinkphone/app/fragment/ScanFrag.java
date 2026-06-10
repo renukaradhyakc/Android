@@ -1,8 +1,10 @@
 package com.thelinkphone.app.fragment;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 
 import androidx.annotation.NonNull;
 
@@ -16,6 +18,7 @@ import android.widget.Toast;
 import com.budiyev.android.codescanner.CodeScanner;
 import com.budiyev.android.codescanner.CodeScannerView;
 import com.budiyev.android.codescanner.DecodeCallback;
+import com.thelinkphone.app.BillCaptureActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemSimInfo;
 import com.thelinkphone.app.model.QRResponse;
@@ -24,6 +27,7 @@ import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
+import com.thelinkphone.app.utils.ScanConstants;
 import com.thelinkphone.app.utils.SimUtils;
 import com.google.zxing.Result;
 
@@ -37,7 +41,9 @@ import retrofit2.Response;
 public class ScanFrag extends BaseFragment {
 
     private CodeScanner mCodeScanner;
-    CodeScannerView scannerView;
+    private CodeScannerView scannerView;
+    private boolean isProcessing = false;
+    private int mode = ScanConstants.MODE_QR;
 
     public ScanFrag() {
         // Required empty public constructor
@@ -48,37 +54,66 @@ public class ScanFrag extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        if (getArguments() != null) {
+            mode = getArguments().getInt("mode", ScanConstants.MODE_QR);
+        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        final Activity activity = getActivity();
         View view = inflater.inflate(R.layout.fragment_scan, container, false);
-         scannerView = view.findViewById(R.id.scanner_view);
-        mCodeScanner = new CodeScanner(activity, scannerView);
 
+        Activity activity = getActivity();
+        if (activity == null) return view;
+
+        scannerView = view.findViewById(R.id.scanner_view);
+        mCodeScanner = new CodeScanner(activity, scannerView);
         mCodeScanner.setDecodeCallback(new DecodeCallback() {
             @Override
             public void onDecoded(@NonNull final Result result) {
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                     //   Toast.makeText(activity, result.getText(), Toast.LENGTH_SHORT).show();
-                        GetPhoneNumber(result.getText());
+
+                if (isProcessing) return;
+                isProcessing = true;
+
+                Activity act = getActivity();
+                if (act == null) {
+                    isProcessing = false;
+                    return;
+                }
+
+                act.runOnUiThread(()-> {
+                    String data = result.getText();
+
+                    //   Toast.makeText(activity, result.getText(), Toast.LENGTH_SHORT).show();
+                    //   GetPhoneNumber(result.getText());
+                    if (mode == ScanConstants.MODE_BILL) {
+                        openBillFlow(data);
+                    } else {
+                        GetPhoneNumber(data);
                     }
                 });
             }
         });
-        scannerView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+        scannerView.setOnClickListener(v-> {
+            if (mCodeScanner != null) {
                 mCodeScanner.startPreview();
             }
         });
         return view;
+    }
+
+    private void openBillFlow(String data) {
+        Activity activity = getActivity();
+
+        if (activity == null) {
+            resetProcessing();
+            return;
+        }
+
+        Intent intent = new Intent(getContext(), BillCaptureActivity.class);
+        intent.putExtra("QR_DATA", data);
+        startActivity(intent);
     }
 
     private void GetPhoneNumber(String text)
@@ -94,11 +129,13 @@ public class ScanFrag extends BaseFragment {
             }
         } catch (Exception e) {
             Toast.makeText(getContext(), "Invalid QR code", Toast.LENGTH_SHORT).show();
+            resetProcessing();
             return;
         }
 
         if (domain == null || domain.isEmpty()) {
             Toast.makeText(getContext(), "Invalid QR code", Toast.LENGTH_SHORT).show();
+            resetProcessing();
             return;
         }
 
@@ -108,19 +145,25 @@ public class ScanFrag extends BaseFragment {
         apiService.scanQr(qrRequest).enqueue(new Callback<QRResponse>() {
             @Override
             public void onResponse(Call<QRResponse> call, Response<QRResponse> response) {
+                if (!isAdded()) {
+                    resetProcessing();
+                    return;
+                }
                 if (response.isSuccessful() && response.body() != null) {
                     String phoneNumber = response.body().getPhoneNumber();
                 //    Toast.makeText(getContext(), "Phone Number: " + phoneNumber, Toast.LENGTH_LONG).show();
                     Callnumber(phoneNumber);
                 } else {
                     Toast.makeText(getContext(), "User does not exist", Toast.LENGTH_LONG).show();
+                    resetProcessing();
                 }
             }
 
             @Override
             public void onFailure(Call<QRResponse> call, Throwable t) {
-                Toast.makeText(getContext(), "API call failed", Toast.LENGTH_LONG).show();
-                Log.e("API_ERROR", t.getMessage());
+                Log.e("API_ERROR", t.getMessage() != null ? t.getMessage() : "error");
+                if (getContext() != null) {Toast.makeText(getContext(), "API call failed", Toast.LENGTH_LONG).show();}
+                resetProcessing();
             }
         });
 
@@ -131,19 +174,22 @@ public class ScanFrag extends BaseFragment {
         // Add null checks and proper error handling
         if (getContext() == null || getActivity() == null) {
             Log.e("ScanFrag", "Context or Activity is null, cannot make call");
+            resetProcessing();
             return;
         }
-        
-        ArrayList<ItemSimInfo> arrSim = SimUtils.getAvailableSIMCardLabels(getContext());
-        int posSim = MyShare.getPosSim(getContext());
         
         if (phoneNumber == null || phoneNumber.isEmpty()) {
             Toast.makeText(getContext(), "Invalid phone number", Toast.LENGTH_SHORT).show();
+            resetProcessing();
             return;
         }
+
+        ArrayList<ItemSimInfo> arrSim = SimUtils.getAvailableSIMCardLabels(getContext());
+        int posSim = MyShare.getPosSim(getContext());
         
         if (arrSim.size() == 0) {
             Toast.makeText(getContext(), "No SIM card available", Toast.LENGTH_SHORT).show();
+            resetProcessing();
             return;
         }
         
@@ -157,9 +203,16 @@ public class ScanFrag extends BaseFragment {
         final String finalPhoneNumber = phoneNumber;
         
         // Add a small delay to ensure WebView operations complete before making the call
-        new android.os.Handler().postDelayed(new Runnable() {
+        new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+                Activity activity = getActivity();
+
+                if (activity == null) {
+                    resetProcessing();
+                    return;
+                }
+
                 try {
                     OtherUtils.call(getContext(), finalPhoneNumber, finalPhoneAccountHandle);
                 } catch (Exception e) {
@@ -168,18 +221,28 @@ public class ScanFrag extends BaseFragment {
                         Toast.makeText(getContext(), "Failed to make call", Toast.LENGTH_SHORT).show();
                     }
                 }
+                resetProcessing();
             }
         }, 500); // 500ms delay
     }
 
     public void onResume() {
         super.onResume();
-        mCodeScanner.startPreview();
+        resetProcessing();
     }
 
     @Override
     public void onPause() {
-        mCodeScanner.releaseResources();
+        if (mCodeScanner != null) {
+            mCodeScanner.releaseResources();
+        }
         super.onPause();
+    }
+
+    private void resetProcessing() {
+        isProcessing = false;
+        if (mCodeScanner != null) {
+            mCodeScanner.startPreview();
+        }
     }
 }

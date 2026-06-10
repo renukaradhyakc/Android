@@ -249,16 +249,9 @@ public class BillCaptureFragment extends Fragment {
         // Get token from SharedPreferences
         SharedPreferences prefs = requireContext()
                 .getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
-        Map<String, ?> allPrefs = prefs.getAll();
-        for (Map.Entry<String, ?> entry : allPrefs.entrySet()) {
-            Log.d("BillCapture", "Pref key: " + entry.getKey() + " = " + entry.getValue());
-        }
         String token = prefs.getString("auth_token", null);
-
-        // ADD THESE LOGS
-        Log.d("BillCapture", "Token from prefs: " + token);
+        Log.d("BillCapture", "Using token = " + token);
         Log.d("BillCapture", "Token is null: " + (token == null));
-        Log.d("BillCapture", "Authorization header will be: Bearer " + token);
 
         if (token == null) {
             Toast.makeText(getContext(), "Not logged in", Toast.LENGTH_SHORT).show();
@@ -296,6 +289,7 @@ public class BillCaptureFragment extends Fragment {
 
                         requireActivity().runOnUiThread(() -> {
                             if (!isAdded()) return;
+                            Log.d("BillCapture", "Response code = " + response.code());
                             if (response.isSuccessful() && response.body() != null
                                     && response.body().isSuccess()) {
 
@@ -320,6 +314,8 @@ public class BillCaptureFragment extends Fragment {
                                         Toast.LENGTH_LONG).show();
 
                             } else {
+                                Log.e("BillCapture",
+                                        "Upload failed. HTTP " + response.code());
                                 Toast.makeText(getContext(),
                                         "Upload failed, try again",
                                         Toast.LENGTH_SHORT).show();
@@ -334,9 +330,20 @@ public class BillCaptureFragment extends Fragment {
                         Log.e("BillCapture", "Upload failed", t);
                         requireActivity().runOnUiThread(() ->{
                             if (!isAdded()) return;
+                            String message;
+                            if (t instanceof java.net.ConnectException) {
+                                message = "Server unreachable. Please try again.";
+                            } else if (t instanceof java.net.SocketTimeoutException) {
+                                message = "Server unreachable. Please try again.";
+                            } else if (t instanceof java.net.UnknownHostException) {
+                                message = "No internet connection.";
+                            } else {
+                                message = "Upload failed.";
+                            }
+                            Log.e("BillCapture", "Showing upload failure toast");
                             Toast.makeText(getContext(),
-                                    "Network error: " + t.getMessage(),
-                                    Toast.LENGTH_SHORT).show();
+                                    message,
+                                    Toast.LENGTH_LONG).show();
                         });
                     }
                 });
