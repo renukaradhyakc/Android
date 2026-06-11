@@ -76,12 +76,18 @@ public class BillCaptureFragment extends Fragment {
     private static final int CAMERA_PERMISSION_CODE = 10;
     private Uri lastCapturedUri = null;
     private boolean currentCropFromGallery = false;
-
     private ActivityResultLauncher<String> galleryLauncher;
-
     private ActivityResultLauncher<Intent> cropLauncher;
-
+    private ModeSwitchListener modeSwitchListener;
     public BillCaptureFragment() {}
+
+    public interface ModeSwitchListener {
+        void openQrScanner();
+    }
+
+    public void setModeSwitchListener(ModeSwitchListener listener) {
+        this.modeSwitchListener = listener;
+    }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -92,6 +98,14 @@ public class BillCaptureFragment extends Fragment {
 
         previewView = view.findViewById(R.id.previewView);
         btnCapture = view.findViewById(R.id.btnCapture);
+
+        ImageButton btnSwitchMode = view.findViewById(R.id.btnSwitchMode);
+
+        btnSwitchMode.setOnClickListener(v -> {
+            if (modeSwitchListener != null) {
+                modeSwitchListener.openQrScanner();
+            }
+        });
 
         cameraExecutor = Executors.newSingleThreadExecutor();
 

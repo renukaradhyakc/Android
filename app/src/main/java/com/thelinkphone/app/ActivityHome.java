@@ -64,6 +64,7 @@ public class ActivityHome extends AppCompatActivity {
     private FragmentPad fragmentPad;
     private FragmentRecents fragmentRecents;
     private ScanFrag fragmentScan;
+    private BillCaptureFragment billCaptureFragment;
 
     private ScheduledEventsFrag scheduledEventsFrag;
     private EventsFragment eventsFragment;
@@ -84,7 +85,6 @@ public class ActivityHome extends AppCompatActivity {
     private boolean isAccessChecked = false;
     private boolean hasAccess = false;
     private ViewTabMode viewTabMode;
-    private boolean billMode = true;
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -406,15 +406,22 @@ public class ActivityHome extends AppCompatActivity {
         Log.d("BillFlow", "showTab position = " + pos);
         MyShare.putLayout(this, this.pos);
         int i = this.pos;
-        if (i == 0) {
-            // Replace FragmentFavorites with ScanFrag
-            if (this.fragmentScan == null) {
+//        if (i == 0) {
+//            // Replace FragmentFavorites with ScanFrag
+//            if (this.fragmentScan == null) {
 //                ScanFrag scanFrag = new ScanFrag();
 //                this.fragmentScan = scanFrag;
-                showFragment(new BillCaptureFragment(), false);
-                // Set any necessary parameters for ScanFrag
+//                // Set any necessary parameters for ScanFrag
+//            }
+//            showFragment(this.fragmentScan, false);
+        if (i == 0) {
+            boolean billMode = MyShare.isBillMode(this);
+
+            if (billMode) {
+                showBillCaptureFragment();
+            } else {
+                showQrFragment();
             }
-            showFragment(this.fragmentScan, false);
         /*if (i == 0) {
             if (this.fragmentFavorites == null) {
                 FragmentFavorites fragmentFavorites = new FragmentFavorites();
@@ -702,15 +709,26 @@ public class ActivityHome extends AppCompatActivity {
 
     }
 
-    private void openScanFrag(int mode) {
-        ScanFrag frag = new ScanFrag();
+    public void showQrFragment() {
+        if (fragmentScan == null) {
+            fragmentScan = new ScanFrag();
+            fragmentScan.setModeSwitchListener(() -> {
+                showBillCaptureFragment();
+            });
+        }
+        MyShare.putScannerMode(this, false);
+        showFragment(fragmentScan, false);
+    }
 
-        Bundle b = new Bundle();
-        b.putInt("mode", mode);
-        frag.setArguments(b);
-
-        fragmentScan = frag;
-        showFragment(frag, false);
+    public void showBillCaptureFragment() {
+        if (billCaptureFragment == null) {
+            billCaptureFragment = new BillCaptureFragment();
+            billCaptureFragment.setModeSwitchListener(() -> {
+                showQrFragment();
+            });
+        }
+        MyShare.putScannerMode(this, true);
+        showFragment(billCaptureFragment, false);
     }
 
     @Override

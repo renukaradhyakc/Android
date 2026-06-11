@@ -148,6 +148,7 @@ public class MyShare {
     public static final int CALL_SETTING_PHONELINK_SCHEDULED = 1;
     private static final String PREF_CALL_INFO = "CALL_INFO";
     private static final String KEY_USER_EMAIL = "user_email";
+    private static final String KEY_SCAN_TAB_MODE = "scanner_bill_mode";
 
     public static void putCallSetting(Context context, int callSetting) {
         share(context).edit().putInt("call_setting", callSetting).apply();
@@ -224,5 +225,13 @@ public class MyShare {
 
     public static String getUserEmail(Context context) {
         return share(context).getString(KEY_USER_EMAIL, null);
+    }
+
+    public static void putScannerMode(Context context, boolean billMode) {
+        share(context).edit().putBoolean(KEY_SCAN_TAB_MODE, billMode).apply();
+    }
+
+    public static boolean isBillMode(Context context) {
+        return share(context).getBoolean(KEY_SCAN_TAB_MODE, false);
     }
 }

@@ -72,5 +72,5 @@ dependencies {
     implementation "androidx.camera:camera-extensions:$camerax_version"
 
     implementation "com.google.guava:guava:31.1-android"
-
+    implementation 'com.airbnb.android:lottie:6.4.0'
 }

@@ -13,11 +13,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.budiyev.android.codescanner.CodeScanner;
 import com.budiyev.android.codescanner.CodeScannerView;
 import com.budiyev.android.codescanner.DecodeCallback;
+import com.thelinkphone.app.ActivityHome;
 import com.thelinkphone.app.BillCaptureActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemSimInfo;
@@ -44,12 +46,19 @@ public class ScanFrag extends BaseFragment {
     private CodeScannerView scannerView;
     private boolean isProcessing = false;
     private int mode = ScanConstants.MODE_QR;
+    private ModeSwitchListener modeSwitchListener;
 
     public ScanFrag() {
         // Required empty public constructor
     }
 
+    public interface ModeSwitchListener {
+        void openBillScanner();
+    }
 
+    public void setModeSwitchListener(ModeSwitchListener listener) {
+        this.modeSwitchListener = listener;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -69,6 +78,15 @@ public class ScanFrag extends BaseFragment {
 
         scannerView = view.findViewById(R.id.scanner_view);
         mCodeScanner = new CodeScanner(activity, scannerView);
+
+        ImageButton btnSwitchMode = view.findViewById(R.id.btnSwitchMode);
+
+        btnSwitchMode.setOnClickListener(v -> {
+            if (modeSwitchListener != null) {
+                modeSwitchListener.openBillScanner();
+            }
+        });
+
         mCodeScanner.setDecodeCallback(new DecodeCallback() {
             @Override
             public void onDecoded(@NonNull final Result result) {

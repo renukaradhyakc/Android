@@ -189,5 +189,9 @@
     <string name="action_automatically_blocked">BLOCKED</string>
     <string name="close_popup">Close</string>
 
-    <string name="capture_bill">Capture bill image</string>
+    <string name="capture_bill">Capture Bill Image</string>
+    <string name="qr_scan_mode">QR Scanner</string>
+    <string name="bill_scan_mode">Bill Scanner</string>
+    <string name="switch_mode">Switch Mode</string>
+    <string name="capture">Capture</string>
 </resources>

@@ -3,6 +3,7 @@ package com.thelinkphone.app;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,7 +45,24 @@ public class BillProcessingActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
 
                     txtBill.setText("Receipt Uploaded ✓\n\n" + "Bill #" + billId + "\n\n" + "Status: Done ✓");
-                    openLoyaltyWebView(billId);
+                    View overlay = findViewById(R.id.successOverlay);
+                    TextView points = findViewById(R.id.txtPoints);
+                    com.airbnb.lottie.LottieAnimationView anim =
+                            findViewById(R.id.lottieSuccess);
+
+                    overlay.setVisibility(View.VISIBLE);
+                    anim.playAnimation();
+
+                    points.setText("+410 Points Earned");
+
+                    overlay.animate()
+                            .alpha(1f)
+                            .setDuration(200)
+                            .start();
+
+                    new android.os.Handler().postDelayed(() -> {
+                        openLoyaltyWebView(billId);
+                    }, 1600);
                 });
             }
 

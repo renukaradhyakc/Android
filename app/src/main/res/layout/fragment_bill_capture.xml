@@ -18,7 +18,7 @@
         android:id="@+id/txtMode"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Bill Scanner"
+        android:text="@string/bill_scan_mode"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
         android:textStyle="bold"
@@ -67,7 +67,7 @@
                 android:layout_height="80dp"
                 android:layout_gravity="center"
                 android:background="@drawable/bg_capture_button"
-                android:contentDescription="Capture" />
+                android:contentDescription="@string/capture" />
 
         </FrameLayout>
 
@@ -86,7 +86,7 @@
                 android:background="@drawable/bg_round_button"
                 android:src="@drawable/ic_switch_camera_mode"
                 android:scaleType="centerInside"
-                android:contentDescription="Switch Mode" />
+                android:contentDescription="@string/switch_mode" />
 
         </FrameLayout>
 
