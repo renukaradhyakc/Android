@@ -26,6 +26,9 @@ public class BillStatusResponse {
         @SerializedName("status")
         private String status;
 
+        @SerializedName("points")
+        private int points;
+
         public int getBillId() {
             return billId;
         }
@@ -33,5 +36,6 @@ public class BillStatusResponse {
         public String getStatus() {
             return status;
         }
+        public int getPoints() { return points; }
     }
 }

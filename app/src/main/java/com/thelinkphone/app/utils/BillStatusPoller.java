@@ -2,6 +2,7 @@ package com.thelinkphone.app.utils;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -15,7 +16,7 @@ public class BillStatusPoller {
 
     public interface Listener {
         void onStatusChanged(String status);
-        void onCompleted();
+        void onCompleted(int points);
         void onFailed(String status);
     }
 
@@ -59,14 +60,15 @@ public class BillStatusPoller {
                                 }
 
                                 String status = response.body().getData().getStatus();
+                                int points = response.body().getData().getPoints();
 
-                                android.util.Log.d("BillStatus", "Current status = " + status);
+                                Log.d("BillStatus", "Current status = " + status);
 
                                 listener.onStatusChanged(status);
 
                                 if ("done".equalsIgnoreCase(status)) {
                                     stop();
-                                    listener.onCompleted();
+                                    listener.onCompleted(points);
 
                                 } else if ("failed".equalsIgnoreCase(status)) {
                                     stop();

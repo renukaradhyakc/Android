@@ -1,6 +1,7 @@
 package com.thelinkphone.app.fragment;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -41,6 +42,7 @@ import com.thelinkphone.app.R;
 import com.thelinkphone.app.model.BillUploadResponse;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
+import com.thelinkphone.app.utils.NetworkUtils;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
@@ -291,6 +293,18 @@ public class BillCaptureFragment extends Fragment {
         requireActivity().runOnUiThread(() ->
                 Toast.makeText(getContext(), "Uploading bill...", Toast.LENGTH_SHORT).show()
         );
+        if (!NetworkUtils.isInternetAvailable(this)) {
+
+            Log.d("BillCapture", "Internet available = "
+                    + NetworkUtils.isInternetAvailable(this));
+            new AlertDialog.Builder(this)
+                    .setTitle("No Internet")
+                    .setMessage("Please connect to the internet and try again.")
+                    .setPositiveButton("OK", null)
+                    .show();
+
+            return;
+        }
 
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         apiService.uploadBill("Bearer " + token, part)

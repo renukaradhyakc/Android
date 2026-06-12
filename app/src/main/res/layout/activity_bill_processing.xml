@@ -3,27 +3,43 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
 
     <!-- BASE LOADING UI -->
     <LinearLayout
+        android:id="@+id/processingContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
         android:orientation="vertical">
 
         <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:indeterminateTint="#14B8A6"/>
 
         <TextView
             android:id="@+id/txtBill"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="22sp"
+            android:layout_marginTop="24dp"
             android:gravity="center"
-            android:layout_marginTop="20dp"/>
+            android:text="Scanning your receipt..."
+            android:textColor="#1E293B"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="This usually takes a few seconds"
+            android:textColor="#64748B"
+            android:textSize="14sp"/>
     </LinearLayout>
 
     <!-- SUCCESS OVERLAY (FULL SCREEN ON TOP) -->
@@ -31,34 +47,33 @@
         android:id="@+id/successOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#CC000000"
+        android:background="#0F172A"
         android:visibility="gone"
         android:clickable="true"
         android:focusable="true">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical">
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieSuccess"
+            android:layout_width="360dp"
+            android:layout_height="360dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="60dp"
+            app:lottie_fileName="lottie/Gift Box Orange.json"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"/>
 
-            <com.airbnb.lottie.LottieAnimationView
-                android:id="@+id/lottieSuccess"
-                android:layout_width="220dp"
-                android:layout_height="220dp"
-                app:lottie_fileName="lottie/success.json"
-                app:lottie_autoPlay="false"
-                app:lottie_loop="false"/>
-
-            <TextView
-                android:id="@+id/txtPoints"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="+410 Points Earned"
-                android:textSize="20sp"
-                android:textColor="#FFFFFF"
-                android:layout_marginTop="16dp"/>
-        </LinearLayout>
+        <!-- Points text starts hidden, animates up from box -->
+        <TextView
+            android:id="@+id/txtPoints"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="+0 Points"
+            android:textSize="14sp"
+            android:textColor="#FFD700"
+            android:textStyle="bold"
+            android:alpha="0"
+            android:elevation="10dp"/>
 
     </FrameLayout>
 
