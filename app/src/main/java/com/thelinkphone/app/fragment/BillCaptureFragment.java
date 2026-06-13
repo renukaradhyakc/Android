@@ -81,7 +81,11 @@ public class BillCaptureFragment extends Fragment {
     private ActivityResultLauncher<String> galleryLauncher;
     private ActivityResultLauncher<Intent> cropLauncher;
     private ModeSwitchListener modeSwitchListener;
-    public BillCaptureFragment() {}
+
+    private Uri pendingUploadUri;
+
+    public BillCaptureFragment() {
+    }
 
     public interface ModeSwitchListener {
         void openQrScanner();
@@ -134,8 +138,7 @@ public class BillCaptureFragment extends Fragment {
                 } else {
                     Log.e("Crop", "Crop returned null URI");
                 }
-            }
-            else if (result.getResultCode() == UCrop.RESULT_ERROR) {
+            } else if (result.getResultCode() == UCrop.RESULT_ERROR) {
                 Throwable error = UCrop.getError(result.getData());
                 Log.e("Crop", "Crop failed", error);
                 Toast.makeText(getContext(), "Crop failed", Toast.LENGTH_SHORT).show();
@@ -260,17 +263,30 @@ public class BillCaptureFragment extends Fragment {
     }
 
     private void uploadBill(Uri uri) {
+        pendingUploadUri = uri;
         if (uri == null) return;
 
         // Get token from SharedPreferences
         SharedPreferences prefs = requireContext()
                 .getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
         String token = prefs.getString("auth_token", null);
-        Log.d("BillCapture", "Using token = " + token);
         Log.d("BillCapture", "Token is null: " + (token == null));
 
         if (token == null) {
             Toast.makeText(getContext(), "Not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!NetworkUtils.isInternetAvailable(requireContext())) {
+
+            Log.d("BillCapture", "Internet available = "
+                    + NetworkUtils.isInternetAvailable(requireContext()));
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("No Internet")
+                    .setMessage("Please connect to the internet and try again.")
+                    .setPositiveButton("OK", null)
+                    .show();
+
             return;
         }
 
@@ -293,18 +309,6 @@ public class BillCaptureFragment extends Fragment {
         requireActivity().runOnUiThread(() ->
                 Toast.makeText(getContext(), "Uploading bill...", Toast.LENGTH_SHORT).show()
         );
-        if (!NetworkUtils.isInternetAvailable(this)) {
-
-            Log.d("BillCapture", "Internet available = "
-                    + NetworkUtils.isInternetAvailable(this));
-            new AlertDialog.Builder(this)
-                    .setTitle("No Internet")
-                    .setMessage("Please connect to the internet and try again.")
-                    .setPositiveButton("OK", null)
-                    .show();
-
-            return;
-        }
 
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         apiService.uploadBill("Bearer " + token, part)
@@ -356,7 +360,7 @@ public class BillCaptureFragment extends Fragment {
                                           @NonNull Throwable t) {
                         if (!isAdded()) return;
                         Log.e("BillCapture", "Upload failed", t);
-                        requireActivity().runOnUiThread(() ->{
+                        requireActivity().runOnUiThread(() -> {
                             if (!isAdded()) return;
                             String message;
                             if (t instanceof java.net.ConnectException) {
@@ -369,9 +373,14 @@ public class BillCaptureFragment extends Fragment {
                                 message = "Upload failed.";
                             }
                             Log.e("BillCapture", "Showing upload failure toast");
-                            Toast.makeText(getContext(),
-                                    message,
-                                    Toast.LENGTH_LONG).show();
+                            new AlertDialog.Builder(requireContext())
+                                    .setTitle("Upload Failed")
+                                    .setMessage(message)
+                                    .setPositiveButton("Retry", (dialog, which) -> {
+                                        uploadBill(pendingUploadUri);
+                                    })
+                                    .setNegativeButton("Cancel", null)
+                                    .show();
                         });
                     }
                 });
@@ -382,6 +391,14 @@ public class BillCaptureFragment extends Fragment {
             InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
 
             if (inputStream == null) return null;
+
+            Cursor cursor = requireContext().getContentResolver().query(uri, new String[]{android.provider.OpenableColumns.SIZE}, null, null, null);
+
+            if (cursor != null && cursor.moveToFirst()) {
+                long originalSize = cursor.getLong(cursor.getColumnIndexOrThrow(android.provider.OpenableColumns.SIZE));
+                Log.d("BillCapture", "Original file size = " + (originalSize / 1024) + " KB");
+                cursor.close();
+            }
 
             android.graphics.Bitmap bitmap = android.graphics.BitmapFactory
                     .decodeStream(inputStream);
@@ -395,6 +412,8 @@ public class BillCaptureFragment extends Fragment {
 
             int width = bitmap.getWidth();
             int height = bitmap.getHeight();
+
+            Log.d("BillCapture", "Original dimensions = " + width + " x " + height);
 
             float scale = Math.min(1.0f, 1024f / Math.max(width, height));
 
@@ -416,6 +435,9 @@ public class BillCaptureFragment extends Fragment {
 
             outputStream.flush();
             outputStream.close();
+
+            Log.d("BillCapture", "Compressed dimensions = " + scaledBitmap.getWidth() + " x " + scaledBitmap.getHeight());
+            Log.d("BillCapture", "Compressed file size = " + (tempFile.length() / 1024) + " KB");
 
             Log.d("BillCapture", "Final file size: " + tempFile.length() + " bytes");
 
