@@ -1,7 +1,8 @@
 package com.thelinkphone.app.fragment;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,8 +20,6 @@ import android.widget.Toast;
 import com.budiyev.android.codescanner.CodeScanner;
 import com.budiyev.android.codescanner.CodeScannerView;
 import com.budiyev.android.codescanner.DecodeCallback;
-import com.thelinkphone.app.ActivityHome;
-import com.thelinkphone.app.BillCaptureActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemSimInfo;
 import com.thelinkphone.app.model.QRResponse;
@@ -29,7 +28,6 @@ import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
-import com.thelinkphone.app.utils.ScanConstants;
 import com.thelinkphone.app.utils.SimUtils;
 import com.google.zxing.Result;
 
@@ -45,7 +43,6 @@ public class ScanFrag extends BaseFragment {
     private CodeScanner mCodeScanner;
     private CodeScannerView scannerView;
     private boolean isProcessing = false;
-    private int mode = ScanConstants.MODE_QR;
     private ModeSwitchListener modeSwitchListener;
 
     public ScanFrag() {
@@ -63,9 +60,6 @@ public class ScanFrag extends BaseFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mode = getArguments().getInt("mode", ScanConstants.MODE_QR);
-        }
     }
 
     @Override
@@ -104,12 +98,7 @@ public class ScanFrag extends BaseFragment {
                     String data = result.getText();
 
                     //   Toast.makeText(activity, result.getText(), Toast.LENGTH_SHORT).show();
-                    //   GetPhoneNumber(result.getText());
-                    if (mode == ScanConstants.MODE_BILL) {
-                        openBillFlow(data);
-                    } else {
-                        GetPhoneNumber(data);
-                    }
+                    GetPhoneNumber(result.getText());
                 });
             }
         });
@@ -119,19 +108,6 @@ public class ScanFrag extends BaseFragment {
             }
         });
         return view;
-    }
-
-    private void openBillFlow(String data) {
-        Activity activity = getActivity();
-
-        if (activity == null) {
-            resetProcessing();
-            return;
-        }
-
-        Intent intent = new Intent(getContext(), BillCaptureActivity.class);
-        intent.putExtra("QR_DATA", data);
-        startActivity(intent);
     }
 
     private void GetPhoneNumber(String text)
@@ -157,16 +133,33 @@ public class ScanFrag extends BaseFragment {
             return;
         }
 
+        SharedPreferences prefs = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+
+        String token = prefs.getString("auth_token", null);
+
+        if (token == null) {Toast.makeText(getContext(), "Please login again", Toast.LENGTH_SHORT).show();
+            resetProcessing();
+            return;
+        }
+
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         QrRequest qrRequest = new QrRequest(domain);
 
-        apiService.scanQr(qrRequest).enqueue(new Callback<QRResponse>() {
+        apiService.scanQr("Bearer " + token, qrRequest).enqueue(new Callback<QRResponse>() {
             @Override
             public void onResponse(Call<QRResponse> call, Response<QRResponse> response) {
                 if (!isAdded()) {
                     resetProcessing();
                     return;
                 }
+
+                if (response.code() == 401) {
+                    Toast.makeText(getContext(), "Session expired. Please login again.", Toast.LENGTH_LONG).show();
+
+                    resetProcessing();
+                    return;
+                }
+
                 if (response.isSuccessful() && response.body() != null) {
                     String phoneNumber = response.body().getPhoneNumber();
                 //    Toast.makeText(getContext(), "Phone Number: " + phoneNumber, Toast.LENGTH_LONG).show();

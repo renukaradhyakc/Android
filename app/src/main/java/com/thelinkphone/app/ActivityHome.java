@@ -1,5 +1,8 @@
 package com.thelinkphone.app;
 
+import static androidx.core.content.ContentProviderCompat.requireContext;
+import static java.security.AccessController.getContext;
+
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.Intent;
@@ -42,7 +45,10 @@ import com.thelinkphone.app.fragment.ScheduledEventsFrag;
 import com.thelinkphone.app.fragment.SettingsFragment;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemRecentGroup;
+import com.thelinkphone.app.model.QrRequest;
 import com.thelinkphone.app.service.IncomingCallPopupService;
+import com.thelinkphone.app.utils.ApiClient;
+import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyConst;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
@@ -156,24 +162,37 @@ public class ActivityHome extends AppCompatActivity {
     }
 
     private void processLinkPhoneDeepLink(String userParam) {
+
+        SharedPreferences prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+
+        String token = prefs.getString("auth_token", null);
+
+        if (token == null) {
+            Toast.makeText(this, "Please login again", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Log.d(TAG, "Processing LinkPhone deep link for user: " + userParam);
 
         // Show a toast to indicate deep link processing
         Toast.makeText(this, "Processing CallALink call link...", Toast.LENGTH_SHORT).show();
 
         // Use the same API call as QR scanning to get the phone number
-        com.thelinkphone.app.utils.ApiService apiService =
-                com.thelinkphone.app.utils.ApiClient.getClient().
-                        create(com.thelinkphone.app.utils.ApiService.class);
-        com.thelinkphone.app.model.QrRequest qrRequest =
-                new com.thelinkphone.app.model.QrRequest(userParam);
+        ApiService apiService = ApiClient.getClient().create(ApiService.class);
+        QrRequest qrRequest = new QrRequest(userParam);
 
-        apiService.scanQr(qrRequest).enqueue(
+        apiService.scanQr("Bearer " + token,qrRequest).enqueue(
                 new retrofit2.Callback<com.thelinkphone.app.model.QRResponse>() {
             @Override
             public void onResponse(
                     retrofit2.Call<com.thelinkphone.app.model.QRResponse> call,
                     retrofit2.Response<com.thelinkphone.app.model.QRResponse> response) {
+
+                if (response.code() == 401) {
+                    Toast.makeText(ActivityHome.this, "Session expired. Please login again.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
                 if (response.isSuccessful() && response.body() != null) {
                     String phoneNumber = response.body().getPhoneNumber();
                     Log.d(TAG, "Deep link resolved to phone number: " + phoneNumber);

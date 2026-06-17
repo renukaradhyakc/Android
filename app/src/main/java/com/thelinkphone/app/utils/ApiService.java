@@ -30,7 +30,7 @@ public interface ApiService {
     Call<LoginResponse> login(@Field("email") String email, @Field("password") String password);
 
     @POST("qrscan")
-    Call<QRResponse> scanQr(@Body QrRequest qrRequest);
+    Call<QRResponse> scanQr(@Header("Authorization") String token,@Body QrRequest qrRequest);
 
     @FormUrlEncoded
     @POST("login")

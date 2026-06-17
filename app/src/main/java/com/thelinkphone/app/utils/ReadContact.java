@@ -120,6 +120,8 @@ public class ReadContact {
     }
     @SuppressLint("Range")
     public static ArrayList<ItemRecentGroup> getAllRecents(Context context) {
+        long start = System.currentTimeMillis();
+        android.util.Log.d("RECENTS_PERF", "getAllRecents START");
         int count = 0;
         boolean z;
         ItemRecent itemRecent;
@@ -131,7 +133,9 @@ public class ReadContact {
         if (context.checkSelfPermission("android.permission.READ_CALL_LOG") != PackageManager.PERMISSION_GRANTED) {
             return arrayList;
         }
+        long queryStart = System.currentTimeMillis();
         Cursor query = contentResolver.query(CallLog.Calls.CONTENT_URI, new String[]{"_id", "number", "subscription_id", "duration", "date", "countryiso", "type", "photo_uri", "name", "numberlabel"}, null, null, "date DESC");
+        android.util.Log.d("RECENTS_PERF", "query created in " + (System.currentTimeMillis() - queryStart) + " ms");
         int i = 0;
         if (query != null) {
             try {
@@ -141,9 +145,11 @@ public class ReadContact {
         } else {
             count = 0;
         }
+        android.util.Log.d("RECENTS_PERF", "call log count = " + count);
         if (count > 0) {
             Locale locale2 = context.getResources().getConfiguration().locale;
             Calendar calendar = Calendar.getInstance();
+            long loopStart = System.currentTimeMillis();
             while (query.moveToNext()) {
                String string = query.getString(query.getColumnIndex("_id"));
                 String string2 = query.getString(query.getColumnIndex("number"));
@@ -219,6 +225,9 @@ public class ReadContact {
                 i = 0;
             }
             query.close();
+            android.util.Log.d("RECENTS_PERF", "loop finished in " + (System.currentTimeMillis() - loopStart) + " ms");
+            android.util.Log.d("RECENTS_PERF", "TOTAL = " + (System.currentTimeMillis() - start) + " ms");
+            android.util.Log.d("RECENTS_PERF", "count = " + count);
         }
         return arrayList;
     }
