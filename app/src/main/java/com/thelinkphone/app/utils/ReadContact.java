@@ -9,6 +9,8 @@ import android.net.Uri;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
+import android.util.Log;
+
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemPhone;
 import com.thelinkphone.app.item.ItemRecent;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 
 
@@ -51,7 +54,7 @@ public class ReadContact {
             Cursor query = contentResolver.query(ContactsContract.Contacts.CONTENT_URI, new String[]{"display_name", "_id", "photo_uri"}, null, null, null);
             if ((query != null ? query.getCount() : 0) > 0) {
                 while (query.moveToNext()) {
-                   String string = query.getString(query.getColumnIndex("display_name"));
+                    String string = query.getString(query.getColumnIndex("display_name"));
                     String string2 = query.getString(query.getColumnIndex("_id"));
                     String string3 = query.getString(query.getColumnIndex("photo_uri"));
                     if (string != null && !string.isEmpty()) {
@@ -120,116 +123,86 @@ public class ReadContact {
     }
     @SuppressLint("Range")
     public static ArrayList<ItemRecentGroup> getAllRecents(Context context) {
+
         long start = System.currentTimeMillis();
-        android.util.Log.d("RECENTS_PERF", "getAllRecents START");
-        int count = 0;
-        boolean z;
-        ItemRecent itemRecent;
-        Locale locale;
-        long j;
-        ItemRecent itemRecent2;
-        ArrayList<ItemRecentGroup> arrayList = new ArrayList<>();
-        ContentResolver contentResolver = context.getContentResolver();
+        Log.d("RECENTS_PERF", "getAllRecents START");
+
+        ArrayList<ItemRecentGroup> result = new ArrayList<>();
+
         if (context.checkSelfPermission("android.permission.READ_CALL_LOG") != PackageManager.PERMISSION_GRANTED) {
-            return arrayList;
+            return result;
         }
+
+        ContentResolver contentResolver = context.getContentResolver();
         long queryStart = System.currentTimeMillis();
         Cursor query = contentResolver.query(CallLog.Calls.CONTENT_URI, new String[]{"_id", "number", "subscription_id", "duration", "date", "countryiso", "type", "photo_uri", "name", "numberlabel"}, null, null, "date DESC");
-        android.util.Log.d("RECENTS_PERF", "query created in " + (System.currentTimeMillis() - queryStart) + " ms");
-        int i = 0;
-        if (query != null) {
-            try {
-                count = query.getCount();
-            } catch (SecurityException unused) {
-            }
-        } else {
-            count = 0;
+        Log.d("RECENTS_PERF", "query created in " + (System.currentTimeMillis() - queryStart) + " ms");
+
+        if (query == null) {
+            return result;
         }
-        android.util.Log.d("RECENTS_PERF", "call log count = " + count);
-        if (count > 0) {
-            Locale locale2 = context.getResources().getConfiguration().locale;
-            Calendar calendar = Calendar.getInstance();
-            long loopStart = System.currentTimeMillis();
-            while (query.moveToNext()) {
-               String string = query.getString(query.getColumnIndex("_id"));
-                String string2 = query.getString(query.getColumnIndex("number"));
-                String string3 = query.getString(query.getColumnIndex("subscription_id"));
-                long j2 = query.getLong(query.getColumnIndex("duration"));
-                long j3 = query.getLong(query.getColumnIndex("date"));
-                String string4 = query.getString(query.getColumnIndex("countryiso"));
-                if (string4 != null && !string4.isEmpty()) {
-                    string4 = locale2.getDisplayCountry(new Locale(string4));
-                }
-                int i2 = query.getInt(query.getColumnIndex("type"));
-                String string5 = query.getString(query.getColumnIndex("photo_uri"));
-                String string6 = query.getString(query.getColumnIndex("name"));
-                int i3 = i2;
-                long j4 = j3;
-                ItemRecent itemRecent3 = new ItemRecent(string, string2, string3, j2, j3, string4, i3, query.getString(query.getColumnIndex("numberlabel")));
-                Iterator<ItemRecentGroup> it = arrayList.iterator();
-                while (true) {
-                    z = true;
-                    if (!it.hasNext()) {
-                        itemRecent = itemRecent3;
-                        locale = locale2;
-                        break;
-                    }
-                    ItemRecentGroup next = it.next();
-                    ItemRecent itemRecent4 = next.arrRecent.get(i);
-                    int i4 = i3;
-                    if (itemRecent4.type != i4) {
-                        if (itemRecent4.type != 3 && i4 != 3) {
-                        }
-                        itemRecent2 = itemRecent3;
-                        locale = locale2;
-                        j = j4;
-                        itemRecent3 = itemRecent2;
-                        i3 = i4;
-                        j4 = j;
-                        locale2 = locale;
-                        i = 0;
-                    }
-                    if (itemRecent4.number.equals(string2)) {
-                        j = j4;
-                        calendar.setTimeInMillis(j);
-                        int i5 = calendar.get(1);
-                        int i6 = calendar.get(6);
-                        locale = locale2;
-                        calendar.setTimeInMillis(itemRecent4.time);
-                        if (i5 == calendar.get(1) && i6 == calendar.get(6)) {
-                            itemRecent = itemRecent3;
-                            next.addRecent(itemRecent);
-                            z = false;
-                            break;
-                        }
-                        itemRecent2 = itemRecent3;
-                        itemRecent3 = itemRecent2;
-                        i3 = i4;
-                        j4 = j;
-                        locale2 = locale;
-                        i = 0;
-                    }
-                    itemRecent2 = itemRecent3;
-                    locale = locale2;
-                    j = j4;
-                    itemRecent3 = itemRecent2;
-                    i3 = i4;
-                    j4 = j;
-                    locale2 = locale;
-                    i = 0;
-                }
-                if (z) {
-                    arrayList.add(new ItemRecentGroup(itemRecent, string6, string5));
-                }
-                locale2 = locale;
-                i = 0;
-            }
+
+        int count= query.getCount();
+
+        Log.d("RECENTS_PERF", "call log count = " + count);
+
+        if (count <= 0) {
             query.close();
-            android.util.Log.d("RECENTS_PERF", "loop finished in " + (System.currentTimeMillis() - loopStart) + " ms");
-            android.util.Log.d("RECENTS_PERF", "TOTAL = " + (System.currentTimeMillis() - start) + " ms");
-            android.util.Log.d("RECENTS_PERF", "count = " + count);
+            return result;
         }
-        return arrayList;
+
+        Locale locale2 = context.getResources().getConfiguration().locale;
+        Calendar calendar = Calendar.getInstance();
+        long loopStart = System.currentTimeMillis();
+        LinkedHashMap<String, ItemRecentGroup> groupMap = new java.util.LinkedHashMap<>();
+
+        while (query.moveToNext()) {
+            String id = query.getString(query.getColumnIndex("_id"));
+            String number = query.getString(query.getColumnIndex("number"));
+            String simId = query.getString(query.getColumnIndex("subscription_id"));
+            long duration = query.getLong(query.getColumnIndex("duration"));
+            long time = query.getLong(query.getColumnIndex("date"));
+            String country = query.getString(query.getColumnIndex("countryiso"));
+            if (country != null && !country.isEmpty()) {
+                country = locale2.getDisplayCountry(new Locale(country));
+            }
+            int type = query.getInt(query.getColumnIndex("type"));
+
+            String photo = query.getString(query.getColumnIndex("photo_uri"));
+            String name = query.getString(query.getColumnIndex("name"));
+            String numberLabel = query.getString(query.getColumnIndex("numberlabel"));
+
+            ItemRecent recent = new ItemRecent(id, number, simId, duration, time, country, type, numberLabel);
+
+            calendar.setTimeInMillis(time);
+
+            int year = calendar.get(Calendar.YEAR);
+            int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
+
+
+            boolean isMissed = (type == CallLog.Calls.MISSED_TYPE);
+            String key = number + "_" + year + "_" + dayOfYear + "_" + (isMissed ? "M" : "N");
+            ItemRecentGroup group = groupMap.get(key);
+
+            if (group == null) {
+                group = new ItemRecentGroup(recent, name, photo);
+                groupMap.put(key, group);
+            } else {
+                group.addRecent(recent);
+            }
+        }
+
+        query.close();
+
+        result.addAll(groupMap.values());
+        Log.d("RECENTS_PERF", "groupMap size = " + groupMap.size());
+
+        android.util.Log.d("RECENTS_PERF", "loop finished in " + (System.currentTimeMillis() - loopStart) + " ms");
+        android.util.Log.d("RECENTS_PERF", "TOTAL = " + (System.currentTimeMillis() - start) + " ms");
+        android.util.Log.d("RECENTS_PERF", "count = " + count);
+        android.util.Log.d("RECENTS_PERF", "groups = " + result.size());
+
+        return result;
     }
 
     public static void removeRecents(final Context context, final String[] strArr) {
@@ -267,20 +240,20 @@ public class ReadContact {
                     ContentResolver contentResolver = context.getContentResolver();
                     // Query for the most recent call log entry for this phone number
                     Cursor cursor = contentResolver.query(
-                        CallLog.Calls.CONTENT_URI,
-                        new String[]{"_id"},
-                        "number = ?",
-                        new String[]{phoneNumber},
-                        "date DESC LIMIT 1"
+                            CallLog.Calls.CONTENT_URI,
+                            new String[]{"_id"},
+                            "number = ?",
+                            new String[]{phoneNumber},
+                            "date DESC LIMIT 1"
                     );
 
                     if (cursor != null && cursor.moveToFirst()) {
                         String callId = cursor.getString(cursor.getColumnIndexOrThrow("_id"));
                         // Delete this specific call log entry
                         contentResolver.delete(
-                            CallLog.Calls.CONTENT_URI,
-                            "_id = ?",
-                            new String[]{callId}
+                                CallLog.Calls.CONTENT_URI,
+                                "_id = ?",
+                                new String[]{callId}
                         );
                     }
 
@@ -304,7 +277,7 @@ public class ReadContact {
 
             // Clear missed call notifications using NotificationManager
             android.app.NotificationManager notificationManager =
-                (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
             if (notificationManager != null) {
                 // Cancel all notifications with the "missed call" tag or category
@@ -338,10 +311,10 @@ public class ReadContact {
             values.put("is_read", 1); // Mark as read
 
             contentResolver.update(
-                CallLog.Calls.CONTENT_URI,
-                values,
-                "number = ? AND type = ?",
-                new String[]{phoneNumber, String.valueOf(CallLog.Calls.MISSED_TYPE)}
+                    CallLog.Calls.CONTENT_URI,
+                    values,
+                    "number = ? AND type = ?",
+                    new String[]{phoneNumber, String.valueOf(CallLog.Calls.MISSED_TYPE)}
             );
 
             android.util.Log.d("ReadContact", "Cleared missed call count for: " + phoneNumber);
@@ -355,7 +328,7 @@ public class ReadContact {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                 android.telecom.TelecomManager telecomManager =
-                    (android.telecom.TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
+                        (android.telecom.TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
 
                 if (telecomManager != null && context.getPackageName().equals(telecomManager.getDefaultDialerPackage())) {
                     // As default dialer, we can manipulate call log more effectively
@@ -368,10 +341,10 @@ public class ReadContact {
                     values.put(CallLog.Calls.IS_READ, 1);
 
                     int updatedRows = contentResolver.update(
-                        CallLog.Calls.CONTENT_URI,
-                        values,
-                        CallLog.Calls.NUMBER + " = ? AND " + CallLog.Calls.TYPE + " = ? AND " + CallLog.Calls.NEW + " = 1",
-                        new String[]{phoneNumber, String.valueOf(CallLog.Calls.MISSED_TYPE)}
+                            CallLog.Calls.CONTENT_URI,
+                            values,
+                            CallLog.Calls.NUMBER + " = ? AND " + CallLog.Calls.TYPE + " = ? AND " + CallLog.Calls.NEW + " = 1",
+                            new String[]{phoneNumber, String.valueOf(CallLog.Calls.MISSED_TYPE)}
                     );
 
                     android.util.Log.d("ReadContact", "Updated " + updatedRows + " missed call entries for: " + phoneNumber);
@@ -392,7 +365,7 @@ public class ReadContact {
 
                     // Quick notification clear
                     android.app.NotificationManager notificationManager =
-                        (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                            (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
                     if (notificationManager != null) {
                         notificationManager.cancel("missed_call", 0);
@@ -404,10 +377,10 @@ public class ReadContact {
                     values.put(CallLog.Calls.NEW, 0);
 
                     contentResolver.update(
-                        CallLog.Calls.CONTENT_URI,
-                        values,
-                        CallLog.Calls.TYPE + " = ? AND " + CallLog.Calls.NEW + " = 1",
-                        new String[]{String.valueOf(CallLog.Calls.MISSED_TYPE)}
+                            CallLog.Calls.CONTENT_URI,
+                            values,
+                            CallLog.Calls.TYPE + " = ? AND " + CallLog.Calls.NEW + " = 1",
+                            new String[]{String.valueOf(CallLog.Calls.MISSED_TYPE)}
                     );
 
                 } catch (Exception e) {
@@ -427,7 +400,7 @@ public class ReadContact {
 
             // Quick notification clear without heavy operations
             android.app.NotificationManager notificationManager =
-                (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             if (notificationManager != null) {
                 notificationManager.cancel("missed_call", phoneNumber.hashCode());
                 notificationManager.cancel(phoneNumber.hashCode());
@@ -448,10 +421,10 @@ public class ReadContact {
 
             // Simple exact match to avoid heavy LIKE operations
             int updated = contentResolver.update(
-                CallLog.Calls.CONTENT_URI,
-                values,
-                CallLog.Calls.NUMBER + " = ? AND " + CallLog.Calls.NEW + " = 1",
-                new String[]{phoneNumber}
+                    CallLog.Calls.CONTENT_URI,
+                    values,
+                    CallLog.Calls.NUMBER + " = ? AND " + CallLog.Calls.NEW + " = 1",
+                    new String[]{phoneNumber}
             );
 
             android.util.Log.d("ReadContact", "Updated " + updated + " missed call entries for: " + phoneNumber);
@@ -476,9 +449,9 @@ public class ReadContact {
             long fiveMinutesAgo = System.currentTimeMillis() - (5 * 60 * 1000);
 
             int deletedRows = contentResolver.delete(
-                CallLog.Calls.CONTENT_URI,
-                CallLog.Calls.NUMBER + " = ? AND " + CallLog.Calls.DATE + " > ?",
-                new String[]{phoneNumber, String.valueOf(fiveMinutesAgo)}
+                    CallLog.Calls.CONTENT_URI,
+                    CallLog.Calls.NUMBER + " = ? AND " + CallLog.Calls.DATE + " > ?",
+                    new String[]{phoneNumber, String.valueOf(fiveMinutesAgo)}
             );
 
             android.util.Log.d("ReadContact", "Force deleted " + deletedRows + " recent call log entries for: " + phoneNumber);
