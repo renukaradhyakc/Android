@@ -1,5 +1,6 @@
 package com.thelinkphone.app.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,13 +53,18 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public void addNewData() {
+        long start = System.currentTimeMillis();
+        Log.d("ADAPTER_PERF", "addNewData itemCount=" + getItemCount());
         if (this.isMiss) {
             showMiss(true);
             return;
         }
         this.arrShow.clear();
         this.arrShow.addAll(this.arrGroup);
+        Log.d("ADAPTER_PERF", "addNewData arrShow=" + arrShow.size());
+        Log.d("ADAPTER_PERF", "before notifyDataSetChanged = " + (System.currentTimeMillis() - start) + " ms");
         notifyDataSetChanged();
+        Log.d("ADAPTER_PERF", "after notifyDataSetChanged");
     }
 
     public void setChoose(boolean z) {
@@ -84,9 +90,10 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public void removeRecent(ItemRecentGroup itemRecentGroup) {
+        int position = arrShow.indexOf(itemRecentGroup);
         this.arrGroup.remove(itemRecentGroup);
         this.arrShow.remove(itemRecentGroup);
-        notifyItemRemoved(this.arrShow.indexOf(itemRecentGroup) + 1);
+        notifyItemRemoved(position+1);
     }
 
     public void removeAll() {
@@ -102,9 +109,11 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     @Override 
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
+        long start = System.currentTimeMillis();
         if (i == 0) {
             return new HolderTop(new LayoutItemTopRecent(viewGroup.getContext()));
         }
+        Log.d("VH_CREATE", "onCreateViewHolder = " + (System.currentTimeMillis()-start) + " ms");
         return new HolderItem(LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.item_recent, viewGroup, false));
     }
 
@@ -141,6 +150,7 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     @Override 
     public int getItemCount() {
         return this.arrShow.size() + 1;
+
     }
 
     
@@ -158,6 +168,8 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
         public HolderItem(View view) {
             super(view);
+
+            long start = System.currentTimeMillis();
             this.sw = (SwipeLayout) view;
             LayoutRecent layoutRecent = (LayoutRecent) view.findViewById(R.id.content);
             this.layoutRecent = layoutRecent;
@@ -203,6 +215,7 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     HolderItem.this.m60xb6fabf5e(view2);
                 }
             });
+            Log.d("VH_CREATE", "HolderItem ctor = " + (System.currentTimeMillis()-start) + " ms");
         }
 
         

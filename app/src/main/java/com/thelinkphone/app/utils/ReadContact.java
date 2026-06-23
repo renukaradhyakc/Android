@@ -135,7 +135,7 @@ public class ReadContact {
 
         ContentResolver contentResolver = context.getContentResolver();
         long queryStart = System.currentTimeMillis();
-        Cursor query = contentResolver.query(CallLog.Calls.CONTENT_URI, new String[]{"_id", "number", "subscription_id", "duration", "date", "countryiso", "type", "photo_uri", "name", "numberlabel"}, null, null, "date DESC");
+        Cursor query = contentResolver.query(CallLog.Calls.CONTENT_URI, new String[]{"_id", "number", "subscription_id", "duration", "date", "countryiso", "type", "photo_uri", "name", "numberlabel"}, null, null, "date DESC LIMIT 1000" + "");
         Log.d("RECENTS_PERF", "query created in " + (System.currentTimeMillis() - queryStart) + " ms");
 
         if (query == null) {
@@ -180,8 +180,7 @@ public class ReadContact {
             int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
 
 
-            boolean isMissed = (type == CallLog.Calls.MISSED_TYPE);
-            String key = number + "_" + year + "_" + dayOfYear + "_" + (isMissed ? "M" : "N");
+            String key = number + "_" + year + "_" + dayOfYear;
             ItemRecentGroup group = groupMap.get(key);
 
             if (group == null) {
@@ -204,6 +203,124 @@ public class ReadContact {
 
         return result;
     }
+
+//    @SuppressLint("Range")
+//    public static ArrayList<ItemRecentGroup> getAllRecents(Context context) {
+//
+//        long start = System.currentTimeMillis();
+//        Log.d("RECENTS_PERF", "getAllRecents START");
+//        int count = 0;
+//        boolean z;
+//        ItemRecent itemRecent;
+//        Locale locale;
+//        long j;
+//        ItemRecent itemRecent2;
+//        ArrayList<ItemRecentGroup> arrayList = new ArrayList<>();
+//        ContentResolver contentResolver = context.getContentResolver();
+//        if (context.checkSelfPermission("android.permission.READ_CALL_LOG") != PackageManager.PERMISSION_GRANTED) {
+//            return arrayList;
+//        }
+//
+//        long queryStart = System.currentTimeMillis();
+//        Cursor query = contentResolver.query(CallLog.Calls.CONTENT_URI, new String[]{"_id", "number", "subscription_id", "duration", "date", "countryiso", "type", "photo_uri", "name", "numberlabel"}, null, null, "date DESC");
+//        Log.d("RECENTS_PERF", "query created in " + (System.currentTimeMillis() - queryStart) + " ms");
+//        int i=0;
+//        if (query != null) {
+//            try {
+//                count = query.getCount();
+//            } catch (SecurityException unused) {
+//            }
+//        } else {
+//            count = 0;
+//        }
+//        Log.d("RECENTS_PERF", "call log count = " + count);
+//
+//        if (count > 0) {
+//            Locale locale2 = context.getResources().getConfiguration().locale;
+//            Calendar calendar = Calendar.getInstance();
+//            long loopStart = System.currentTimeMillis();
+//
+//            while (query.moveToNext()) {
+//                String string = query.getString(query.getColumnIndex("_id"));
+//                String string2 = query.getString(query.getColumnIndex("number"));
+//                String string3 = query.getString(query.getColumnIndex("subscription_id"));
+//                long j2 = query.getLong(query.getColumnIndex("duration"));
+//                long j3 = query.getLong(query.getColumnIndex("date"));
+//                String string4 = query.getString(query.getColumnIndex("countryiso"));
+//                if (string4 != null && !string4.isEmpty()) {
+//                    string4 = locale2.getDisplayCountry(new Locale(string4));
+//                }
+//                int i2 = query.getInt(query.getColumnIndex("type"));
+//                String string5 = query.getString(query.getColumnIndex("photo_uri"));
+//                String string6 = query.getString(query.getColumnIndex("name"));
+//                int i3 = i2;
+//                long j4 = j3;
+//                ItemRecent itemRecent3 = new ItemRecent(string, string2, string3, j2, j3, string4, i3, query.getString(query.getColumnIndex("numberlabel")));
+//                Iterator<ItemRecentGroup> it = arrayList.iterator();
+//                while (true) {
+//                    z = true;
+//                    if (!it.hasNext()) {
+//                        itemRecent = itemRecent3;
+//                        locale = locale2;
+//                        break;
+//                    }
+//                    ItemRecentGroup next = it.next();
+//                    ItemRecent itemRecent4 = next.arrRecent.get(i);
+//                    int i4 = i3;
+//                    if (itemRecent4.type != i4) {
+//                        if (itemRecent4.type != 3 && i4 != 3) {
+//                        }
+//                        itemRecent2 = itemRecent3;
+//                        locale = locale2;
+//                        j = j4;
+//                        itemRecent3 = itemRecent2;
+//                        i3 = i4;
+//                        j4 = j;
+//                        locale2 = locale;
+//                        i = 0;
+//                    }
+//                    if (itemRecent4.number.equals(string2)) {
+//                        j = j4;
+//                        calendar.setTimeInMillis(j);
+//                        int i5 = calendar.get(1);
+//                        int i6 = calendar.get(6);
+//                        locale = locale2;
+//                        calendar.setTimeInMillis(itemRecent4.time);
+//                        if (i5 == calendar.get(1) && i6 == calendar.get(6)) {
+//                            itemRecent = itemRecent3;
+//                            next.addRecent(itemRecent);
+//                            z = false;
+//                            break;
+//                        }
+//                        itemRecent2 = itemRecent3;
+//                        itemRecent3 = itemRecent2;
+//                        i3 = i4;
+//                        j4 = j;
+//                        locale2 = locale;
+//                        i = 0;
+//                    }
+//                    itemRecent2 = itemRecent3;
+//                    locale = locale2;
+//                    j = j4;
+//                    itemRecent3 = itemRecent2;
+//                    i3 = i4;
+//                    j4 = j;
+//                    locale2 = locale;
+//                    i = 0;
+//                }
+//                if (z) {
+//                    arrayList.add(new ItemRecentGroup(itemRecent, string6, string5));
+//                }
+//                locale2 = locale;
+//                i = 0;
+//            }
+//            query.close();
+//            android.util.Log.d("RECENTS_PERF", "loop finished in " + (System.currentTimeMillis() - loopStart) + " ms");
+//            android.util.Log.d("RECENTS_PERF", "TOTAL = " + (System.currentTimeMillis() - start) + " ms");
+//            android.util.Log.d("RECENTS_PERF", "count = " + count);
+//        }
+//        return arrayList;
+//    }
 
     public static void removeRecents(final Context context, final String[] strArr) {
         new Thread(new Runnable() {

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.telecom.PhoneAccountHandle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,7 @@ import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemFavorites;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.item.ItemSimInfo;
+import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -43,7 +45,10 @@ public class FragmentRecents extends BaseFragment {
     @Override 
     public View onCreateView(LayoutInflater layoutInflater, ViewGroup viewGroup, Bundle bundle) {
         if (this.viewFragmentRecents == null) {
+            long createStart = System.currentTimeMillis();
+            Log.d("RECENTS_UI", "Creating ViewFragmentRecents");
             this.viewFragmentRecents = new ViewFragmentRecents(layoutInflater.getContext());
+            Log.d("RECENTS_UI", "ViewFragmentRecents created in " + (System.currentTimeMillis() - createStart) + " ms");
         }
         return this.viewFragmentRecents;
     }
@@ -68,9 +73,13 @@ public class FragmentRecents extends BaseFragment {
         private final TextW tvEdit;
         private final TextW tvEmpty;
         private final TextW tvRemoveAll;
+        private volatile boolean isLoading = false;
+        private boolean isNavigating = false;
 
         public ViewFragmentRecents(Context context) {
             super(context);
+            long ctorStart = System.currentTimeMillis();
+            Log.d("RECENTS_UI", "Constructor START");
             ArrayList<ItemSimInfo> availableSIMCardLabels = SimUtils.getAvailableSIMCardLabels(context);
             this.arrSim = availableSIMCardLabels;
             this.posSim = MyShare.getPosSim(context);
@@ -144,12 +153,14 @@ public class FragmentRecents extends BaseFragment {
             LayoutParams layoutParams5 = new LayoutParams(-1, -1);
             layoutParams5.addRule(3, textW.getId());
             addView(swipeMenuRecyclerView, layoutParams5);
+            Log.d("RECENTS_UI", "RecyclerView attached");
             if (theme) {
                 setBackgroundColor(-1);
             } else {
                 setBackgroundColor(Color.parseColor("#2C2C2C"));
             }
             updateEdit();
+            Log.d("RECENTS_UI", "Constructor END = " + (System.currentTimeMillis() - ctorStart) + " ms");
         }
 
 
@@ -185,6 +196,7 @@ public class FragmentRecents extends BaseFragment {
         }
 
         private void checkList() {
+            Log.d("RECENTS_UI", "arrRecent size = " + arrRecent.size());
             if (this.arrRecent.isEmpty()) {
                 this.tvEmpty.setVisibility(View.VISIBLE);
                 this.tvEdit.setVisibility(View.INVISIBLE);
@@ -202,14 +214,43 @@ public class FragmentRecents extends BaseFragment {
 
 
         public void loadAllRecent() {
-            final Handler handler = new Handler(new Handler.Callback() { 
-                @Override 
+
+            Log.d("RECENTS_CACHE", "loadAllRecent() called");
+            if (RecentsRepository.hasCache()) {
+
+                Log.d("RECENTS_CACHE", "CACHE HIT");
+                isNavigating=false;
+                arrRecent.clear();
+                arrRecent.addAll(RecentsRepository.getCache());
+
+                Log.d("RECENTS_CACHE", "Loaded from cache. size=" + arrRecent.size());
+
+                checkList();
+                adapterRecent.addNewData();
+
+                Log.d("RECENTS_CACHE", "UI updated from cache");
+
+                return;
+            }
+
+            Log.d("RECENTS_CACHE", "CACHE MISS");
+
+            if (isLoading) {
+                Log.d("RECENTS_CACHE", "Already loading, skipping");
+                return;
+            }
+            isLoading=true;
+            isNavigating=false;
+
+            final Handler handler = new Handler(new Handler.Callback() {
+                @Override
                 public final boolean handleMessage(Message message) {
                     return ViewFragmentRecents.this.m147x64a531a9(message);
                 }
             });
-            new Thread(new Runnable() { 
-                @Override 
+            Log.d("RECENTS_UI", "Starting background load");
+            new Thread(new Runnable() {
+                @Override
                 public final void run() {
                     ViewFragmentRecents.this.m148x451e87aa(handler);
                 }
@@ -219,17 +260,32 @@ public class FragmentRecents extends BaseFragment {
 
 
         public  boolean m147x64a531a9(Message message) {
+            Log.d("RECENTS_UI", "UI handler received message");
+            long uiStart = System.currentTimeMillis();
+            isLoading = false;
+
             checkList();
+            Log.d("RECENTS_UI", "checkList finished in " + (System.currentTimeMillis() - uiStart) + " ms");
             this.adapterRecent.addNewData();
+            Log.d("RECENTS_UI", "adapterRecent.addNewData finished in " + (System.currentTimeMillis() - uiStart) + " ms");
             return true;
         }
 
 
 
         public  void m148x451e87aa(Handler handler) {
+            long t = System.currentTimeMillis();
+            Log.d("RECENTS_UI", "Background load started");
+            Log.d("RECENTS_CACHE", "Reading CallLog");
+            ArrayList<ItemRecentGroup> data = ReadContact.getAllRecents(getContext());
+            Log.d("RECENTS_CACHE", "CallLog loaded. size=" + data.size());
             this.arrRecent.clear();
-            this.arrRecent.addAll(ReadContact.getAllRecents(getContext()));
+            this.arrRecent.addAll(data);
+            RecentsRepository.setCache(data);
+            Log.d("RECENTS_CACHE", "Cache saved");
+            Log.d("RECENTS_UI", "ReadContact finished in " + (System.currentTimeMillis() - t) + " ms, size=" + arrRecent.size());
             handler.sendEmptyMessage(1);
+            Log.d("RECENTS_UI", "Sending UI update message");
         }
 
         @Override 
@@ -286,17 +342,23 @@ public class FragmentRecents extends BaseFragment {
 
         @Override 
         public void onInfo(ItemRecentGroup itemRecentGroup) {
+
+            if (isNavigating) return;
+            isNavigating = true;
+
             if (FragmentRecents.this.getActivity() instanceof ActivityHome) {
+                ActivityHome activity = (ActivityHome) FragmentRecents.this.getActivity();
                 ItemContact contactWithNumber = ReadContact.getContactWithNumber(getContext(), itemRecentGroup.arrRecent.get(0).number);
                 if (contactWithNumber != null) {
                     FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.recents);
                     newInstance.setContactResult(FragmentRecents.this.contactResult);
-                    ((ActivityHome) FragmentRecents.this.getActivity()).showFragment(newInstance, true);
-                    return;
+                    activity.showFragment(newInstance, true);
                 }
-                FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(itemRecentGroup);
-                newInstance2.setContactResult(FragmentRecents.this.contactResult);
-                ((ActivityHome) FragmentRecents.this.getActivity()).showFragment(newInstance2, true);
+                else {
+                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(itemRecentGroup);
+                    newInstance2.setContactResult(FragmentRecents.this.contactResult);
+                    activity.showFragment(newInstance2, true);
+                }
             }
         }
 

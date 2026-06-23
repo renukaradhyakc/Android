@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.telecom.PhoneAccountHandle;
 import android.telephony.PhoneNumberUtils;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -79,19 +80,39 @@ public class FragmentInfoAnother extends Fragment {
 
     @Override 
     public void onCreate(Bundle bundle) {
+        Log.d("INFO_DEBUG", "onCreate START");
         String string;
         super.onCreate(bundle);
-        if (getArguments() == null || (string = getArguments().getString("dataG")) == null || string.isEmpty()) {
+//        if (getArguments() == null || (string = getArguments().getString("dataG")) == null || string.isEmpty()) {
+//            return;
+//        }
+
+        if (getArguments() == null) {
+            Log.d("INFO_DEBUG", "getArguments NULL");
             return;
         }
+
+        string = getArguments().getString("dataG");
+
+        Log.d("INFO_DEBUG", "json length = " + (string == null ? "null" : string.length()));
+
+        if (string == null || string.isEmpty()) {
+            Log.d("INFO_DEBUG", "json empty");
+            return;
+        }
+
         this.itemRecentGroup = (ItemRecentGroup) new Gson().fromJson(string, new TypeToken<ItemRecentGroup>() { 
         }.getType());
+        Log.d("INFO_DEBUG", "onCreate END");
     }
 
     @Override 
     public View onCreateView(LayoutInflater layoutInflater, ViewGroup viewGroup, Bundle bundle) {
+        Log.d("INFO_DEBUG", "onCreateView START");
         ViewInfoAnother viewInfoAnother = new ViewInfoAnother(layoutInflater.getContext());
+        Log.d("INFO_DEBUG", "ViewInfoAnother created");
         this.viewInfoAnother = viewInfoAnother;
+        Log.d("INFO_DEBUG", "onCreateView END");
         return viewInfoAnother;
     }
 
@@ -159,11 +180,22 @@ public class FragmentInfoAnother extends Fragment {
 
         public ViewInfoAnother(Context context) {
             super(context);
+            Log.d("INFO_DEBUG", "Constructor START");
+
+            Log.d("INFO_DEBUG", "number=" + FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).number);
+            Log.d("INFO_DEBUG", "country=" + FragmentInfoAnother.this.itemRecentGroup.country);
+            Log.d("INFO_DEBUG", "time=" + FragmentInfoAnother.this.itemRecentGroup.time);
+            Log.d("INFO_DEBUG", "recentCount=" + FragmentInfoAnother.this.itemRecentGroup.arrRecent.size());
+            Log.d("INFO_DEBUG", "simId=" + FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).simId);
+
+
             TextW tvBlock1;
             TextW textW;
             TextW textW2;
             Iterator<ItemRecent> it;
+            Log.d("INFO_DEBUG", "before sim lookup");
             ArrayList<ItemSimInfo> availableSIMCardLabels = SimUtils.getAvailableSIMCardLabels(context);
+            Log.d("INFO_DEBUG", "SIM count = " + availableSIMCardLabels.size());
             this.arrSim = availableSIMCardLabels;
             this.posSim = MyShare.getPosSim(context);
             int widthScreen = OtherUtils.getWidthScreen(context);
@@ -219,6 +251,7 @@ public class FragmentInfoAnother extends Fragment {
             textW4.setEllipsize(TextUtils.TruncateAt.END);
             textW4.setPadding(i, i / 8, i, 0);
             String str = FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).number;
+            Log.d("INFO_DEBUG", "number = " + str);
             textW4.setText(str == null ? "" : str);
             linearLayout.addView(textW4, -2, -2);
             textW4.setOnLongClickListener(new OnLongClickListener() { 
@@ -227,7 +260,11 @@ public class FragmentInfoAnother extends Fragment {
                     return ViewInfoAnother.this.m140x5ff48d5c(view);
                 }
             });
+            Log.d("INFO_DEBUG", "Entering SIM block check");
+            Log.d("INFO_DEBUG", "SIM count check = " + availableSIMCardLabels.size());
             if (availableSIMCardLabels.size() > 1) {
+                Log.d("INFO_DEBUG", "Inside SIM block");
+                Log.d("INFO_DEBUG", "MULTI SIM PATH");
                 int i4 = 0;
                 while (true) {
                     if (i4 >= this.arrSim.size()) {
@@ -255,6 +292,7 @@ public class FragmentInfoAnother extends Fragment {
                     layoutChooseSimInfo.hideViewNext();
                     linearLayout2.addView(layoutChooseSimInfo, -2, -2);
                     textW.setText("  " + FragmentInfoAnother.this.getString(R.string.last_used) + ":");
+                    Log.d("INFO_DEBUG", "country value = " + FragmentInfoAnother.this.itemRecentGroup.country);
                     if (FragmentInfoAnother.this.itemRecentGroup.country != null || FragmentInfoAnother.this.itemRecentGroup.country.isEmpty()) {
                         textW2 = null;
                     } else {
@@ -401,14 +439,20 @@ public class FragmentInfoAnother extends Fragment {
                         view.setBackgroundColor(Color.parseColor("#5c5c5c"));
                         textW10.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
                     }
+                    Log.d("INFO_DEBUG", "Calling updateBlock()");
                     updateBlock();
                 }
             }
+            Log.d("INFO_DEBUG", "AFTER MULTI SIM BLOCK");
             textW = null;
+            Log.d("INFO_DEBUG", "AFTER textW = null");
             if (FragmentInfoAnother.this.itemRecentGroup.country != null) {
             }
             textW2 = null;
+            Log.d("INFO_DEBUG", "AFTER textW2 = null");
+            Log.d("INFO_DEBUG", "BEFORE linearLayout32");
             LinearLayout linearLayout32 = new LinearLayout(context);
+            Log.d("INFO_DEBUG", "AFTER linearLayout32");
             linearLayout32.setOrientation(LinearLayout.HORIZONTAL);
             linearLayout32.setGravity(1);
             LinearLayout.LayoutParams layoutParams42 = new LinearLayout.LayoutParams(-1, -2);
@@ -416,20 +460,29 @@ public class FragmentInfoAnother extends Fragment {
             linearLayout.addView(linearLayout32, layoutParams42);
             int i52 = (widthScreen * 78) / 360;
             int i62 = (widthScreen * 5) / 360;
+            Log.d("INFO_DEBUG", "BEFORE viewItemInfo5");
             ViewItemInfo viewItemInfo5 = new ViewItemInfo(context);
+            Log.d("INFO_DEBUG", "AFTER viewItemInfo5 constructor");
+            Log.d("INFO_DEBUG", "BEFORE setInfo MESSAGE");
             viewItemInfo5.setOnClickListener(new OnClickListener() { 
                 @Override 
                 public final void onClick(View view2) {
                     ViewInfoAnother.this.m141x406de35d(view2);
                 }
             });
+            Log.d("INFO_DEBUG", "After setInfo MESSAGE");
             TextW textW52 = textW;
             TextW textW62 = textW2;
             viewItemInfo5.setInfo(R.drawable.ic_message, R.string.message, true, this.theme);
+            Log.d("INFO_DEBUG", "AFTER viewItemInfo5.setInfo");
+            Log.d("INFO_DEBUG", "BEFORE linearLayout52");
             LinearLayout.LayoutParams layoutParams52 = new LinearLayout.LayoutParams(i52, -2);
             layoutParams52.setMargins(i62, 0, i62, 0);
+            Log.d("INFO_DEBUG", "AFTER linearLayout32");
             linearLayout32.addView(viewItemInfo5, layoutParams52);
+            Log.d("INFO_DEBUG", "BEFORE viewItemInfo22");
             ViewItemInfo viewItemInfo22 = new ViewItemInfo(context);
+            Log.d("INFO_DEBUG", "AFTER viewItemInfo5 constructor");
             viewItemInfo22.setOnClickListener(new OnClickListener() { 
                 @Override 
                 public final void onClick(View view2) {
@@ -445,15 +498,19 @@ public class FragmentInfoAnother extends Fragment {
             LinearLayout.LayoutParams layoutParams72 = new LinearLayout.LayoutParams(i52, -2);
             layoutParams72.setMargins(i62, 0, i62, 0);
             linearLayout32.addView(viewItemInfo32, layoutParams72);
+            Log.d("INFO_DEBUG", "AFTER viewItemInfo42");
             ViewItemInfo viewItemInfo42 = new ViewItemInfo(context);
             viewItemInfo42.setInfo(R.drawable.ic_mail, R.string.mail, false, this.theme);
+            Log.d("INFO_DEBUG", "BEFORE layoutParams82");
             LinearLayout.LayoutParams layoutParams82 = new LinearLayout.LayoutParams(i52, -2);
             layoutParams82.setMargins(i62, 0, i62, 0);
             linearLayout32.addView(viewItemInfo42, layoutParams82);
+            Log.d("INFO_DEBUG", "BEFORE linearLayout42");
             LinearLayout linearLayout42 = new LinearLayout(context);
             linearLayout42.setPadding(i3, i3, i3, i);
             linearLayout42.setOrientation(LinearLayout.VERTICAL);
             int i72 = (widthScreen * 342) / 360;
+            Log.d("INFO_DEBUG", "BEFORE layoutParams92");
             LinearLayout.LayoutParams layoutParams92 = new LinearLayout.LayoutParams(i72, -2);
             layoutParams92.setMargins(0, i, 0, 0);
             linearLayout.addView(linearLayout42, layoutParams92);
@@ -463,8 +520,13 @@ public class FragmentInfoAnother extends Fragment {
             textW72.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfoAnother.this.itemRecentGroup.time));
             linearLayout42.addView(textW72, -1, -2);
             it = FragmentInfoAnother.this.itemRecentGroup.arrRecent.iterator();
+            Log.d("INFO_DEBUG", "Debug1");
             while (it.hasNext()) {
+                LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
+                layoutShowRecent.setRecent(it.next(), this.theme);
+                linearLayout42.addView(layoutShowRecent, -1, -2);
             }
+            Log.d("INFO_DEBUG", "Debug2");
             LinearLayout linearLayout52 = new LinearLayout(context);
             linearLayout52.setOrientation(LinearLayout.VERTICAL);
             LinearLayout.LayoutParams layoutParams102 = new LinearLayout.LayoutParams(i72, -2);
@@ -513,9 +575,26 @@ public class FragmentInfoAnother extends Fragment {
             layoutParams122.setMargins(0, i, 0, 0);
             linearLayout.addView(textW102, layoutParams122);
             linearLayout.addView(new View(context), -1, widthScreen / 10);
+            float radius2 = (widthScreen * 3.0f) / 100.0f;
             if (!this.theme) {
+                setBackgroundColor(Color.parseColor("#F2F2F7"));
+                textW4.setTextColor(-16777216);
+                linearLayout42.setBackground(OtherUtils.bgIcon(-1, radius2));
+                textW72.setTextColor(-16777216);
+                linearLayout52.setBackground(OtherUtils.bgIcon(-1, radius2));
+                view2.setBackgroundColor(Color.parseColor("#dedede"));
+                textW102.setBackground(OtherUtils.bgIcon(-1, radius2));
+            } else {
+                setBackgroundColor(Color.parseColor("#2C2C2C"));
+                textW4.setTextColor(-1);
+                linearLayout42.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
+                textW72.setTextColor(-1);
+                linearLayout52.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
+                view2.setBackgroundColor(Color.parseColor("#5c5c5c"));
+                textW102.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
             }
             updateBlock();
+            Log.d("INFO_DEBUG", "End of Constructor");
         }
 
 
@@ -631,6 +710,7 @@ public class FragmentInfoAnother extends Fragment {
         }
 
         private void updateBlock() {
+            Log.d("INFO_DEBUG", "updateBlock START");
             boolean z = false;
             String str = FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).number;
             Iterator<ItemContact> it = this.arrBlock.iterator();
@@ -651,6 +731,8 @@ public class FragmentInfoAnother extends Fragment {
             }
             this.tvBlock.setTextColor(Color.parseColor("#FF2828"));
             this.tvBlock.setText(R.string.block_this_caller);
+
+            Log.d("INFO_DEBUG", "updateBlock END");
         }
     }
 }

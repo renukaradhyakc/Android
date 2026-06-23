@@ -3,6 +3,7 @@ package com.thelinkphone.app.custom;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -165,6 +166,7 @@ public class LayoutRecent extends RelativeLayout {
     }
 
     public void setItemRecent(ItemRecentGroup itemRecentGroup, int i, boolean z, boolean z2) {
+        long start = System.currentTimeMillis();
         if (z) {
             this.imDel.setVisibility(View.VISIBLE);
             this.imInfo.setVisibility(View.INVISIBLE);
@@ -175,10 +177,28 @@ public class LayoutRecent extends RelativeLayout {
             this.imStatus.setVisibility(View.VISIBLE);
         }
         int i2 = itemRecentGroup.arrRecent.get(0).type;
-        if (i2 == 2) {
-            this.imStatus.setImageResource(R.drawable.ic_status_out_call);
-        } else {
-            this.imStatus.setImageResource(0);
+//        if (i2 == 2) {
+//            this.imStatus.setImageResource(R.drawable.ic_status_out_call);
+//        } else {
+//            this.imStatus.setImageResource(0);
+//        }
+        switch (i2) {
+
+            case 1: // Incoming
+                this.imStatus.setImageResource(R.drawable.ic_call_in_info);
+                break;
+
+            case 2: // Outgoing
+                this.imStatus.setImageResource(R.drawable.ic_call_out_info);
+                break;
+
+            case 3: // Missed
+                this.imStatus.setImageResource(R.drawable.ic_status_missed_call);
+                break;
+
+            default:
+                this.imStatus.setImageResource(0);
+                break;
         }
         if (i2 == 3) {
             this.tvName.setTextColor(Color.parseColor("#FF2828"));
@@ -214,5 +234,6 @@ public class LayoutRecent extends RelativeLayout {
         } else {
             this.imSim.setVisibility(View.GONE);
         }
+        Log.d("ROW_BIND", "setItemRecent = " + (System.currentTimeMillis() - start) + " ms");
     }
 }
