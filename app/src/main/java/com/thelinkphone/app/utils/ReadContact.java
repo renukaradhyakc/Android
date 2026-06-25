@@ -17,7 +17,7 @@ import com.thelinkphone.app.item.ItemRecent;
 import com.thelinkphone.app.item.ItemRecentGroup;
 
 import java.util.ArrayList;
-import java.util.Calendar;
+//import java.util.Calendar;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -152,7 +152,7 @@ public class ReadContact {
         }
 
         Locale locale2 = context.getResources().getConfiguration().locale;
-        Calendar calendar = Calendar.getInstance();
+//        Calendar calendar = Calendar.getInstance();
         long loopStart = System.currentTimeMillis();
         LinkedHashMap<String, ItemRecentGroup> groupMap = new java.util.LinkedHashMap<>();
 
@@ -174,13 +174,14 @@ public class ReadContact {
 
             ItemRecent recent = new ItemRecent(id, number, simId, duration, time, country, type, numberLabel);
 
-            calendar.setTimeInMillis(time);
+//            calendar.setTimeInMillis(time);
+//
+//            int year = calendar.get(Calendar.YEAR);
+//            int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
 
-            int year = calendar.get(Calendar.YEAR);
-            int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
 
-
-            String key = number + "_" + year + "_" + dayOfYear;
+//            String key = number + "_" + year + "_" + dayOfYear;
+            String key = number;
             ItemRecentGroup group = groupMap.get(key);
 
             if (group == null) {

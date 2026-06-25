@@ -16,6 +16,8 @@ import com.thelinkphone.app.item.ItemSimInfo;
 
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 
 
@@ -76,17 +78,35 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         this.isMiss = z;
         this.arrShow.clear();
         if (z) {
+            final HashMap<ItemRecentGroup, Long> missedTimeMap = new java.util.HashMap<>();
             Iterator<ItemRecentGroup> it = this.arrGroup.iterator();
             while (it.hasNext()) {
                 ItemRecentGroup next = it.next();
-                if (next.arrRecent.get(0).type == 3) {
+                long latestMissedTime = 0;
+                for (int i = 0; i < next.arrRecent.size(); i++) {
+                    if (next.arrRecent.get(i).type == 3 && next.arrRecent.get(i).time > latestMissedTime) {
+                        latestMissedTime = next.arrRecent.get(i).time;
+                    }
+                }
+                if (latestMissedTime > 0) {
+                    missedTimeMap.put(next, latestMissedTime);
                     this.arrShow.add(next);
                 }
             }
+            Collections.sort(this.arrShow, new java.util.Comparator<ItemRecentGroup>() {
+                @Override
+                public int compare(ItemRecentGroup a, ItemRecentGroup b) {
+                    return Long.compare(missedTimeMap.get(b), missedTimeMap.get(a));
+                }
+            });
         } else {
             this.arrShow.addAll(this.arrGroup);
         }
         notifyDataSetChanged();
+    }
+
+    public boolean isMiss() {
+        return this.isMiss;
     }
 
     public void removeRecent(ItemRecentGroup itemRecentGroup) {
@@ -137,7 +157,7 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     }
                 }
             }
-            holderItem.layoutRecent.setItemRecent(itemRecentGroup, i2, this.isChoose, this.theme);
+            holderItem.layoutRecent.setItemRecent(itemRecentGroup, i2, this.isChoose, this.theme, this.isMiss);
             if (this.isChoose) {
                 holderItem.sw.setSwipeFlags(0);
                 holderItem.sw.closeRightMenu(true);

@@ -165,7 +165,7 @@ public class LayoutRecent extends RelativeLayout {
         this.favOnItemClick.onInfo();
     }
 
-    public void setItemRecent(ItemRecentGroup itemRecentGroup, int i, boolean z, boolean z2) {
+    public void setItemRecent(ItemRecentGroup itemRecentGroup, int i, boolean z, boolean z2, boolean missedOnly) {
         long start = System.currentTimeMillis();
         if (z) {
             this.imDel.setVisibility(View.VISIBLE);
@@ -177,6 +177,14 @@ public class LayoutRecent extends RelativeLayout {
             this.imStatus.setVisibility(View.VISIBLE);
         }
         int i2 = itemRecentGroup.arrRecent.get(0).type;
+        if (missedOnly & i2 != 3) {
+            for (int idx = 0; idx < itemRecentGroup.arrRecent.size(); idx++) {
+                if (itemRecentGroup.arrRecent.get(idx).type == 3) {
+                    i2 = 3;
+                    break;
+                }
+            }
+        }
 //        if (i2 == 2) {
 //            this.imStatus.setImageResource(R.drawable.ic_status_out_call);
 //        } else {
@@ -214,9 +222,9 @@ public class LayoutRecent extends RelativeLayout {
         if (str == null) {
             str = "";
         }
-        if (itemRecentGroup.arrRecent.size() > 1) {
-            str = str + " (" + itemRecentGroup.arrRecent.size() + ")";
-        }
+//        if (itemRecentGroup.arrRecent.size() > 1) {
+//            str = str + " (" + itemRecentGroup.arrRecent.size() + ")";
+//        }
         this.tvName.setText(str);
         if (itemRecentGroup.nameType != null && !itemRecentGroup.nameType.isEmpty()) {
             this.tvStatus.setText(itemRecentGroup.nameType);
@@ -224,7 +232,16 @@ public class LayoutRecent extends RelativeLayout {
             String str2 = itemRecentGroup.country;
             this.tvStatus.setText(str2 != null ? str2 : "");
         }
-        this.tvTime.setText(OtherUtils.longToTime(getContext(), itemRecentGroup.time));
+        long displayTime = itemRecentGroup.time;
+        if (missedOnly) {
+            for (int idx = 0; idx < itemRecentGroup.arrRecent.size(); idx++) {
+                if (itemRecentGroup.arrRecent.get(idx).type == 3) {
+                    displayTime = itemRecentGroup.arrRecent.get(idx).time;
+                    break;
+                }
+            }
+        }
+        this.tvTime.setText(OtherUtils.longToTime(getContext(), displayTime));
         if (i == 0) {
             this.imSim.setVisibility(View.VISIBLE);
             this.imSim.setImageResource(R.drawable.ic_num_1);

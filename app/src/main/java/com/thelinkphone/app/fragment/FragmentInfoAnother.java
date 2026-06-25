@@ -46,6 +46,7 @@ import com.thelinkphone.app.utils.SimUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 
 
@@ -53,6 +54,7 @@ public class FragmentInfoAnother extends Fragment {
     private ContactResult contactResult;
     private ItemRecentGroup itemRecentGroup;
     private ViewInfoAnother viewInfoAnother;
+    private boolean missedOnly;
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
         public final void onActivityResult(Object obj) {
@@ -70,10 +72,11 @@ public class FragmentInfoAnother extends Fragment {
         this.contactResult = contactResult;
     }
 
-    public static FragmentInfoAnother newInstance(ItemRecentGroup itemRecentGroup) {
+    public static FragmentInfoAnother newInstance(ItemRecentGroup itemRecentGroup, boolean missedOnly) {
         FragmentInfoAnother fragmentInfoAnother = new FragmentInfoAnother();
         Bundle bundle = new Bundle();
         bundle.putString("dataG", new Gson().toJson(itemRecentGroup));
+        bundle.putBoolean("missedOnly", missedOnly);
         fragmentInfoAnother.setArguments(bundle);
         return fragmentInfoAnother;
     }
@@ -101,6 +104,7 @@ public class FragmentInfoAnother extends Fragment {
             return;
         }
 
+        this.missedOnly = getArguments().getBoolean("missedOnly", false);
         this.itemRecentGroup = (ItemRecentGroup) new Gson().fromJson(string, new TypeToken<ItemRecentGroup>() { 
         }.getType());
         Log.d("INFO_DEBUG", "onCreate END");
@@ -350,17 +354,18 @@ public class FragmentInfoAnother extends Fragment {
                     LinearLayout.LayoutParams layoutParams9 = new LinearLayout.LayoutParams(i7, -2);
                     layoutParams9.setMargins(0, i, 0, 0);
                     linearLayout.addView(linearLayout4, layoutParams9);
-                    TextW textW7 = new TextW(context);
-                    textW7.setPadding(i3, i3, i3, 0);
-                    textW7.setupText(400, 3.5f);
-                    textW7.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfoAnother.this.itemRecentGroup.time));
-                    linearLayout4.addView(textW7, -1, -2);
-                    it = FragmentInfoAnother.this.itemRecentGroup.arrRecent.iterator();
-                    while (it.hasNext()) {
-                        LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
-                        layoutShowRecent.setRecent(it.next(), this.theme);
-                        linearLayout4.addView(layoutShowRecent, -1, -2);
-                    }
+//                    TextW textW7 = new TextW(context);
+//                    textW7.setPadding(i3, i3, i3, 0);
+//                    textW7.setupText(400, 3.5f);
+//                    textW7.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfoAnother.this.itemRecentGroup.time));
+//                    linearLayout4.addView(textW7, -1, -2);
+//                    it = FragmentInfoAnother.this.itemRecentGroup.arrRecent.iterator();
+//                    while (it.hasNext()) {
+//                        LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
+//                        layoutShowRecent.setRecent(it.next(), this.theme);
+//                        linearLayout4.addView(layoutShowRecent, -1, -2);
+//                    }
+                    addRecentsGroupedByDay(linearLayout4, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme);
                     LinearLayout linearLayout5 = new LinearLayout(context);
                     linearLayout5.setOrientation(LinearLayout.VERTICAL);
                     LinearLayout.LayoutParams layoutParams10 = new LinearLayout.LayoutParams(i7, -2);
@@ -408,7 +413,7 @@ public class FragmentInfoAnother extends Fragment {
                     layoutParams12.setMargins(0, i, 0, 0);
                     linearLayout.addView(textW10, layoutParams12);
                     linearLayout.addView(new View(context), -1, widthScreen / 10);
-                    if (!this.theme) {
+                    if (this.theme) {
                         setBackgroundColor(Color.parseColor("#F2F2F7"));
                         textW4.setTextColor(-16777216);
                         if (textW6 != null) {
@@ -418,8 +423,7 @@ public class FragmentInfoAnother extends Fragment {
                             textW5.setTextColor(Color.parseColor("#8A8A8E"));
                         }
                         float f = (widthScreen * 3.0f) / 100.0f;
-                        linearLayout4.setBackground(OtherUtils.bgIcon(-1, f));
-                        textW7.setTextColor(-16777216);
+//                        textW7.setTextColor(-16777216);
                         linearLayout5.setBackground(OtherUtils.bgIcon(-1, f));
                         view.setBackgroundColor(Color.parseColor("#dedede"));
                         textW10.setBackground(OtherUtils.bgIcon(-1, f));
@@ -433,8 +437,7 @@ public class FragmentInfoAnother extends Fragment {
                             textW5.setTextColor(Color.parseColor("#F5F5F5"));
                         }
                         float f2 = (widthScreen * 3.0f) / 100.0f;
-                        linearLayout4.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
-                        textW7.setTextColor(-1);
+//                        textW7.setTextColor(-1);
                         linearLayout5.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
                         view.setBackgroundColor(Color.parseColor("#5c5c5c"));
                         textW10.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
@@ -514,18 +517,19 @@ public class FragmentInfoAnother extends Fragment {
             LinearLayout.LayoutParams layoutParams92 = new LinearLayout.LayoutParams(i72, -2);
             layoutParams92.setMargins(0, i, 0, 0);
             linearLayout.addView(linearLayout42, layoutParams92);
-            TextW textW72 = new TextW(context);
-            textW72.setPadding(i3, i3, i3, 0);
-            textW72.setupText(400, 3.5f);
-            textW72.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfoAnother.this.itemRecentGroup.time));
-            linearLayout42.addView(textW72, -1, -2);
-            it = FragmentInfoAnother.this.itemRecentGroup.arrRecent.iterator();
+//            TextW textW72 = new TextW(context);
+//            textW72.setPadding(i3, i3, i3, 0);
+//            textW72.setupText(400, 3.5f);
+//            textW72.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfoAnother.this.itemRecentGroup.time));
+//            linearLayout42.addView(textW72, -1, -2);
+//            it = FragmentInfoAnother.this.itemRecentGroup.arrRecent.iterator();
             Log.d("INFO_DEBUG", "Debug1");
-            while (it.hasNext()) {
-                LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
-                layoutShowRecent.setRecent(it.next(), this.theme);
-                linearLayout42.addView(layoutShowRecent, -1, -2);
-            }
+//            while (it.hasNext()) {
+//                LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
+//                layoutShowRecent.setRecent(it.next(), this.theme);
+//                linearLayout42.addView(layoutShowRecent, -1, -2);
+//            }
+            addRecentsGroupedByDay(linearLayout42, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme);
             Log.d("INFO_DEBUG", "Debug2");
             LinearLayout linearLayout52 = new LinearLayout(context);
             linearLayout52.setOrientation(LinearLayout.VERTICAL);
@@ -576,19 +580,19 @@ public class FragmentInfoAnother extends Fragment {
             linearLayout.addView(textW102, layoutParams122);
             linearLayout.addView(new View(context), -1, widthScreen / 10);
             float radius2 = (widthScreen * 3.0f) / 100.0f;
-            if (!this.theme) {
+            Log.d("THEME_DEBUG before if", "theme = " + this.theme);
+            Log.d("THEME_DEBUG before if", "MyShare.getTheme = " + MyShare.getTheme(context));
+            if (this.theme) {
                 setBackgroundColor(Color.parseColor("#F2F2F7"));
                 textW4.setTextColor(-16777216);
-                linearLayout42.setBackground(OtherUtils.bgIcon(-1, radius2));
-                textW72.setTextColor(-16777216);
+//                textW72.setTextColor(-16777216);
                 linearLayout52.setBackground(OtherUtils.bgIcon(-1, radius2));
                 view2.setBackgroundColor(Color.parseColor("#dedede"));
                 textW102.setBackground(OtherUtils.bgIcon(-1, radius2));
             } else {
                 setBackgroundColor(Color.parseColor("#2C2C2C"));
                 textW4.setTextColor(-1);
-                linearLayout42.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
-                textW72.setTextColor(-1);
+//                textW72.setTextColor(-1);
                 linearLayout52.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
                 view2.setBackgroundColor(Color.parseColor("#5c5c5c"));
                 textW102.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
@@ -733,6 +737,52 @@ public class FragmentInfoAnother extends Fragment {
             this.tvBlock.setText(R.string.block_this_caller);
 
             Log.d("INFO_DEBUG", "updateBlock END");
+        }
+
+        private void addRecentsGroupedByDay(LinearLayout container, Context context, ArrayList<ItemRecent> arrRecent, boolean theme) {
+            Calendar cal = Calendar.getInstance();
+            int lastYear = -1;
+            int lastDayOfYear = -1;
+            int widthScreen = OtherUtils.getWidthScreen(context);
+            int pad = widthScreen / 25;
+            float radius = (widthScreen * 3.0f) / 100.0f;
+            Log.d("THEME_DEBUG inside method", "theme = " + this.theme);
+            Log.d("THEME_DEBUG inside method", "MyShare.getTheme = " + MyShare.getTheme(context));
+            int bgColor = theme ? -1 : Color.parseColor("#424141");
+            LinearLayout currentDayBlock = null;
+
+            for (ItemRecent recent : arrRecent) {
+                if (missedOnly && recent.type != 3) continue;
+
+                cal.setTimeInMillis(recent.time);
+                int year = cal.get(java.util.Calendar.YEAR);
+                int dayOfYear = cal.get(java.util.Calendar.DAY_OF_YEAR);
+
+                if (year != lastYear || dayOfYear != lastDayOfYear) {
+                    currentDayBlock = new LinearLayout(context);
+                    currentDayBlock.setOrientation(LinearLayout.VERTICAL);
+                    currentDayBlock.setBackground(OtherUtils.bgIcon(bgColor, radius));
+                    currentDayBlock.setPadding(pad, pad / 2, pad, pad / 2);
+
+                    LinearLayout.LayoutParams blockParams = new LinearLayout.LayoutParams(-1, -2);
+                    blockParams.setMargins(0, pad, 0, 0);
+                    container.addView(currentDayBlock, blockParams);
+
+                    TextW header = new TextW(context);
+                    header.setupText(400, 3.3f);
+                    header.setText(OtherUtils.longToTimeTitle(context, recent.time));
+                    header.setPadding(0, pad / 2, 0, pad / 2);
+                    header.setTextColor(theme ? Color.parseColor("#8A8A8E") : Color.parseColor("#F5F5F5"));
+                    currentDayBlock.addView(header, -1, -2);
+
+                    lastYear = year;
+                    lastDayOfYear = dayOfYear;
+                }
+
+                LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
+                layoutShowRecent.setRecent(recent, theme);
+                currentDayBlock.addView(layoutShowRecent, -1, -2);
+            }
         }
     }
 }

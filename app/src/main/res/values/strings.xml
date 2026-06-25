@@ -88,7 +88,7 @@
     <string name="grant">GRANT</string>
     <string name="hide">Hide</string>
     <string name="hold">Hold</string>
-    <string name="hour">hour</string>
+    <string name="hour">h</string>
     <string name="id_sub_month">1111111</string>
     <string name="id_sub_week">1111111</string>
     <string name="id_sub_year">1111111</string>
@@ -104,7 +104,7 @@
     <string name="mail">mail</string>
     <string name="message">message</string>
     <string name="message_up">Message</string>
-    <string name="minute">minute</string>
+    <string name="minute">m</string>
     <string name="missed_call">Missed call</string>
     <string name="monday">Monday</string>
     <string name="more_app">More App</string>
@@ -139,7 +139,7 @@
     <string name="saturday">Saturday</string>
     <string name="search">Search</string>
     <string name="search_menu_title">Search</string>
-    <string name="seconds">seconds</string>
+    <string name="seconds">s</string>
     <string name="send_message">Send message</string>
     <string name="set_default_phone">Set as default</string>
     <string name="setting">Setting</string>

@@ -348,14 +348,15 @@ public class FragmentRecents extends BaseFragment {
 
             if (FragmentRecents.this.getActivity() instanceof ActivityHome) {
                 ActivityHome activity = (ActivityHome) FragmentRecents.this.getActivity();
+                boolean missedOnly = adapterRecent.isMiss();
                 ItemContact contactWithNumber = ReadContact.getContactWithNumber(getContext(), itemRecentGroup.arrRecent.get(0).number);
                 if (contactWithNumber != null) {
-                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.recents);
+                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.recents, missedOnly);
                     newInstance.setContactResult(FragmentRecents.this.contactResult);
                     activity.showFragment(newInstance, true);
                 }
                 else {
-                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(itemRecentGroup);
+                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(itemRecentGroup, missedOnly);
                     newInstance2.setContactResult(FragmentRecents.this.contactResult);
                     activity.showFragment(newInstance2, true);
                 }

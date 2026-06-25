@@ -13,6 +13,7 @@ import android.telephony.PhoneNumberUtils;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,6 +58,7 @@ import com.thelinkphone.app.utils.SimUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 
 
@@ -66,6 +68,7 @@ public class FragmentInfo extends Fragment {
     private ItemRecentGroup itemRecentGroup;
     private int title;
     private ViewInfo viewInfo;
+    private boolean missedOnly;
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
         public final void onActivityResult(Object obj) {
@@ -92,12 +95,13 @@ public class FragmentInfo extends Fragment {
         return fragmentInfo;
     }
 
-    public static FragmentInfo newInstance(ItemContact itemContact, ItemRecentGroup itemRecentGroup, int i) {
+    public static FragmentInfo newInstance(ItemContact itemContact, ItemRecentGroup itemRecentGroup, int i, boolean missedOnly) {
         FragmentInfo fragmentInfo = new FragmentInfo();
         Bundle bundle = new Bundle();
         bundle.putString("dataf", new Gson().toJson(itemContact));
         bundle.putString("dataG", new Gson().toJson(itemRecentGroup));
         bundle.putInt("title", i);
+        bundle.putBoolean("missedOnly", missedOnly);
         fragmentInfo.setArguments(bundle);
         return fragmentInfo;
     }
@@ -117,6 +121,7 @@ public class FragmentInfo extends Fragment {
                 this.itemRecentGroup = (ItemRecentGroup) new Gson().fromJson(string2, new TypeToken<ItemRecentGroup>() { 
                 }.getType());
             }
+            this.missedOnly = getArguments().getBoolean("missedOnly", false);
         }
         if (this.itemContact == null) {
             this.itemContact = new ItemContact("", getString(R.string.unknown), "", new ArrayList());
@@ -365,24 +370,25 @@ public class FragmentInfo extends Fragment {
                 LinearLayout.LayoutParams layoutParams11 = new LinearLayout.LayoutParams((widthScreen * 342) / 360, -2);
                 layoutParams11.setMargins(0, i, 0, 0);
                 linearLayout.addView(linearLayout3, layoutParams11);
-                TextW textW4 = new TextW(context);
-                textW4.setPadding(i3, i3, i3, 0);
-                textW4.setupText(400, 3.5f);
-                textW4.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfo.this.itemRecentGroup.time));
-                linearLayout3.addView(textW4, -1, -2);
-                Iterator<ItemRecent> it = FragmentInfo.this.itemRecentGroup.arrRecent.iterator();
-                while (it.hasNext()) {
-                    LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
-                    layoutShowRecent.setRecent(it.next(), this.theme);
-                    linearLayout3.addView(layoutShowRecent, -1, -2);
-                }
-                if (this.theme) {
-                    linearLayout3.setBackground(OtherUtils.bgIcon(-1, (widthScreen * 3.0f) / 100.0f));
-                    textW4.setTextColor(-16777216);
-                } else {
-                    linearLayout3.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), (widthScreen * 3.0f) / 100.0f));
-                    textW4.setTextColor(-1);
-                }
+//                TextW textW4 = new TextW(context);
+//                textW4.setPadding(i3, i3, i3, 0);
+//                textW4.setupText(400, 3.5f);
+//                textW4.setText(OtherUtils.longToTimeTitle(getContext(), FragmentInfo.this.itemRecentGroup.time));
+//                linearLayout3.addView(textW4, -1, -2);
+//                Iterator<ItemRecent> it = FragmentInfo.this.itemRecentGroup.arrRecent.iterator();
+//                while (it.hasNext()) {
+//                    LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
+//                    layoutShowRecent.setRecent(it.next(), this.theme);
+//                    linearLayout3.addView(layoutShowRecent, -1, -2);
+//                }
+//                if (this.theme) {
+//                    linearLayout3.setBackground(OtherUtils.bgIcon(-1, (widthScreen * 3.0f) / 100.0f));
+//                    textW4.setTextColor(-16777216);
+//                } else {
+//                    linearLayout3.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), (widthScreen * 3.0f) / 100.0f));
+//                    textW4.setTextColor(-1);
+//                }
+                addRecentsGroupedByDay(linearLayout3, context, FragmentInfo.this.itemRecentGroup.arrRecent, this.theme);
             }
             LinearLayout linearLayout4 = new LinearLayout(context);
             this.llNumber = linearLayout4;
@@ -484,6 +490,8 @@ public class FragmentInfo extends Fragment {
             layoutParams17.setMargins(0, i, 0, 0);
             linearLayout.addView(this.tvBlock, layoutParams17);
             linearLayout.addView(new View(context), -1, widthScreen / 10);
+            Log.d("THEME_DEBUG before if", "theme = " + this.theme);
+            Log.d("THEME_DEBUG before if", "MyShare.getTheme = " + MyShare.getTheme(context));
             if (this.theme) {
                 setBackgroundColor(Color.parseColor("#F2F2F7"));
                 float f = (widthScreen * 3.0f) / 100.0f;
@@ -877,6 +885,52 @@ public class FragmentInfo extends Fragment {
             }
             this.tvBlock.setTextColor(Color.parseColor("#FF2828"));
             this.tvBlock.setText(R.string.block_this_caller);
+        }
+
+        private void addRecentsGroupedByDay(LinearLayout container, Context context, ArrayList<ItemRecent> arrRecent, boolean theme) {
+            Calendar cal = Calendar.getInstance();
+            int lastYear = -1;
+            int lastDayOfYear = -1;
+            int widthScreen = OtherUtils.getWidthScreen(context);
+            int pad = widthScreen / 25;
+            float radius = (widthScreen * 3.0f) / 100.0f;
+            Log.d("THEME_DEBUG inside method", "theme = " + this.theme);
+            Log.d("THEME_DEBUG inside method", "MyShare.getTheme = " + MyShare.getTheme(context));
+            int bgColor = theme ? -1 : Color.parseColor("#424141");
+            LinearLayout currentDayBlock = null;
+
+            for (ItemRecent recent : arrRecent) {
+                if (missedOnly && recent.type != 3) continue;
+
+                cal.setTimeInMillis(recent.time);
+                int year = cal.get(java.util.Calendar.YEAR);
+                int dayOfYear = cal.get(java.util.Calendar.DAY_OF_YEAR);
+
+                if (year != lastYear || dayOfYear != lastDayOfYear) {
+                    currentDayBlock = new LinearLayout(context);
+                    currentDayBlock.setOrientation(LinearLayout.VERTICAL);
+                    currentDayBlock.setBackground(OtherUtils.bgIcon(bgColor, radius));
+                    currentDayBlock.setPadding(pad, pad / 2, pad, pad / 2);
+
+                    LinearLayout.LayoutParams blockParams = new LinearLayout.LayoutParams(-1, -2);
+                    blockParams.setMargins(0, pad, 0, 0);
+                    container.addView(currentDayBlock, blockParams);
+
+                    TextW header = new TextW(context);
+                    header.setupText(400, 3.3f);
+                    header.setText(OtherUtils.longToTimeTitle(context, recent.time));
+                    header.setPadding(0, pad / 2, 0, pad / 2);
+                    header.setTextColor(theme ? Color.parseColor("#8A8A8E") : Color.parseColor("#F5F5F5"));
+                    currentDayBlock.addView(header, -1, -2);
+
+                    lastYear = year;
+                    lastDayOfYear = dayOfYear;
+                }
+
+                LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
+                layoutShowRecent.setRecent(recent, theme);
+                currentDayBlock.addView(layoutShowRecent, -1, -2);
+            }
         }
     }
 }

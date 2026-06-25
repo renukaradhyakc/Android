@@ -2,6 +2,7 @@ package com.thelinkphone.app.custom;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.RelativeLayout;
 
@@ -32,18 +33,20 @@ public class LayoutShowRecent extends RelativeLayout {
         textW2.setId(9899);
         textW2.setupText(500, 3.0f);
         textW2.setGravity(16);
-        LayoutParams layoutParams2 = new LayoutParams(-1, -2);
+        LayoutParams layoutParams2 = new LayoutParams(-2, -2);
         layoutParams2.addRule(17, textW.getId());
         layoutParams2.addRule(6, textW.getId());
         addView(textW2, layoutParams2);
+
         TextW textW3 = new TextW(context);
         this.tvDur = textW3;
         textW3.setupText(350, 2.9f);
         textW3.setTextColor(Color.parseColor("#a8a8a8"));
-        textW3.setPadding(0, 0, 0, i);
-        LayoutParams layoutParams3 = new LayoutParams(-1, -2);
-        layoutParams3.addRule(3, textW2.getId());
-        layoutParams3.addRule(18, textW2.getId());
+        textW3.setGravity(Gravity.END);
+        LayoutParams layoutParams3 = new LayoutParams(-2, -2);
+        layoutParams3.addRule(21);
+        layoutParams3.addRule(6, textW2.getId());
+        layoutParams3.setMargins(widthScreen, 0, widthScreen, i);
         addView(textW3, layoutParams3);
     }
 
