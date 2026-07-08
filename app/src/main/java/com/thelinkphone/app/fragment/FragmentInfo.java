@@ -3,6 +3,7 @@ package com.thelinkphone.app.fragment;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -32,6 +33,7 @@ import com.thelinkphone.app.custom.AvatarPeople;
 import com.thelinkphone.app.custom.EditW;
 import com.thelinkphone.app.custom.LayoutChooseSimInfo;
 import com.thelinkphone.app.custom.LayoutListSim;
+import com.thelinkphone.app.custom.LayoutSchedulePreview;
 import com.thelinkphone.app.custom.LayoutShowRecent;
 import com.thelinkphone.app.custom.TextW;
 import com.thelinkphone.app.custom.ViewItemInfo;
@@ -48,8 +50,14 @@ import com.thelinkphone.app.item.ItemNote;
 import com.thelinkphone.app.item.ItemPhone;
 import com.thelinkphone.app.item.ItemRecent;
 import com.thelinkphone.app.item.ItemRecentGroup;
+import com.thelinkphone.app.item.ItemSchedulePreview;
 import com.thelinkphone.app.item.ItemSimInfo;
+import com.thelinkphone.app.mapper.ScheduleMapper;
+import com.thelinkphone.app.model.PhoneScheduleResponse;
+import com.thelinkphone.app.repository.PhoneScheduleRepository;
 import com.thelinkphone.app.utils.ActionUtils;
+import com.thelinkphone.app.utils.ApiClient;
+import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -61,12 +69,17 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 public class FragmentInfo extends Fragment {
     private ContactResult contactResult;
     private ItemContact itemContact;
     private ItemRecentGroup itemRecentGroup;
     private int title;
+    private LayoutSchedulePreview schedulePreview;
     private ViewInfo viewInfo;
     private boolean missedOnly;
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
@@ -241,7 +254,7 @@ public class FragmentInfo extends Fragment {
                 }
             });
             ImageView imageView = new ImageView(context);
-            imageView.setId(100);
+            imageView.setId(View.generateViewId());
             imageView.setImageResource(R.drawable.ic_back);
             imageView.setOnClickListener(new OnClickListener() { 
                 @Override 
@@ -397,6 +410,21 @@ public class FragmentInfo extends Fragment {
             LinearLayout.LayoutParams layoutParams12 = new LinearLayout.LayoutParams(i6, -2);
             layoutParams12.setMargins(0, i, 0, 0);
             linearLayout.addView(linearLayout4, layoutParams12);
+
+
+            schedulePreview = new LayoutSchedulePreview(context);
+            LinearLayout.LayoutParams scheduleParams = new LinearLayout.LayoutParams(i6, -2);
+            scheduleParams.setMargins(0, i, 0, 0);
+            linearLayout.addView(schedulePreview, scheduleParams);
+
+            schedulePreview.setOnManageScheduleClickListener(phone -> {
+                if (getActivity() instanceof ActivityHome && phone != null) {
+                    FragmentScheduleEditor editor = FragmentScheduleEditor.newInstance(phone);
+                    ((ActivityHome) getActivity()).showFragment(editor, true);
+                }
+            });
+
+
             LinearLayout linearLayout5 = new LinearLayout(context);
             linearLayout5.setOrientation(LinearLayout.VERTICAL);
             LinearLayout.LayoutParams layoutParams13 = new LinearLayout.LayoutParams(i6, -2);
@@ -518,6 +546,7 @@ public class FragmentInfo extends Fragment {
                 view2.setBackgroundColor(Color.parseColor("#5c5c5c"));
             }
             updateContact();
+            loadSchedule();
             new Thread(new Runnable() { 
                 @Override 
                 public final void run() {
@@ -931,6 +960,50 @@ public class FragmentInfo extends Fragment {
                 layoutShowRecent.setRecent(recent, theme);
                 currentDayBlock.addView(layoutShowRecent, -1, -2);
             }
+        }
+
+        private void loadSchedule() {
+
+            if (FragmentInfo.this.itemContact.getArrPhone().isEmpty()) {
+                schedulePreview.setVisibility(GONE);
+                return;
+            }
+
+            String phone = FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber();
+
+            SharedPreferences prefs = getContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+            String authToken = prefs.getString("auth_token", null);
+            if (authToken == null || authToken.isEmpty()) {
+                schedulePreview.setVisibility(GONE);
+                return;
+            }
+            String token = "Bearer " + authToken;
+
+            PhoneScheduleRepository repository = new PhoneScheduleRepository(ApiClient.getClient().create(ApiService.class), token);
+
+            repository.getSchedule(phone, new Callback<PhoneScheduleResponse>() {
+                @Override
+                public void onResponse(Call<PhoneScheduleResponse> call, Response<PhoneScheduleResponse> response) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        schedulePreview.setVisibility(GONE);
+                        return;
+                    }
+                    ItemSchedulePreview item = ScheduleMapper.toItem(response.body());
+
+                    if (item == null) {
+                        schedulePreview.setVisibility(GONE);
+                        return;
+                    }
+
+                    schedulePreview.setSchedule(item);
+                }
+
+                @Override
+                public void onFailure(Call<PhoneScheduleResponse> call, Throwable t) {
+                    Log.e("Schedule", "Failed to load schedule", t);
+                    schedulePreview.setVisibility(GONE);
+                }
+            });
         }
     }
 }

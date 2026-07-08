@@ -16,17 +16,21 @@ public class LoginResponse {
     @SerializedName("phone_number")
     private String phone_number;
 
+    @SerializedName("timezone")
+    private String timezone;
+
     public LoginResponse()
     {
 
     }
 
-    public LoginResponse(String status, User user, String token, String domain_url, String phone_number) {
+    public LoginResponse(String status, User user, String token, String domain_url, String phone_number, String timezone) {
         this.status = status;
         this.user = user;
         this.token = token;
         this.domain_url = domain_url;
         this.phone_number = phone_number;
+        this.timezone = timezone;
     }
 
     public String getDomain_url() {
@@ -68,6 +72,10 @@ public class LoginResponse {
     public void setToken(String token) {
         this.token = token;
     }
+
+    public String getTimezone() { return timezone; }
+
+    public void setTimezone(String timezone) { this.timezone = timezone; }
 
     // Getters and Setters
 }

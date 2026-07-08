@@ -12,7 +12,9 @@ import android.widget.EditText;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.thelinkphone.app.model.LoginResponse;
+import com.thelinkphone.app.model.TimeZoneResponse;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.google.gson.JsonObject;
@@ -38,6 +40,8 @@ public class LoginActivity extends AppCompatActivity {
     private static final String PHONE_KEY = "auth_phone";
     private static final String EMAIL_KEY = "user_email";
     private static final String PASSWORD_KEY = "user_password";
+    private static final String TIMEZONE_KEY = "auth_timezone";
+    private static final String TIMEZONE_LIST_KEY = "timezone_list";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,9 +82,10 @@ public class LoginActivity extends AppCompatActivity {
                     if (loginResponse.getToken() != null) {
                         // Login successful, proceed with WebView loading
                         //   loadWebView(loginResponse.getToken());
-                        saveToken(loginResponse.getToken(),loginResponse.getDomain_url(), loginResponse.getPhone_number());
+                        saveToken(loginResponse.getToken(),loginResponse.getDomain_url(), loginResponse.getPhone_number(), loginResponse.getTimezone());
                         saveUserCredentials(email, password);
                         Log.d(TAG, "User logged in successfully - Email: " + email.substring(0, Math.min(3, email.length())) + "***");
+                        fetchTimezones();
                         finish();
                         Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
 
@@ -111,11 +116,12 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void saveToken(String token, String domainUrl, String phoneNumber) {
+    private void saveToken(String token, String domainUrl, String phoneNumber, String timeZone) {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(TOKEN_KEY, token);
         editor.putString(DOMAIN_KEY, domainUrl);
         editor.putString(PHONE_KEY, phoneNumber);
+        editor.putString(TIMEZONE_KEY, timeZone);
         editor.apply();
     }
 
@@ -125,5 +131,29 @@ public class LoginActivity extends AppCompatActivity {
         editor.putString(PASSWORD_KEY, password);
         editor.apply();
         Log.d(TAG, "User credentials saved for API use");
+    }
+
+    private void fetchTimezones() {
+        String token = sharedPreferences.getString(TOKEN_KEY, null);
+
+        apiService.getTimezones("Bearer " + token)
+            .enqueue(new Callback<TimeZoneResponse>() {
+                @Override
+                public void onResponse(Call<TimeZoneResponse> call, Response<TimeZoneResponse> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        String json = new Gson().toJson(response.body().getTimezones());
+                        sharedPreferences.edit().putString(TIMEZONE_LIST_KEY, json).apply();
+                        Log.d(TAG, "Saved " + response.body().getTimezones().size() + " timezones");
+                    }
+                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+
+                @Override
+                public void onFailure(Call<TimeZoneResponse> call, Throwable t) {
+                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+            });
     }
 }

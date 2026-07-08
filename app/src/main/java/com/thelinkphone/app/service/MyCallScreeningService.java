@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.telecom.Call;
 import android.telecom.CallScreeningService;
 import android.telephony.PhoneNumberUtils;
@@ -39,10 +40,6 @@ public class MyCallScreeningService extends CallScreeningService {
     private static final String TAG = "MyCallScreeningService";
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
-    private static final String DOMAIN_KEY = "auth_domain";
-    private static final String PHONE_KEY = "auth_phone";
-    private static final String EMAIL_KEY = "user_email";
-    private static final String PASSWORD_KEY = "user_password";
 
     @Override
     public void onScreenCall(Call.Details details) {
@@ -54,13 +51,15 @@ public class MyCallScreeningService extends CallScreeningService {
         Log.d(TAG, "Extracted phone number: " + phoneNumber);
 
         // Check if this is an incoming call (call screening should only apply to incoming calls)
-        int callDirection = details.getCallDirection();
-        Log.d(TAG, "Call direction: " + callDirection + " (0=UNKNOWN, 1=OUTGOING, 2=INCOMING)");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && details.getCallDirection() == Call.Details.DIRECTION_OUTGOING) {
+            int callDirection = details.getCallDirection();
+            Log.d(TAG, "Call direction: " + callDirection + " (0=UNKNOWN, 1=OUTGOING, 2=INCOMING)");
 
-        if (callDirection == Call.Details.DIRECTION_OUTGOING) {
-            Log.d(TAG, "Outgoing call detected - allowing without screening: " + phoneNumber);
-            allowCall(details);
-            return;
+            if (callDirection == Call.Details.DIRECTION_OUTGOING) {
+                Log.d(TAG, "Outgoing call detected - allowing without screening: " + phoneNumber);
+                allowCall(details);
+                return;
+            }
         }
 
         Log.d(TAG, "Screening incoming call from: " + phoneNumber);
@@ -256,9 +255,9 @@ public class MyCallScreeningService extends CallScreeningService {
         }
     }
 
-    private void checkEventTime(String email, String password, String phoneNumber, CheckEventTimeListener listener) {
+    private void checkEventTime(String token, String phoneNumber, CheckEventTimeListener listener) {
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
-        retrofit2.Call<Event> call = apiService.checkEvent(email, password, phoneNumber);
+        retrofit2.Call<Event> call = apiService.checkEvent("Bearer " + token, phoneNumber);
 
         call.enqueue(new retrofit2.Callback<Event>() {
             @Override
@@ -285,18 +284,17 @@ public class MyCallScreeningService extends CallScreeningService {
 
     private void checkEventAndProceed(Call.Details details, String phoneNumber, int callMode,boolean isManuallyBlocked) {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
-        String userEmail = sharedPreferences.getString(EMAIL_KEY, "");
-        String userPassword = sharedPreferences.getString(PASSWORD_KEY, "");
+        String token = sharedPreferences.getString(TOKEN_KEY, "");
 
         // Call API always, even if credentials missing (gracefully skip if empty)
-        if (userEmail.isEmpty() || userPassword.isEmpty()) {
-            Log.w(TAG, "Credentials missing — proceeding without event info");
+        if (token.isEmpty()) {
+            Log.w(TAG, "Auth token missing");
             allowCall(details);
             launchActivityCall(callMode, null, phoneNumber);
             return;
         }
 
-        checkEventTime(userEmail, userPassword, phoneNumber, new CheckEventTimeListener() {
+        checkEventTime(token, phoneNumber, new CheckEventTimeListener() {
             @Override
             public void onEventCheckComplete(Event event,boolean apiFailed) {
                 Log.d(TAG, "Event check complete for " + phoneNumber);

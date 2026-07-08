@@ -4,19 +4,27 @@ import com.google.gson.JsonObject;
 import com.thelinkphone.app.model.BillUploadResponse;
 import com.thelinkphone.app.model.Event;
 import com.thelinkphone.app.model.EventResponse;
+import com.thelinkphone.app.model.GenericResponse;
 import com.thelinkphone.app.model.LoginResponse;
+import com.thelinkphone.app.model.PhoneScheduleResponse;
 import com.thelinkphone.app.model.QRResponse;
 import com.thelinkphone.app.model.QrRequest;
+import com.thelinkphone.app.model.Schedule;
+import com.thelinkphone.app.model.ScheduleListResponse;
+import com.thelinkphone.app.model.ScheduleResponse;
+import com.thelinkphone.app.model.TimeZoneResponse;
 import com.thelinkphone.app.model.TrialStatusResponse;
 import com.thelinkphone.app.model.BillStatusResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -38,8 +46,8 @@ public interface ApiService {
                                      @Field("client_time") String clientTime);
 
     @FormUrlEncoded
-    @POST("check-event")
-    Call<Event> checkEvent(@Field("email") String email, @Field("password") String password,
+    @POST("call-permission")
+    Call<Event> checkEvent(@Header("Authorization") String token,
                            @Field("caller_number") String callerNumber);
 
     @GET("trial/status")
@@ -66,4 +74,56 @@ public interface ApiService {
             @Path("id") long billId
     );
 
+    @GET("phone-schedules/{phoneNumber}")
+    Call<PhoneScheduleResponse> getPhoneSchedule(
+            @Header("Authorization") String token,
+            @Path("phoneNumber") String phoneNumber
+    );
+
+    @FormUrlEncoded
+    @POST("phone-schedules/existing")
+    Call<PhoneScheduleResponse> assignExisting(
+            @Header("Authorization") String token,
+            @Field("phone_number") String phoneNumber,
+            @Field("schedule_id") int scheduleId
+    );
+
+    @FormUrlEncoded
+    @POST("phone-schedules/custom")
+    Call<PhoneScheduleResponse> assignCustom(
+            @Header("Authorization") String token,
+            @Field("phone_number") String phoneNumber,
+            @Field("slots") String slotsJson
+    );
+
+    @FormUrlEncoded
+    @PUT("phone-schedules")
+    Call<PhoneScheduleResponse> updateSchedule(
+            @Header("Authorization") String token,
+            @Field("phone_number") String phoneNumber,
+            @Field("schedule_id") Integer scheduleId,
+            @Field("slots") String slotsJson
+    );
+
+    @DELETE("phone-schedules/{phone}")
+    Call<GenericResponse> deleteSchedule(
+            @Header("Authorization") String token,
+            @Path("phone") String phoneNumber
+    );
+
+    @GET("timezones")
+    Call<TimeZoneResponse> getTimezones(
+            @Header("Authorization") String token
+    );
+
+    @GET("schedules")
+    Call<ScheduleListResponse> getSchedules(
+            @Header("Authorization") String token
+    );
+
+    @GET("schedules/{id}")
+    Call<ScheduleResponse> getScheduleDetails(
+            @Header("Authorization") String token,
+            @Path("id") int scheduleId
+    );
 }
