@@ -11,7 +11,7 @@ import android.widget.RelativeLayout;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.utils.OtherUtils;
-
+import com.thelinkphone.app.utils.SearchHighlightUtils;
 
 
 public class LayoutRecent extends RelativeLayout {
@@ -153,7 +153,12 @@ public class LayoutRecent extends RelativeLayout {
         return true;
     }
 
-    
+    public void applySearchHighlight(String query) {
+        CharSequence current = this.tvName.getText();
+        if (current != null) {
+            this.tvName.setText(SearchHighlightUtils.highlight(current.toString(), query));
+        }
+    }
     
     public  void m86x49aaf150(View view) {
         this.favOnItemClick.onDel();
@@ -177,6 +182,7 @@ public class LayoutRecent extends RelativeLayout {
             this.imStatus.setVisibility(View.VISIBLE);
         }
         int i2 = itemRecentGroup.arrRecent.get(0).type;
+        Log.d("ROW_BIND", "name=" + itemRecentGroup.name + " type=" + i2);
         if (missedOnly & i2 != 3) {
             for (int idx = 0; idx < itemRecentGroup.arrRecent.size(); idx++) {
                 if (itemRecentGroup.arrRecent.get(idx).type == 3) {
@@ -204,11 +210,15 @@ public class LayoutRecent extends RelativeLayout {
                 this.imStatus.setImageResource(R.drawable.ic_status_missed_call);
                 break;
 
+            case 6: // Blocked
+                this.imStatus.setImageResource(R.drawable.ic_call_block);
+                break;
+
             default:
                 this.imStatus.setImageResource(0);
                 break;
         }
-        if (i2 == 3) {
+        if (i2 == 3 || i2 == 6) {
             this.tvName.setTextColor(Color.parseColor("#FF2828"));
         } else if (z2) {
             this.tvName.setTextColor(-16777216);

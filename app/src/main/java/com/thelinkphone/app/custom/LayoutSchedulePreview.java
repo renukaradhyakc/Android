@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -60,6 +61,10 @@ public class LayoutSchedulePreview extends LinearLayout {
     private LinearLayout emptyStateView;
     private TextView tvEmptyTitle;
     private TextView tvEmptySubtitle;
+    private View scheduleContentRoot;
+    private LinearLayout noScheduleView;
+
+
 
     public LayoutSchedulePreview(Context context) {
         super(context);
@@ -68,7 +73,7 @@ public class LayoutSchedulePreview extends LinearLayout {
 
         LayoutInflater.from(context)
                 .inflate(R.layout.layout_schedule_preview, this, true);
-
+        scheduleContentRoot = getChildAt(0);
         applyTheme(context);
     }
 
@@ -134,6 +139,10 @@ public class LayoutSchedulePreview extends LinearLayout {
         SimpleDateFormat fmt = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
         tvSelectedDate.setText(fmt.format(calendarView.getSelectedDate().getTime()));
 
+        noScheduleView = buildNoScheduleState(context);
+        noScheduleView.setVisibility(GONE);
+        addView(noScheduleView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
         // Capture calendar's real rendered height once layout finishes.
         calendarCard.getViewTreeObserver().addOnGlobalLayoutListener(
                 new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -149,17 +158,23 @@ public class LayoutSchedulePreview extends LinearLayout {
                 });
     }
 
-    public void setSchedule(ItemSchedulePreview item) {
+    public void setSchedule(ItemSchedulePreview item, String phoneNumber) {
 
         preview = item;
-        currentPhoneNumber = (item != null) ? item.phoneNumber : null;
+        currentPhoneNumber = phoneNumber;
+
+        setVisibility(VISIBLE);
 
         if (item == null) {
-            setVisibility(GONE);
+            Log.d("SCHEDULE_DEBUG", "Preview is NULL");
+            scheduleContentRoot.setVisibility(GONE);
+            noScheduleView.setVisibility(VISIBLE);
             return;
         }
 
-        setVisibility(VISIBLE);
+        noScheduleView.setVisibility(GONE);
+        scheduleContentRoot.setVisibility(VISIBLE);
+
         tvScheduleName.setText(item.scheduleName);
 
         if (item.days == null || item.days.isEmpty()) {
@@ -177,7 +192,7 @@ public class LayoutSchedulePreview extends LinearLayout {
         }
 
         calendarView.setScheduleDays(scheduleDays);
-
+        Log.d("SCHEDULE_DEBUG", "Calendar highlighted days = " + scheduleDays);
         int realTodayBackendDay = ScheduleAvailabilityUtils.backendDayOfWeek(Calendar.getInstance());
         ItemScheduleDay realToday = findDay(item.days, realTodayBackendDay);
         boolean todayExpired = realToday == null || ScheduleAvailabilityUtils.allSlotsExpired(realToday.slots);
@@ -190,7 +205,7 @@ public class LayoutSchedulePreview extends LinearLayout {
     }
 
     private void showDay(ItemScheduleDay day) {
-
+        Log.d("SCHEDULE_DEBUG", "showDay called");
         Calendar selectedRealDate = calendarView.getSelectedDate();
 
         SimpleDateFormat labelFmt = new SimpleDateFormat("d MMM, EEEE", Locale.getDefault());
@@ -198,6 +213,9 @@ public class LayoutSchedulePreview extends LinearLayout {
 
         ScheduleAvailabilityUtils.Availability availability = ScheduleAvailabilityUtils.resolve(day, selectedRealDate);
 
+        Log.d("SCHEDULE_DEBUG", "day=" + (day != null ? day.day : "null")
+                + " visibleSlots=" + availability.visibleSlots.size()
+                + " emptyReason=" + availability.emptyReason);
 
         if (availability.emptyReason != null) {
             applyEmptyStateReason(availability.emptyReason);
@@ -413,6 +431,58 @@ public class LayoutSchedulePreview extends LinearLayout {
         root.addView(subtitle, subParams);
 
         applyEmptyStateReason(ScheduleAvailabilityUtils.EmptyReason.NO_SCHEDULE);
+
+        return root;
+    }
+
+    private LinearLayout buildNoScheduleState(Context context) {
+
+        int textColor = theme ? Color.parseColor("#1C1C1E") : Color.WHITE;
+        int secondary = theme ? Color.parseColor("#8E8E93") : Color.parseColor("#B8B8B8");
+
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(VERTICAL);
+        root.setGravity(Gravity.CENTER);
+        root.setPadding(dp(8), dp(20), dp(8), dp(20));
+
+        ImageView icon = new ImageView(context);
+        icon.setImageResource(R.drawable.ic_no_schedule);
+        icon.setColorFilter(secondary, android.graphics.PorterDuff.Mode.SRC_IN);
+        root.addView(icon, new LayoutParams(dp(28), dp(28)));
+
+        TextView title = new TextView(context);
+        title.setText("No schedule set");
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        title.setTypeface(title.getTypeface(), Typeface.BOLD);
+        title.setTextColor(textColor);
+        title.setGravity(Gravity.CENTER);
+        LayoutParams titleParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        titleParams.topMargin = dp(8);
+        root.addView(title, titleParams);
+
+        TextView subtitle = new TextView(context);
+        subtitle.setText("Set up calling hours for this number.");
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        subtitle.setTextColor(secondary);
+        subtitle.setGravity(Gravity.CENTER);
+        LayoutParams subParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        subParams.topMargin = dp(4);
+        root.addView(subtitle, subParams);
+
+        TextView cta = new TextView(context);
+        cta.setText("Add Schedule  \u203A");
+        cta.setTextColor(Color.parseColor("#007AFF"));
+        cta.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        cta.setTypeface(cta.getTypeface(), Typeface.BOLD);
+        cta.setGravity(Gravity.CENTER);
+        cta.setOnClickListener(v -> {
+            if (manageScheduleListener != null) {
+                manageScheduleListener.onManageScheduleClicked(currentPhoneNumber);
+            }
+        });
+        LayoutParams ctaParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        ctaParams.topMargin = dp(14);
+        root.addView(cta, ctaParams);
 
         return root;
     }

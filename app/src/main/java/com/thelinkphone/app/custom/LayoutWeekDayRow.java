@@ -8,10 +8,12 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemTimeSlot;
 import com.thelinkphone.app.item.ItemWeekDaySchedule;
+import com.thelinkphone.app.utils.ScheduleValidationUtils;
 
 import java.util.ArrayList;
 
@@ -33,6 +35,7 @@ public class LayoutWeekDayRow extends LinearLayout {
     private LinearLayout headerSlotContainer;
     private final boolean interactive;
     private static final int LABEL_WIDTH_DP = 44;
+    private int firstLineOffsetPx;
 
     public LayoutWeekDayRow(Context context, ItemWeekDaySchedule day, boolean theme, WeekDayRowListener listener) {
         this(context, day, theme, true, listener);
@@ -65,14 +68,17 @@ public class LayoutWeekDayRow extends LinearLayout {
 
         dayToggle = new ToggleSwitch(ctx, true);
         dayToggle.setInteractive(interactive);
-        LayoutParams toggleParams = new LayoutParams(dayToggle.getPreferredWidth(), dayToggle.getPreferredHeight());
-        toggleParams.setMarginEnd(dp(12));
+        int toggleWidth = dayToggle.getPreferredWidth();
+        int toggleMarginEnd = dp(12);
+        LayoutParams toggleParams = new LayoutParams(toggleWidth, dayToggle.getPreferredHeight());
+        toggleParams.setMarginEnd(toggleMarginEnd);
         header.addView(dayToggle, toggleParams);
         dayToggle.setOnToggleListener(on -> {
             if (!interactive) return;
             day.available = on;
             if (on && day.slots.isEmpty()) {
-                day.slots.add(new ItemTimeSlot("09:00 AM", "05:00 PM"));
+                ItemTimeSlot suggested = ScheduleValidationUtils.suggestNextSlot(day);
+                if (suggested != null) day.slots.add(suggested);
             }
             render();
             listener.onScheduleChanged();
@@ -84,8 +90,10 @@ public class LayoutWeekDayRow extends LinearLayout {
         tvLabel.setTypeface(tvLabel.getTypeface(), android.graphics.Typeface.BOLD);
         tvLabel.setTextColor(theme ? Color.BLACK : Color.WHITE);
         tvLabel.setSingleLine(true);
-        LayoutParams labelParams = new LayoutParams(dp(LABEL_WIDTH_DP), LayoutParams.WRAP_CONTENT);
+        int labelWidth = dp(LABEL_WIDTH_DP);
+        LayoutParams labelParams = new LayoutParams(labelWidth, LayoutParams.WRAP_CONTENT);
         header.addView(tvLabel, labelParams);
+        firstLineOffsetPx = toggleWidth + toggleMarginEnd + labelWidth;
 
         if (interactive) {
             View spacer = new View(ctx);
@@ -95,7 +103,12 @@ public class LayoutWeekDayRow extends LinearLayout {
             actionRow.setOrientation(HORIZONTAL);
 
             addIcon(actionRow, R.drawable.ic_add, () -> {
-                day.slots.add(new ItemTimeSlot("09:00 AM", "05:00 PM"));
+                ItemTimeSlot suggested = ScheduleValidationUtils.suggestNextSlot(day);
+                if (suggested == null) {
+                    Toast.makeText(ctx, "This day is fully booked \u2014 no room for another slot.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                day.slots.add(suggested);
                 render();
                 listener.onScheduleChanged();
             });
@@ -104,6 +117,7 @@ public class LayoutWeekDayRow extends LinearLayout {
         } else {
             headerSlotContainer = new LinearLayout(ctx);
             headerSlotContainer.setOrientation(HORIZONTAL);
+            headerSlotContainer.setGravity(Gravity.CENTER_VERTICAL);
             LayoutParams headerSlotParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f);
             header.addView(headerSlotContainer, headerSlotParams);
         }
@@ -111,7 +125,7 @@ public class LayoutWeekDayRow extends LinearLayout {
         slotsContainer = new LinearLayout(ctx);
         slotsContainer.setOrientation(VERTICAL);
         LayoutParams slotsParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        slotsParams.leftMargin = dp(LABEL_WIDTH_DP + 34); // aligns under label, past toggle
+        slotsParams.leftMargin = firstLineOffsetPx;
         slotsParams.topMargin = dp(6);
         addView(slotsContainer, slotsParams);
 
@@ -120,7 +134,7 @@ public class LayoutWeekDayRow extends LinearLayout {
         tvUnavailable.setTextColor(Color.parseColor("#8E8E93"));
         tvUnavailable.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         LayoutParams unavailParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        unavailParams.leftMargin = dp(LABEL_WIDTH_DP + 34);
+        unavailParams.leftMargin = firstLineOffsetPx;
         addView(tvUnavailable, unavailParams);
 
         View divider = new View(ctx);
@@ -179,7 +193,7 @@ public class LayoutWeekDayRow extends LinearLayout {
     }
 
     private LayoutTimeSlotRow buildSlotRow(ItemTimeSlot slot) {
-        return new LayoutTimeSlotRow(ctx, slot, theme, interactive,
+        return new LayoutTimeSlotRow(ctx, day, slot, theme, interactive,
             new LayoutTimeSlotRow.RowActionListener() {
                 @Override
                 public void onDeleteClicked(ItemTimeSlot s) {

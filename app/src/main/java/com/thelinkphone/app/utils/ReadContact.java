@@ -173,6 +173,7 @@ public class ReadContact {
             String numberLabel = query.getString(query.getColumnIndex("numberlabel"));
 
             ItemRecent recent = new ItemRecent(id, number, simId, duration, time, country, type, numberLabel);
+//            Log.d("NUM_DEBUG", "raw number = [" + number + "] type=" + type + " len=" + (number == null ? -1 : number.length()));
 
 //            calendar.setTimeInMillis(time);
 //
@@ -181,7 +182,7 @@ public class ReadContact {
 
 
 //            String key = number + "_" + year + "_" + dayOfYear;
-            String key = number;
+            String key = normalizeNumber(number);
             ItemRecentGroup group = groupMap.get(key);
 
             if (group == null) {
@@ -582,5 +583,30 @@ public class ReadContact {
         } catch (Exception e) {
             android.util.Log.e("ReadContact", "Error force deleting recent call logs: " + e.getMessage());
         }
+    }
+
+    private static String normalizeNumber(String rawNumber) {
+        if (rawNumber == null || rawNumber.isEmpty()) {
+            return "unknown";
+        }
+
+        if (rawNumber.startsWith("-")) {
+            return rawNumber;
+        }
+        StringBuilder digitsOnly = new StringBuilder();
+        for (int i = 0; i < rawNumber.length(); i++) {
+            char c = rawNumber.charAt(i);
+            if (Character.isDigit(c)) {
+                digitsOnly.append(c);
+            }
+        }
+        String digits = digitsOnly.toString();
+        if (digits.isEmpty()) {
+            return rawNumber;
+        }
+        if (digits.length() > 10) {
+            return digits.substring(digits.length() - 10);
+        }
+        return digits;
     }
 }

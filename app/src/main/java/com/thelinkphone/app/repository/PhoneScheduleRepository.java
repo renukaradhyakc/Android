@@ -5,6 +5,8 @@ import com.thelinkphone.app.model.PhoneScheduleResponse;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyShare;
 
+import java.util.Map;
+
 import retrofit2.Callback;
 
 public class PhoneScheduleRepository {
@@ -25,8 +27,8 @@ public class PhoneScheduleRepository {
         api.assignExisting(token, phone, scheduleId).enqueue(callback);
     }
 
-    public void assignCustom(String phone, String slotsJson, Callback<PhoneScheduleResponse> callback) {
-        api.assignCustom(token, phone, slotsJson).enqueue(callback);
+    public void assignCustom(String phone, Map<String, String> slotFields, Callback<PhoneScheduleResponse> callback) {
+        api.assignCustom(token, phone, slotFields).enqueue(callback);
     }
 
     public void deleteSchedule(String phone, Callback<GenericResponse> callback) {

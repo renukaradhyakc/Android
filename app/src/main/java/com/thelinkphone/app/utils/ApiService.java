@@ -1,6 +1,5 @@
 package com.thelinkphone.app.utils;
 
-import com.google.gson.JsonObject;
 import com.thelinkphone.app.model.BillUploadResponse;
 import com.thelinkphone.app.model.Event;
 import com.thelinkphone.app.model.EventResponse;
@@ -9,17 +8,19 @@ import com.thelinkphone.app.model.LoginResponse;
 import com.thelinkphone.app.model.PhoneScheduleResponse;
 import com.thelinkphone.app.model.QRResponse;
 import com.thelinkphone.app.model.QrRequest;
-import com.thelinkphone.app.model.Schedule;
 import com.thelinkphone.app.model.ScheduleListResponse;
 import com.thelinkphone.app.model.ScheduleResponse;
 import com.thelinkphone.app.model.TimeZoneResponse;
 import com.thelinkphone.app.model.TrialStatusResponse;
 import com.thelinkphone.app.model.BillStatusResponse;
 
+import java.util.Map;
+
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.Field;
+import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
@@ -93,7 +94,7 @@ public interface ApiService {
     Call<PhoneScheduleResponse> assignCustom(
             @Header("Authorization") String token,
             @Field("phone_number") String phoneNumber,
-            @Field("slots") String slotsJson
+            @FieldMap Map<String, String> slotFields
     );
 
     @FormUrlEncoded

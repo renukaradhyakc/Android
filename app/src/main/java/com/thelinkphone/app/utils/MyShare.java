@@ -8,6 +8,7 @@ import com.thelinkphone.app.item.ItemNote;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 
 public class MyShare {
@@ -149,6 +150,8 @@ public class MyShare {
     private static final String PREF_CALL_INFO = "CALL_INFO";
     private static final String KEY_USER_EMAIL = "user_email";
     private static final String KEY_SCAN_TAB_MODE = "scanner_bill_mode";
+    private static final String KEY_SEARCH_HISTORY = "recent_search_history";
+    private static final int MAX_SEARCH_HISTORY = 20;
 
     public static void putCallSetting(Context context, int callSetting) {
         share(context).edit().putInt("call_setting", callSetting).apply();
@@ -233,5 +236,50 @@ public class MyShare {
 
     public static boolean isBillMode(Context context) {
         return share(context).getBoolean(KEY_SCAN_TAB_MODE, false);
+    }
+
+    public static void addSearchHistoryEntry(Context context, String term) {
+        if (term == null) return;
+        String trimmed = term.trim();
+        if (trimmed.isEmpty()) return;
+
+        ArrayList<String> history = getSearchHistory(context);
+
+        Iterator<String> it = history.iterator();
+        while (it.hasNext()) {
+            if (it.next().equalsIgnoreCase(trimmed)) {
+                it.remove();
+                break;
+            }
+        }
+        history.add(0, trimmed);
+
+        while (history.size() > MAX_SEARCH_HISTORY) {
+            history.remove(history.size() - 1);
+        }
+
+        share(context).edit().putString(KEY_SEARCH_HISTORY, new Gson().toJson(history)).apply();
+        android.util.Log.d("SEARCH_HISTORY", "addSearchHistoryEntry term='" + trimmed + "' size=" + history.size());
+    }
+
+    public static ArrayList<String> getSearchHistory(Context context) {
+        String json = share(context).getString(KEY_SEARCH_HISTORY, "");
+        if (!json.isEmpty()) {
+            ArrayList<String> list = new Gson().fromJson(json, new TypeToken<ArrayList<String>>() {}.getType());
+            if (list != null) return list;
+        }
+        return new ArrayList<>();
+    }
+
+    public static void removeSearchHistoryEntry(Context context, String term) {
+        ArrayList<String> history = getSearchHistory(context);
+        boolean removed = history.remove(term);
+        share(context).edit().putString(KEY_SEARCH_HISTORY, new Gson().toJson(history)).apply();
+        android.util.Log.d("SEARCH_HISTORY", "removeSearchHistoryEntry term='" + term + "' removed=" + removed + " size=" + history.size());
+    }
+
+    public static void clearSearchHistory(Context context) {
+        share(context).edit().remove(KEY_SEARCH_HISTORY).apply();
+        android.util.Log.d("SEARCH_HISTORY", "clearSearchHistory called");
     }
 }

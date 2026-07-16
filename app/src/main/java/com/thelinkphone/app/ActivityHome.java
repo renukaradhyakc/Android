@@ -614,7 +614,7 @@ public class ActivityHome extends AppCompatActivity {
 
 
         public  void m46x22192003(ItemContact itemContact, ItemRecentGroup itemRecentGroup) {
-            FragmentInfo newInstance = FragmentInfo.newInstance(itemContact, itemRecentGroup, R.string.recents, false);
+            FragmentInfo newInstance = FragmentInfo.newInstance(itemContact, itemRecentGroup, R.string.back, false);
             newInstance.setContactResult(ActivityHome.this.contactResult);
             ActivityHome.this.showFragment(newInstance, true);
         }

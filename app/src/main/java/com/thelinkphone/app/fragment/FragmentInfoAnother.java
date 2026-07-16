@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Build;
@@ -28,6 +29,7 @@ import androidx.fragment.app.Fragment;
 import com.thelinkphone.app.ActivityHome;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.custom.LayoutChooseSimInfo;
+import com.thelinkphone.app.custom.LayoutSchedulePreview;
 import com.thelinkphone.app.custom.LayoutShowRecent;
 import com.thelinkphone.app.custom.TextW;
 import com.thelinkphone.app.custom.ViewItemInfo;
@@ -36,8 +38,14 @@ import com.thelinkphone.app.dialog.DialogResult;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemRecent;
 import com.thelinkphone.app.item.ItemRecentGroup;
+import com.thelinkphone.app.item.ItemSchedulePreview;
 import com.thelinkphone.app.item.ItemSimInfo;
+import com.thelinkphone.app.mapper.ScheduleMapper;
+import com.thelinkphone.app.model.PhoneScheduleResponse;
+import com.thelinkphone.app.repository.PhoneScheduleRepository;
 import com.thelinkphone.app.utils.ActionUtils;
+import com.thelinkphone.app.utils.ApiClient;
+import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -49,12 +57,18 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 public class FragmentInfoAnother extends Fragment {
     private ContactResult contactResult;
     private ItemRecentGroup itemRecentGroup;
     private ViewInfoAnother viewInfoAnother;
     private boolean missedOnly;
+    private LayoutSchedulePreview schedulePreview;
+
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
         public final void onActivityResult(Object obj) {
@@ -177,10 +191,7 @@ public class FragmentInfoAnother extends Fragment {
         private final int posSim;
         private final boolean theme;
         private final TextW tvBlock;
-
-
-
-
+        private final ViewItemInfo viewItemSchedule;
 
         public ViewInfoAnother(Context context) {
             super(context);
@@ -208,7 +219,7 @@ public class FragmentInfoAnother extends Fragment {
             this.theme = MyShare.getTheme(context);
             this.arrBlock = MyShare.getArrBlock(getContext());
             ImageView imageView = new ImageView(context);
-            imageView.setId(100);
+            imageView.setId(View.generateViewId());
             imageView.setImageResource(R.drawable.ic_back);
             imageView.setOnClickListener(new OnClickListener() { 
                 @Override 
@@ -221,7 +232,7 @@ public class FragmentInfoAnother extends Fragment {
             layoutParams.setMargins(i3, MyShare.getSizeNotification(context), 0, 0);
             addView(imageView, layoutParams);
             TextW textW3 = new TextW(context);
-            textW3.setText(R.string.recents);
+            textW3.setText(R.string.back);
             textW3.setGravity(16);
             textW3.setupText(400, 4.2f);
             textW3.setOnClickListener(new OnClickListener() { 
@@ -311,8 +322,9 @@ public class FragmentInfoAnother extends Fragment {
                     LinearLayout.LayoutParams layoutParams4 = new LinearLayout.LayoutParams(-1, -2);
                     layoutParams4.setMargins(0, i, 0, 0);
                     linearLayout.addView(linearLayout3, layoutParams4);
-                    int i5 = (widthScreen * 78) / 360;
+                    final int scheduleIconCountSim = 5;
                     int i6 = (widthScreen * 5) / 360;
+                    int i5 = (widthScreen - (i6 * 2 * scheduleIconCountSim)) / scheduleIconCountSim;
                     ViewItemInfo viewItemInfo = new ViewItemInfo(context);
                     viewItemInfo.setOnClickListener(new OnClickListener() { 
                         @Override 
@@ -337,6 +349,17 @@ public class FragmentInfoAnother extends Fragment {
                     LinearLayout.LayoutParams layoutParams6 = new LinearLayout.LayoutParams(i5, -2);
                     layoutParams6.setMargins(i6, 0, i6, 0);
                     linearLayout3.addView(viewItemInfo2, layoutParams6);
+                    ViewItemInfo viewItemInfoScheduleSim = new ViewItemInfo(context);
+                    viewItemInfoScheduleSim.setInfo(R.drawable.ic_schedule, R.string.schedule, true, this.theme);
+                    viewItemInfoScheduleSim.setOnClickListener(new OnClickListener() {
+                        @Override
+                        public final void onClick(View view) {
+                            ViewInfoAnother.this.openSchedule(view);
+                        }
+                    });
+                    LinearLayout.LayoutParams layoutParamsScheduleSim = new LinearLayout.LayoutParams(i5, -2);
+                    layoutParamsScheduleSim.setMargins(i6, 0, i6, 0);
+                    linearLayout3.addView(viewItemInfoScheduleSim, layoutParamsScheduleSim);
                     ViewItemInfo viewItemInfo3 = new ViewItemInfo(context);
                     viewItemInfo3.setInfo(R.drawable.ic_facetime, R.string.facetime, false, this.theme);
                     LinearLayout.LayoutParams layoutParams7 = new LinearLayout.LayoutParams(i5, -2);
@@ -461,8 +484,9 @@ public class FragmentInfoAnother extends Fragment {
             LinearLayout.LayoutParams layoutParams42 = new LinearLayout.LayoutParams(-1, -2);
             layoutParams42.setMargins(0, i, 0, 0);
             linearLayout.addView(linearLayout32, layoutParams42);
-            int i52 = (widthScreen * 78) / 360;
+            final int scheduleIconCount = 5;
             int i62 = (widthScreen * 5) / 360;
+            int i52 = (widthScreen - (i62 * 2 * scheduleIconCount)) / scheduleIconCount;
             Log.d("INFO_DEBUG", "BEFORE viewItemInfo5");
             ViewItemInfo viewItemInfo5 = new ViewItemInfo(context);
             Log.d("INFO_DEBUG", "AFTER viewItemInfo5 constructor");
@@ -497,6 +521,17 @@ public class FragmentInfoAnother extends Fragment {
             layoutParams62.setMargins(i62, 0, i62, 0);
             linearLayout32.addView(viewItemInfo22, layoutParams62);
             ViewItemInfo viewItemInfo32 = new ViewItemInfo(context);
+            this.viewItemSchedule = new ViewItemInfo(context);
+            this.viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, this.theme);
+            this.viewItemSchedule.setOnClickListener(new OnClickListener() {
+                @Override
+                public final void onClick(View view2) {
+                    ViewInfoAnother.this.openSchedule(view2);
+                }
+            });
+            LinearLayout.LayoutParams layoutParamsSchedule = new LinearLayout.LayoutParams(i52, -2);
+            layoutParamsSchedule.setMargins(i62, 0, i62, 0);
+            linearLayout32.addView(this.viewItemSchedule, layoutParamsSchedule);
             viewItemInfo32.setInfo(R.drawable.ic_facetime, R.string.facetime, false, this.theme);
             LinearLayout.LayoutParams layoutParams72 = new LinearLayout.LayoutParams(i52, -2);
             layoutParams72.setMargins(i62, 0, i62, 0);
@@ -531,6 +566,17 @@ public class FragmentInfoAnother extends Fragment {
 //            }
             addRecentsGroupedByDay(linearLayout42, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme);
             Log.d("INFO_DEBUG", "Debug2");
+            schedulePreview = new LayoutSchedulePreview(context);
+            LinearLayout.LayoutParams scheduleParams = new LinearLayout.LayoutParams(i72, -2);
+            scheduleParams.setMargins(0, i, 0, 0);
+            linearLayout.addView(schedulePreview, scheduleParams);
+
+            schedulePreview.setOnManageScheduleClickListener(phone -> {
+                if (getActivity() instanceof ActivityHome && phone != null) {
+                    FragmentScheduleEditor editor = FragmentScheduleEditor.newInstance(phone);
+                    ((ActivityHome) getActivity()).showFragment(editor, true);
+                }
+            });
             LinearLayout linearLayout52 = new LinearLayout(context);
             linearLayout52.setOrientation(LinearLayout.VERTICAL);
             LinearLayout.LayoutParams layoutParams102 = new LinearLayout.LayoutParams(i72, -2);
@@ -598,6 +644,7 @@ public class FragmentInfoAnother extends Fragment {
                 textW102.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
             }
             updateBlock();
+            loadSchedule();
             Log.d("INFO_DEBUG", "End of Constructor");
         }
 
@@ -648,6 +695,14 @@ public class FragmentInfoAnother extends Fragment {
 
         public  void m145xc2533b61(View view) {
             onBlock();
+        }
+
+        public void openSchedule(View view) {
+            String phone = FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).number;
+            if (getActivity() instanceof ActivityHome && phone != null) {
+                FragmentScheduleEditor editor = FragmentScheduleEditor.newInstance(phone);
+                ((ActivityHome) getActivity()).showFragment(editor, true);
+            }
         }
 
         public void onCallClick() {
@@ -737,6 +792,66 @@ public class FragmentInfoAnother extends Fragment {
             this.tvBlock.setText(R.string.block_this_caller);
 
             Log.d("INFO_DEBUG", "updateBlock END");
+        }
+
+        private void loadSchedule() {
+            String phone = FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).number;
+
+            if (phone == null || phone.isEmpty()) {
+                schedulePreview.setVisibility(GONE);
+                viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+                return;
+            }
+
+            SharedPreferences prefs = getContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+            String authToken = prefs.getString("auth_token", null);
+            if (authToken == null || authToken.isEmpty()) {
+                schedulePreview.setVisibility(GONE);
+                viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+                return;
+            }
+            String token = "Bearer " + authToken;
+
+            PhoneScheduleRepository repository = new PhoneScheduleRepository(ApiClient.getClient().create(ApiService.class), token);
+
+            repository.getSchedule(phone, new Callback<PhoneScheduleResponse>() {
+                @Override
+                public void onResponse(Call<PhoneScheduleResponse> call, Response<PhoneScheduleResponse> response) {
+                    if (!response.isSuccessful() || response.body() == null) {
+                        viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+                        schedulePreview.setVisibility(GONE);
+                        return;
+                    }
+                    ItemSchedulePreview item = ScheduleMapper.toItem(response.body());
+                    schedulePreview.setSchedule(item, phone);
+                    updateScheduleIcon(item);
+                }
+
+                @Override
+                public void onFailure(Call<PhoneScheduleResponse> call, Throwable t) {
+                    Log.e("Schedule", "Failed to load schedule", t);
+                    schedulePreview.setVisibility(GONE);
+                    viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+                }
+            });
+        }
+
+        private void updateScheduleIcon(ItemSchedulePreview item) {
+            boolean hasSchedule = false;
+            if (item != null && item.days != null) {
+                for (com.thelinkphone.app.item.ItemScheduleDay day : item.days) {
+                    if (day.hasSchedule) {
+                        hasSchedule = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hasSchedule) {
+                viewItemSchedule.setInfo(R.drawable.ic_scheduled, R.string.scheduled, true, theme);
+            } else {
+                viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+            }
         }
 
         private void addRecentsGroupedByDay(LinearLayout container, Context context, ArrayList<ItemRecent> arrRecent, boolean theme) {

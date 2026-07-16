@@ -15,6 +15,7 @@
     <string name="androidx_startup">androidx.startup</string>
     <string name="applied">Applied</string>
     <string name="apply">Apply</string>
+    <string name="back">Back</string>
     <string name="basic">Basic</string>
     <string name="block_contact">Block Contact?</string>
     <string name="block_list">Block List</string>
@@ -26,6 +27,7 @@
     <string name="call_ending">Call Ending</string>
     <string name="call_is_blocked">Call is blocked</string>
     <string name="call_is_canceled">Call is canceled</string>
+    <string name="call_log">Call Logs</string>
     <string name="call_pro">iCall Pro</string>
     <string name="call_screen">iCall OS16</string>
     <string name="call_up">Call</string>
@@ -33,6 +35,7 @@
     <string name="change_theme">Change Theme</string>
     <string name="change_wallpaper">Change Wallpaper</string>
     <string name="choose_sim">Select sim for this call</string>
+    <string name="clear_history">Clear History</string>
     <string name="contacts">Contacts</string>
     <string name="events">Events</string>
     <string name="content_ads_video">To use this feature, please upgrade to the paid version or watch a rewarded ad.</string>
@@ -114,6 +117,7 @@
     <string name="no_browser">No browser</string>
     <string name="no_email">No Email</string>
     <string name="no_internet">No Internet</string>
+    <string name="no_results">No Results</string>
     <string name="note">Note</string>
     <string name="ok">OK</string>
     <string name="ongoing_call">Ongoing Call</string>
@@ -130,9 +134,8 @@
     <string name="rate_content">Do you love this app?</string>
     <string name="rate_now">Rate Now</string>
     <string name="rec">Rec</string>
-    <string name="recent_up">RECENT</string>
     <string name="recents">Scheduled</string>
-    <string name="call_log">Call Log</string>
+    <string name="recent_up">RECENT</string>
     <string name="recorder_list">Recorder List</string>
     <string name="remove_ads">Remove All Ads</string>
     <string name="request_per">Please grant permission to use</string>
@@ -194,4 +197,7 @@
     <string name="bill_scan_mode">Bill Scanner</string>
     <string name="switch_mode">Switch Mode</string>
     <string name="capture">Capture</string>
+
+    <string name="schedule">schedule</string>
+    <string name="scheduled">scheduled</string>
 </resources>

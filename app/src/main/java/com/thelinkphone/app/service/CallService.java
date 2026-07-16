@@ -26,7 +26,7 @@ public class CallService extends InCallService {
 
             // Handle missed calls immediately for badge clearing
             if (i == Call.STATE_DISCONNECTED) {
-                handleCallDisconnected(call);
+//                handleCallDisconnected(call);
             }
         }
     };
@@ -72,7 +72,7 @@ public class CallService extends InCallService {
         this.callNotificationManager.cancelNotification();
 
         // Delete call log if in phonelink scheduled mode
-        deleteCallLogIfNeeded(call);
+//        deleteCallLogIfNeeded(call);
 
         // Privacy protection automatically managed by call settings - no need to disable
     }

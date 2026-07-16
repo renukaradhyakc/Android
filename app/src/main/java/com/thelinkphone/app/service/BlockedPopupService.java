@@ -67,13 +67,24 @@ public class BlockedPopupService extends Service {
         super.onCreate();
         Log.d(TAG, "onCreate called");
         createNotificationChannel();
-        startForeground(NOTIFICATION_ID, buildNotification());
+//        startForeground(NOTIFICATION_ID, buildNotification());
+        try {
+            startForeground(NOTIFICATION_ID, buildNotification());
+        } catch (Exception e) {
+            // Same Android FGS-start restriction the caller can also hit. If this
+            // throws, the service process still exists — it's just not promoted
+            // to foreground. Log and continue rather than let this propagate and
+            // kill the process the way the unguarded version did.
+            Log.e(TAG, "startForeground failed in onCreate: " + e.getMessage(), e);
+        }
     }
 
     @SuppressLint("InflateParams")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand called");
+        Log.d(TAG, "Popup service started");
+        Log.d(TAG, "canDrawOverlays = " + android.provider.Settings.canDrawOverlays(this));
         if (intent == null) {
             Log.e(TAG, "Intent is null, stopping service");
             stopSelf();
@@ -169,7 +180,10 @@ public class BlockedPopupService extends Service {
             Log.d(TAG, "Initial state set. Alpha: 0.0, Params.X: " + params.x + ", Scale: 0.9");
 
             // Add view to WindowManager
+            Log.d(TAG, "Adding popup view — canDrawOverlays=" + android.provider.Settings.canDrawOverlays(this)
+                    + " layoutType=" + layoutFlag);
             windowManager.addView(popupView, params);
+            Log.d(TAG, "Popup position: x=" + params.x + " y=" + params.y + " width=" + params.width + " height=" + params.height + " gravity=" + params.gravity + " alpha=" + popupView.getAlpha() + " visibility=" + popupView.getVisibility());
             isVisible = true;
             Log.d(TAG, "View added to WindowManager successfully");
 
@@ -215,6 +229,7 @@ public class BlockedPopupService extends Service {
                     @Override
                     public void onAnimationEnd(android.animation.Animator animation) {
                         Log.d(TAG, "Slide animation completed");
+                        Log.d(TAG, "Animation finished. alpha=" + popupView.getAlpha() + " translationX=" + popupView.getTranslationX());
                     }
                 });
                 xAnimator.start();

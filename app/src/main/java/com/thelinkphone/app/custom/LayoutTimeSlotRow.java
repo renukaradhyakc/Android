@@ -8,9 +8,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemTimeSlot;
+import com.thelinkphone.app.item.ItemWeekDaySchedule;
+import com.thelinkphone.app.utils.ScheduleValidationUtils;
 import com.thelinkphone.app.utils.TimeSlotUtils;
 
 import java.util.List;
@@ -22,13 +25,15 @@ public class LayoutTimeSlotRow extends LinearLayout {
         void onTimeChanged();
     }
     private final Context ctx;
+    private final ItemWeekDaySchedule day;
     private final ItemTimeSlot slot;
     private final boolean theme;
 
-    public LayoutTimeSlotRow(Context context, ItemTimeSlot slot, boolean theme, boolean interactive, RowActionListener listener) {
+    public LayoutTimeSlotRow(Context context, ItemWeekDaySchedule day, ItemTimeSlot slot, boolean theme, boolean interactive, RowActionListener listener) {
         super(context);
         this.ctx = context;
         this.slot = slot;
+        this.day = day;
         this.theme = theme;
         build(interactive, listener);
     }
@@ -96,7 +101,12 @@ public class LayoutTimeSlotRow extends LinearLayout {
     }
 
     private void showTimePicker(TextView target, boolean isFromTime, RowActionListener listener) {
-        List<String> options = TimeSlotUtils.getTimeOptions();
+        List<String> allOptions = TimeSlotUtils.getTimeOptions();
+        List<String> options = isFromTime ? ScheduleValidationUtils.getValidFromOptions(allOptions, day, slot) : ScheduleValidationUtils.getValidToOptions(allOptions, day, slot);
+        if (options.isEmpty()) {
+            Toast.makeText(ctx, "No valid time available for this slot.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         PopupMenu popup = new PopupMenu(ctx, target);
         for (String time : options) popup.getMenu().add(time);
         popup.setOnMenuItemClickListener(item -> {

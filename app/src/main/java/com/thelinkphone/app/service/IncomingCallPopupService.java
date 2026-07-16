@@ -79,14 +79,24 @@ public class IncomingCallPopupService extends Service {
         super.onCreate();
         ensureFirebaseInitialized();
         createNotificationChannel();
-        startForeground(NOTIFICATION_ID, buildNotification());
+//        startForeground(NOTIFICATION_ID, buildNotification());
+        try {
+            startForeground(NOTIFICATION_ID, buildNotification());
+        } catch (Exception e) {
+            // Same Android FGS-start restriction the caller can also hit. If this
+            // throws, the service process still exists — it's just not promoted
+            // to foreground. Log and continue rather than let this propagate and
+            // kill the process the way the unguarded version did.
+            Log.e(TAG, "startForeground failed in onCreate: " + e.getMessage(), e);
+        }
     }
 
     @SuppressLint("InflateParams")
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "Popup service started");
-
+        Log.d(TAG, "Popup service started");
+        Log.d(TAG, "canDrawOverlays = " + android.provider.Settings.canDrawOverlays(this));
         if (intent == null) {
             stopSelf();
             return START_NOT_STICKY;
@@ -181,7 +191,10 @@ public class IncomingCallPopupService extends Service {
             Log.d(TAG, String.format("DEBUG 2: Initial State set. Alpha: 0.0, Params.X: %d, Scale: 0.9", params.x));
 
             // --- 3. View Addition ---
+            Log.d(TAG, "Adding popup view — canDrawOverlays=" + android.provider.Settings.canDrawOverlays(this)
+                    + " layoutType=" + layoutFlag);
             windowManager.addView(popupView, params);
+            Log.d(TAG, "Popup position: x=" + params.x + " y=" + params.y + " width=" + params.width + " height=" + params.height + " gravity=" + params.gravity + " alpha=" + popupView.getAlpha() + " visibility=" + popupView.getVisibility());
             isVisible = true;
             Log.d(TAG, "DEBUG 3: View added to WindowManager.");
 
@@ -222,6 +235,7 @@ public class IncomingCallPopupService extends Service {
                     @Override
                     public void onAnimationEnd(android.animation.Animator animation) {
                         Log.d(TAG, "DEBUG 4C: Animation completed (Sliding X).");
+                        Log.d(TAG, "Animation finished. alpha=" + popupView.getAlpha() + " translationX=" + popupView.getTranslationX());
                     }
                 });
                 xAnimator.start();

@@ -225,6 +225,7 @@ public class FragmentInfo extends Fragment {
         private final boolean theme;
         private final TextW tvBlock;
         private final TextW tvName;
+        private final ViewItemInfo viewItemSchedule;
 
         public ViewInfo(Context context) {
             super(context);
@@ -342,8 +343,9 @@ public class FragmentInfo extends Fragment {
             LinearLayout.LayoutParams layoutParams6 = new LinearLayout.LayoutParams(-1, -2);
             layoutParams6.setMargins(0, i, 0, 0);
             linearLayout.addView(linearLayout2, layoutParams6);
-            int i4 = (widthScreen * 78) / 360;
-            int i5 = (widthScreen * 5) / 360;
+            final int ICON_COUNT = 5;
+            int marginUnit = (widthScreen * 5) / 360;
+            int iconWidth = (widthScreen - (marginUnit * 2 * ICON_COUNT)) / ICON_COUNT;
             ViewItemInfo viewItemInfo = new ViewItemInfo(context);
             viewItemInfo.setOnClickListener(new OnClickListener() { 
                 @Override 
@@ -352,8 +354,8 @@ public class FragmentInfo extends Fragment {
                 }
             });
             viewItemInfo.setInfo(R.drawable.ic_message, R.string.message, true, theme);
-            LinearLayout.LayoutParams layoutParams7 = new LinearLayout.LayoutParams(i4, -2);
-            layoutParams7.setMargins(i5, 0, i5, 0);
+            LinearLayout.LayoutParams layoutParams7 = new LinearLayout.LayoutParams(iconWidth, -2);
+            layoutParams7.setMargins(marginUnit, 0, marginUnit, 0);
             linearLayout2.addView(viewItemInfo, layoutParams7);
             ViewItemInfo viewItemInfo2 = new ViewItemInfo(context);
             viewItemInfo2.setOnClickListener(new OnClickListener() { 
@@ -363,18 +365,29 @@ public class FragmentInfo extends Fragment {
                 }
             });
             viewItemInfo2.setInfo(R.drawable.ic_call_info, R.string.call, true, theme);
-            LinearLayout.LayoutParams layoutParams8 = new LinearLayout.LayoutParams(i4, -2);
-            layoutParams8.setMargins(i5, 0, i5, 0);
+            LinearLayout.LayoutParams layoutParams8 = new LinearLayout.LayoutParams(iconWidth, -2);
+            layoutParams8.setMargins(marginUnit, 0, marginUnit, 0);
             linearLayout2.addView(viewItemInfo2, layoutParams8);
+            this.viewItemSchedule = new ViewItemInfo(context);
+            this.viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+            this.viewItemSchedule.setOnClickListener(new OnClickListener() {
+                @Override
+                public final void onClick(View view) {
+                    ViewInfo.this.m140xopenSchedule(view);
+                }
+            });
+            LinearLayout.LayoutParams layoutParams10b = new LinearLayout.LayoutParams(iconWidth, -2);
+            layoutParams10b.setMargins(marginUnit, 0, marginUnit, 0);
+            linearLayout2.addView(this.viewItemSchedule, layoutParams10b);
             ViewItemInfo viewItemInfo3 = new ViewItemInfo(context);
             viewItemInfo3.setInfo(R.drawable.ic_facetime, R.string.facetime, false, theme);
-            LinearLayout.LayoutParams layoutParams9 = new LinearLayout.LayoutParams(i4, -2);
-            layoutParams9.setMargins(i5, 0, i5, 0);
+            LinearLayout.LayoutParams layoutParams9 = new LinearLayout.LayoutParams(iconWidth, -2);
+            layoutParams9.setMargins(marginUnit, 0, marginUnit, 0);
             linearLayout2.addView(viewItemInfo3, layoutParams9);
             ViewItemInfo viewItemInfo4 = new ViewItemInfo(context);
             viewItemInfo4.setInfo(R.drawable.ic_mail, R.string.mail, false, theme);
-            LinearLayout.LayoutParams layoutParams10 = new LinearLayout.LayoutParams(i4, -2);
-            layoutParams10.setMargins(i5, 0, i5, 0);
+            LinearLayout.LayoutParams layoutParams10 = new LinearLayout.LayoutParams(iconWidth, -2);
+            layoutParams10.setMargins(marginUnit, 0, marginUnit, 0);
             linearLayout2.addView(viewItemInfo4, layoutParams10);
             if (FragmentInfo.this.itemRecentGroup != null) {
                 LinearLayout linearLayout3 = new LinearLayout(context);
@@ -646,6 +659,14 @@ public class FragmentInfo extends Fragment {
             this.handler.sendEmptyMessage(1);
         }
 
+        public void m140xopenSchedule(View view) {
+            if (FragmentInfo.this.itemContact.getArrPhone().isEmpty()) return;
+            String phone = FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber();
+            if (getActivity() instanceof ActivityHome && phone != null) {
+                FragmentScheduleEditor editor = FragmentScheduleEditor.newInstance(phone);
+                ((ActivityHome) getActivity()).showFragment(editor, true);
+            }
+        }
 
         public void updateContact() {
             this.av.setImage(FragmentInfo.this.itemContact.getPhoto(), FragmentInfo.this.itemContact.getName());
@@ -966,6 +987,7 @@ public class FragmentInfo extends Fragment {
 
             if (FragmentInfo.this.itemContact.getArrPhone().isEmpty()) {
                 schedulePreview.setVisibility(GONE);
+                viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
                 return;
             }
 
@@ -975,6 +997,7 @@ public class FragmentInfo extends Fragment {
             String authToken = prefs.getString("auth_token", null);
             if (authToken == null || authToken.isEmpty()) {
                 schedulePreview.setVisibility(GONE);
+                viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
                 return;
             }
             String token = "Bearer " + authToken;
@@ -985,25 +1008,40 @@ public class FragmentInfo extends Fragment {
                 @Override
                 public void onResponse(Call<PhoneScheduleResponse> call, Response<PhoneScheduleResponse> response) {
                     if (!response.isSuccessful() || response.body() == null) {
+                        viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
                         schedulePreview.setVisibility(GONE);
                         return;
                     }
                     ItemSchedulePreview item = ScheduleMapper.toItem(response.body());
-
-                    if (item == null) {
-                        schedulePreview.setVisibility(GONE);
-                        return;
-                    }
-
-                    schedulePreview.setSchedule(item);
+                    schedulePreview.setSchedule(item, phone);
+                    updateScheduleIcon(item);
                 }
 
                 @Override
                 public void onFailure(Call<PhoneScheduleResponse> call, Throwable t) {
                     Log.e("Schedule", "Failed to load schedule", t);
                     schedulePreview.setVisibility(GONE);
+                    viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
                 }
             });
+        }
+
+        private void updateScheduleIcon(ItemSchedulePreview item) {
+            boolean hasSchedule = false;
+            if (item != null && item.days != null) {
+                for (com.thelinkphone.app.item.ItemScheduleDay day : item.days) {
+                    if (day.hasSchedule) {
+                        hasSchedule = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hasSchedule) {
+                viewItemSchedule.setInfo(R.drawable.ic_scheduled, R.string.scheduled, true, theme);
+            } else {
+                viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
+            }
         }
     }
 }

@@ -37,6 +37,9 @@ public class ViewItemInfo extends LinearLayout {
         this.tv.setText(i2);
         if (z) {
             this.tv.setTextColor(Color.parseColor("#007AFF"));
+            this.tv.setAlpha(1f);
+            this.im.setAlpha(1f);
+            this.im.setColorFilter(Color.parseColor("#007AFF"));
         } else {
             this.tv.setAlpha(0.7f);
             this.im.setAlpha(0.7f);

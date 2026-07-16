@@ -39,6 +39,7 @@ import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
+import com.thelinkphone.app.utils.ScheduleValidationUtils;
 import com.thelinkphone.app.utils.TimeFormatUtils;
 import com.thelinkphone.app.utils.TimeZoneUtils;
 
@@ -48,6 +49,7 @@ import org.json.JSONObject;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -70,6 +72,7 @@ public class FragmentScheduleEditor extends Fragment {
     private boolean isExistingScheduleMode = false;
     private ArrayList<ItemWeekDaySchedule> existingWeekSchedule;
     private ArrayList<LayoutWeekDayRow> existingDayRows;
+    private boolean isSavingCustom = false;
 
     public static FragmentScheduleEditor newInstance(String phone) {
         FragmentScheduleEditor f = new FragmentScheduleEditor();
@@ -332,23 +335,23 @@ public class FragmentScheduleEditor extends Fragment {
         return list;
     }
 
-    private String buildSlotsJson() {
-        JSONArray arr = new JSONArray();
+    private Map<String, String> buildSlotsFieldMap() {
+        Map<String, String> map = new LinkedHashMap<>();
+        int index = 0;
         try {
             for (ItemWeekDaySchedule day : weekSchedule) {
                 if (!day.available) continue;
                 for (ItemTimeSlot slot : day.slots) {
-                    JSONObject obj = new JSONObject();
-                    obj.put("day_of_week", day.dayOfWeek);
-                    obj.put("from_time", slot.fromTime);
-                    obj.put("to_time", slot.toTime);
-                    arr.put(obj);
+                    map.put("slots[" + index + "][day_of_week]", String.valueOf(day.dayOfWeek));
+                    map.put("slots[" + index + "][from_time]", slot.fromTime);
+                    map.put("slots[" + index + "][to_time]", slot.toTime);
+                    index++;
                 }
             }
         } catch (Exception e) {
             Log.e("ScheduleEditor", "Failed to build slots JSON", e);
         }
-        return arr.toString();
+        return map;
     }
 
     private void onSaveClicked(Context context) {
@@ -364,7 +367,53 @@ public class FragmentScheduleEditor extends Fragment {
     // present in the file as given, so I've left it as a stub rather than guess
     // at the API shape.
     private void saveCustomHoursSchedule(Context context) {
-        Log.w("ScheduleEditor", "saveCustomHoursSchedule() is a stub — restore original save logic here");
+        if (isSavingCustom) return;
+
+        ScheduleValidationUtils.ValidationResult result = ScheduleValidationUtils.validateWeek(weekSchedule);
+        if (!result.valid) {
+            Toast.makeText(context, result.errorMessage, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        if (phoneNumber == null) {
+            Toast.makeText(context, "Missing phone number", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SharedPreferences prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+        String authToken = prefs.getString("auth_token", null);
+        if (authToken == null) {
+            Toast.makeText(context, "Please sign in again", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Map<String, String> slotFields = buildSlotsFieldMap();
+
+        PhoneScheduleRepository repository = new PhoneScheduleRepository(
+                ApiClient.getClient().create(ApiService.class), "Bearer " + authToken);
+
+        isSavingCustom = true;
+        repository.assignCustom(phoneNumber, slotFields, new Callback<PhoneScheduleResponse>() {
+            @Override
+            public void onResponse(Call<PhoneScheduleResponse> call, Response<PhoneScheduleResponse> response) {
+                isSavingCustom = false;
+                if (!isAdded()) return;
+                if (response.isSuccessful()) {
+                    Toast.makeText(context, "Schedule saved", Toast.LENGTH_SHORT).show();
+                    if (getActivity() != null) getActivity().onBackPressed();
+                } else {
+                    Toast.makeText(context, "Failed to save schedule", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PhoneScheduleResponse> call, Throwable t) {
+                isSavingCustom = false;
+                if (!isAdded()) return;
+                Log.e("ScheduleEditor", "Failed to save custom schedule", t);
+                Toast.makeText(context, "Network error", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void saveExistingSchedule(Context context) {
@@ -375,6 +424,89 @@ public class FragmentScheduleEditor extends Fragment {
         SharedPreferences prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
         String authToken = prefs.getString("auth_token", null);
         if (authToken == null) return;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         PhoneScheduleRepository repository = new PhoneScheduleRepository(
                 ApiClient.getClient().create(ApiService.class), "Bearer " + authToken);

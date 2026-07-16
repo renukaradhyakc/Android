@@ -58,7 +58,7 @@ public class ViewTabMode extends LinearLayout {
                 onTabClick(view, 0);
             }
         });
-        layoutItemTab.setData(R.drawable.im_tab_rec, R.string.recents);
+        layoutItemTab.setData(R.drawable.im_tab_rec, R.string.back);
         vRec = layoutItemTab;
         addView(layoutItemTab, new LayoutParams(0, -2, 1.0f));
 

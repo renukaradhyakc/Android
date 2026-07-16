@@ -21,16 +21,6 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
-/**
- * Unified searchable dropdown with PopupWindow:
- *  - Closed state: selected item + chevron
- *  - Open state: single bordered box containing:
- *    • Closed state visual at top (selected item + chevron)
- *    • Divider line
- *    • Search field
- *    • List of items (filtered in real-time)
- *  - Currently selected item highlighted in blue
- */
 public class DropDown extends FrameLayout {
 
     public interface OnItemSelectedListener {
@@ -54,6 +44,14 @@ public class DropDown extends FrameLayout {
         buildClosedView();
     }
 
+    private void togglePopup() {
+        if (popupWindow != null && popupWindow.isShowing()) {
+            popupWindow.dismiss();
+        } else {
+            openPopup();
+        }
+    }
+
     private void buildClosedView() {
         removeAllViews();
         setBackground(buildBorderedBackground());
@@ -65,7 +63,6 @@ public class DropDown extends FrameLayout {
         container.setOrientation(LinearLayout.HORIZONTAL);
         container.setGravity(Gravity.CENTER_VERTICAL);
 
-        // Selected item label (left side, takes remaining space)
         TextView tvLabel = new TextView(context);
         tvLabel.setText(selectedLabel.isEmpty() ? "Select..." : selectedLabel);
         tvLabel.setTextColor(lightTheme ? Color.parseColor("#1C1C1E") : Color.WHITE);
@@ -73,27 +70,16 @@ public class DropDown extends FrameLayout {
         container.addView(tvLabel, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
 
-        // Chevron (right side)
         ChevronView chevron = new ChevronView(context, lightTheme);
         chevron.setExpanded(false);
-        chevron.setOnClickListener(v -> {
-            if (popupWindow != null) {
-                popupWindow.dismiss();
-            }
-        });
+        chevron.setOnClickListener(v -> togglePopup());
+
         int chevronSize = dp(context, 20);
         container.addView(chevron, new LinearLayout.LayoutParams(chevronSize, chevronSize));
 
         addView(container, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
-        // Click to open popup
-        setOnClickListener(v -> {
-            if (popupWindow != null && popupWindow.isShowing()) {
-                popupWindow.dismiss();
-            } else {
-                openPopup();
-            }
-        });
+        setOnClickListener(v -> togglePopup());
     }
 
     public void setItems(String[] items) {
@@ -118,12 +104,10 @@ public class DropDown extends FrameLayout {
     }
 
     private void openPopup() {
-        // Outer wrapper with border (unified box containing everything)
         LinearLayout popupWrapper = new LinearLayout(context);
         popupWrapper.setOrientation(LinearLayout.VERTICAL);
         popupWrapper.setBackground(buildPopupBorder());
         popupWrapper.setPadding(dp(context,1), dp(context,1), dp(context,1), dp(context,1));
-        // PART 1: Closed state visual at top (selected item + chevron)
         LinearLayout closedStateVisual = new LinearLayout(context);
         closedStateVisual.setOrientation(LinearLayout.HORIZONTAL);
         closedStateVisual.setGravity(Gravity.CENTER_VERTICAL);
@@ -152,7 +136,6 @@ public class DropDown extends FrameLayout {
             }
         });
 
-        // PART 2: Divider line
         View divider = new View(context);
         divider.setBackgroundColor(lightTheme ? Color.parseColor("#E5E5EA") : Color.parseColor("#545458"));
         popupWrapper.addView(divider, new LinearLayout.LayoutParams(
@@ -170,13 +153,11 @@ public class DropDown extends FrameLayout {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         popupWrapper.addView(searchField, searchParams);
 
-        // PART 4: Divider before list
         View divider2 = new View(context);
         divider2.setBackgroundColor(lightTheme ? Color.parseColor("#E5E5EA") : Color.parseColor("#545458"));
         popupWrapper.addView(divider2, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(context, 1)));
 
-        // PART 5: List view (dynamic height)
         ListView listView = new ListView(context);
         listView.setBackgroundColor(Color.TRANSPARENT);
         listView.setDivider(null);
@@ -185,11 +166,9 @@ public class DropDown extends FrameLayout {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         popupWrapper.addView(listView, listParams);
 
-        // Adapter with filter and selection highlight
         adapter = new FilteredListAdapter(context, allItems, lightTheme, selectedPosition);
         listView.setAdapter(adapter);
 
-        // Item selection
         listView.setOnItemClickListener((parent, view, position, id) -> {
             String selectedItem = adapter.getItem(position);
             for (int i = 0; i < allItems.length; i++) {
@@ -206,12 +185,10 @@ public class DropDown extends FrameLayout {
             if (popupWindow != null) popupWindow.dismiss();
         });
 
-        // Search filtering
         searchField.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 adapter.getFilter().filter(s.toString());
-                // Update list height dynamically
                 int itemCount = adapter.getCount();
                 int itemHeight = dp(context, 50);
                 int maxHeight = dp(context, 250);
@@ -222,7 +199,6 @@ public class DropDown extends FrameLayout {
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // Close on back key
         searchField.setOnKeyListener((v, keyCode, event) -> {
             if (keyCode == KeyEvent.KEYCODE_BACK) {
                 if (popupWindow != null) popupWindow.dismiss();
@@ -231,13 +207,11 @@ public class DropDown extends FrameLayout {
             return false;
         });
 
-        // Calculate initial list height
         int itemCount = allItems.length;
         int itemHeight = dp(context, 50);
         int maxHeight = dp(context, 250);
         int initialListHeight = Math.min(itemCount * itemHeight, maxHeight);
 
-        // Create and show popup
         int popupWidth = getWidth() > 0 ? getWidth() : dp(context, 280);
         popupWindow = new PopupWindow(popupWrapper, popupWidth, ViewGroup.LayoutParams.WRAP_CONTENT, true);
         popupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
@@ -251,7 +225,6 @@ public class DropDown extends FrameLayout {
         isPopupShowing = true;
         popupWindow.showAsDropDown(this, 0, -getHeight() + dp(context, 2));
 
-        // Auto-focus search field
         searchField.requestFocus();
     }
 
@@ -285,7 +258,6 @@ public class DropDown extends FrameLayout {
                 context.getResources().getDisplayMetrics());
     }
 
-    // Draws the ▼ chevron
     private class ChevronView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -327,7 +299,6 @@ public class DropDown extends FrameLayout {
         }
     }
 
-    // Adapter with filter and selection highlight
     private class FilteredListAdapter extends ArrayAdapter<String> {
         private final String[] original;
         private String[] filtered;
@@ -363,7 +334,6 @@ public class DropDown extends FrameLayout {
             }
             tv.setText(filtered[position]);
 
-            // Highlight the currently selected item
             if (selectedPosition >= 0 && selectedPosition < original.length &&
                     filtered[position].equals(original[selectedPosition])) {
                 tv.setBackgroundColor(Color.parseColor("#6366F1"));

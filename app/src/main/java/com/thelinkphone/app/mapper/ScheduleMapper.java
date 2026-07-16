@@ -9,9 +9,13 @@ import com.thelinkphone.app.model.UserSchedule;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 public class ScheduleMapper {
     public static ItemSchedulePreview toItem(PhoneScheduleResponse response) {
+
+        List<UserSchedule> schedules;
+
         if (response == null || !response.isSuccess() || response.getData() == null) {
             return null;
         }
@@ -63,22 +67,26 @@ public class ScheduleMapper {
         }
 
         // Slots
-        if (phoneSchedule.getUserSchedules() != null) {
-            for (UserSchedule us : phoneSchedule.getUserSchedules()) {
-                // API: Monday=1 ... Sunday=7
-                int backendDay = us.getDayOfWeek();
-
-                if (backendDay < 1 || backendDay > 7) {
-                    continue;
-                }
-                ItemScheduleSlot slot = new ItemScheduleSlot();
-                slot.from = us.getFromTime();
-                slot.to = us.getToTime();
-                ItemScheduleDay day = preview.days.get(backendDay - 1);
-
-                day.slots.add(slot);
-                day.hasSchedule = true;
+        if (phoneSchedule.getUserSchedules() != null && !phoneSchedule.getUserSchedules().isEmpty()) {
+            schedules = phoneSchedule.getUserSchedules();
+        } else if (phoneSchedule.getSchedule() != null &&
+                phoneSchedule.getSchedule().getUserSchedules() != null) {
+            schedules = phoneSchedule.getSchedule().getUserSchedules();
+        } else {
+            schedules = new ArrayList<>();
+        }
+        for (UserSchedule us : schedules) {
+            int backendDay = us.getDayOfWeek();
+            if (backendDay < 1 || backendDay > 7) {
+                continue;
             }
+            ItemScheduleSlot slot = new ItemScheduleSlot();
+            slot.from = us.getFromTime();
+            slot.to = us.getToTime();
+            ItemScheduleDay day = preview.days.get(backendDay - 1);
+
+            day.slots.add(slot);
+            day.hasSchedule = true;
         }
         return preview;
     }

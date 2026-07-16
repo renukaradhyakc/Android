@@ -18,6 +18,9 @@ public class Schedule {
     @SerializedName("is_custom")
     private boolean isCustom;
 
+    @SerializedName("user_schedules")
+    private List<UserSchedule> userSchedules;
+
     @SerializedName("slots")
     private List<ScheduleSlot> slots;
 
@@ -34,6 +37,10 @@ public class Schedule {
 
     public boolean isCustom() {
         return isCustom;
+    }
+
+    public List<UserSchedule> getUserSchedules() {
+        return userSchedules;
     }
 
     public List<ScheduleSlot> getSlots() {

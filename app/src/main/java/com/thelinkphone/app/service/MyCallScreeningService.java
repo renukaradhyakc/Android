@@ -196,13 +196,13 @@ public class MyCallScreeningService extends CallScreeningService {
         CallResponse response = new CallResponse.Builder()
                 .setDisallowCall(true)
                 .setRejectCall(true)
-                .setSkipCallLog(true)
-                .setSkipNotification(true)
+                .setSkipCallLog(false)
+                .setSkipNotification(false)
                 .build();
         respondToCall(details, response);
 
         // Delete call log entry for blocked calls in Phonelink Scheduled mode
-        deleteBlockedCallLog(details);
+//        deleteBlockedCallLog(details);
     }
 
     private void deleteBlockedCallLog(Call.Details details) {
@@ -339,12 +339,13 @@ public class MyCallScreeningService extends CallScreeningService {
                 }
 
                 // For Phonelink Scheduled mode
-                boolean isContact = isNumberInContacts(phoneNumber);
-                if (isContact) {
-                    Log.d(TAG, "Contact found — allowing, but updating UI using event info");
-                    allowCall(details);
-                    launchActivityCall(callMode, event, phoneNumber);
-                } else if (event != null && event.isWithinTime()) {
+//                boolean isContact = isNumberInContacts(phoneNumber);
+//                if (isContact) {
+//                    Log.d(TAG, "Contact found — allowing, but updating UI using event info");
+//                    allowCall(details);
+//                    launchActivityCall(callMode, event, phoneNumber);
+//                } else
+                if (event != null && event.isWithinTime()) {
                     Log.d(TAG, "Unknown number — within schedule, allowing");
                     allowCall(details);
                     launchActivityCall(callMode, event, phoneNumber);

@@ -24,7 +24,8 @@ public class LayoutShowRecent extends RelativeLayout {
         this.tvTime = textW;
         textW.setId(9898);
         textW.setupText(350, 3.0f);
-        LayoutParams layoutParams = new LayoutParams(-2, -2);
+        int timeColumnWidth = (int) Math.ceil(textW.getPaint().measureText("88:88"));
+        LayoutParams layoutParams = new LayoutParams(timeColumnWidth, -2);
         int i = widthScreen / 8;
         layoutParams.setMargins(widthScreen, widthScreen, widthScreen, i);
         addView(textW, layoutParams);

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="23dp"
+    android:height="23dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+
+    <!-- Filled calendar -->
+    <path
+        android:fillColor="#FF007AFF"
+        android:pathData="
+            M200,160
+            H240V80H320V160
+            H640V80H720V160
+            H760
+            C804,160 840,196 840,240
+            V440
+            H760
+            V320
+            H200
+            V800
+            H480
+            V880
+            H200
+            C156,880 120,844 120,800
+            V240
+            C120,196 156,160 200,160
+            Z"/>
+
+    <!-- Calendar header cut -->
+    <path
+        android:fillColor="#FF2B2B2B"
+        android:pathData="M200,240H760V320H200Z"/>
+
+    <!-- Pencil -->
+    <path
+        android:fillColor="#FF007AFF"
+        android:pathData="
+            M560,880
+            V757
+            L781,537
+            Q790,528 801,524
+            Q812,520 823,520
+            Q835,520 846,524.5
+            Q857,529 866,538
+            L903,575
+            Q911,584 915.5,595
+            Q920,606 920,617
+            Q920,628 916,639.5
+            Q912,651 903,660
+            L683,880
+            H560
+            Z"/>
+
+    <!-- Pencil slit -->
+    <path
+        android:fillColor="#FF2B2B2B"
+        android:pathData="
+            M620,820
+            H658
+            L779,698
+            L742,661
+            L620,782
+            Z"/>
+</vector>

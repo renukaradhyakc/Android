@@ -2,14 +2,18 @@ package com.thelinkphone.app.fragment;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.telecom.PhoneAccountHandle;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -122,6 +126,7 @@ public class FragmentRecents extends BaseFragment {
             layoutParams2.setMargins(0, MyShare.getSizeNotification(context), 0, 0);
             addView(textW2, layoutParams2);
             LinearLayout linearLayout = new LinearLayout(context);
+            linearLayout.setId(View.generateViewId());
             linearLayout.setOrientation(LinearLayout.VERTICAL);
             linearLayout.setGravity(17);
             LayoutParams layoutParams3 = new LayoutParams(-1, -1);
@@ -136,6 +141,49 @@ public class FragmentRecents extends BaseFragment {
                 }
             });
             linearLayout.addView(viewModeRecent, -2, -2);
+
+            // --- Search bar: fixed sibling, NOT inside the RecyclerView, so it never scrolls away ---
+            int contentMargin = dp(16);
+            LinearLayout searchBar = new LinearLayout(context);
+            searchBar.setId(View.generateViewId());
+            searchBar.setOrientation(LinearLayout.HORIZONTAL);
+            searchBar.setGravity(Gravity.CENTER_VERTICAL);
+            searchBar.setPadding(dp(16), dp(14), dp(16), dp(14));
+
+            GradientDrawable searchBg = new GradientDrawable();
+            searchBg.setCornerRadius(dp(22));
+            searchBg.setColor(theme ? Color.parseColor("#F0F0F0") : Color.parseColor("#3A3A3C"));
+            searchBar.setBackground(searchBg);
+
+            ImageView searchIcon = new ImageView(context);
+            searchIcon.setImageResource(R.drawable.ic_search);
+            searchIcon.setColorFilter(theme ? Color.parseColor("#8A8A8E") : Color.parseColor("#AEAEB2"));
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(16), dp(16));
+            iconParams.setMarginEnd(dp(8));
+            searchBar.addView(searchIcon, iconParams);
+
+            TextW tvSearchHint = new TextW(context);
+            tvSearchHint.setText(R.string.search);
+            tvSearchHint.setTextColor(theme ? Color.parseColor("#8A8A8E") : Color.parseColor("#AEAEB2"));
+            tvSearchHint.setupText(400, 3.6f);
+            searchBar.addView(tvSearchHint, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            searchBar.setOnClickListener(v -> {
+                Log.d("RECENTS_SEARCH", "Search bar tapped, missedOnly=" + adapterRecent.isMiss());
+                if (getActivity() instanceof ActivityHome) {
+                    ActivityHome activity = (ActivityHome) getActivity();
+                    FragmentRecentsSearch newInstance = FragmentRecentsSearch.newInstance(adapterRecent.isMiss());
+                    newInstance.setContactResult(FragmentRecents.this.contactResult);
+                    activity.showFragment(newInstance, true);
+                }
+            });
+
+            LayoutParams searchBarParams = new LayoutParams(-1, -2);
+            searchBarParams.addRule(3, linearLayout.getId());
+            searchBarParams.setMargins(contentMargin, dp(4), contentMargin, dp(10));
+            addView(searchBar, searchBarParams);
+            // --- end search bar ---
             TextW textW3 = new TextW(context);
             this.tvEmpty = textW3;
             textW3.setupText(400, 3.8f);
@@ -144,14 +192,14 @@ public class FragmentRecents extends BaseFragment {
             textW3.setTextColor(Color.parseColor("#aaaaaa"));
             textW3.setVisibility(View.GONE);
             LayoutParams layoutParams4 = new LayoutParams(-1, -1);
-            layoutParams4.setMargins(widthScreen, 0, widthScreen, 0);
-            layoutParams4.addRule(3, textW.getId());
+            layoutParams4.setMargins(contentMargin, 0, contentMargin, 0);
+            layoutParams4.addRule(3, searchBar.getId());
             addView(textW3, layoutParams4);
             SwipeMenuRecyclerView swipeMenuRecyclerView = new SwipeMenuRecyclerView(context);
             swipeMenuRecyclerView.setAdapter(adapterRecent);
             swipeMenuRecyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
             LayoutParams layoutParams5 = new LayoutParams(-1, -1);
-            layoutParams5.addRule(3, textW.getId());
+            layoutParams5.addRule(3, searchBar.getId());
             addView(swipeMenuRecyclerView, layoutParams5);
             Log.d("RECENTS_UI", "RecyclerView attached");
             if (theme) {
@@ -181,6 +229,11 @@ public class FragmentRecents extends BaseFragment {
 
         public  void m151x2a773972(boolean z) {
             this.adapterRecent.showMiss(!z);
+        }
+
+        private int dp(int value) {
+            return (int) TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, value, getResources().getDisplayMetrics());
         }
 
         private void updateEdit() {
@@ -302,8 +355,6 @@ public class FragmentRecents extends BaseFragment {
             }).show();
         }
 
-
-
         public  void m152xf95ee2(ItemRecentGroup itemRecentGroup, ItemFavorites itemFavorites) {
             if (itemFavorites.type == 0) {
                 OtherUtils.sendMessage(getContext(), itemFavorites.number);
@@ -351,7 +402,7 @@ public class FragmentRecents extends BaseFragment {
                 boolean missedOnly = adapterRecent.isMiss();
                 ItemContact contactWithNumber = ReadContact.getContactWithNumber(getContext(), itemRecentGroup.arrRecent.get(0).number);
                 if (contactWithNumber != null) {
-                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.recents, missedOnly);
+                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.back, missedOnly);
                     newInstance.setContactResult(FragmentRecents.this.contactResult);
                     activity.showFragment(newInstance, true);
                 }
