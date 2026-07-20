@@ -585,7 +585,7 @@ public class ReadContact {
         }
     }
 
-    private static String normalizeNumber(String rawNumber) {
+    public static String normalizeNumber(String rawNumber) {
         if (rawNumber == null || rawNumber.isEmpty()) {
             return "unknown";
         }

@@ -59,4 +59,22 @@ public class RecentSearchUtils {
         }
         return result;
     }
+
+    public static ArrayList<ItemRecentGroup> filterBlockedGroups(ArrayList<ItemRecentGroup> source) {
+        ArrayList<ItemRecentGroup> result = new ArrayList<>();
+        if (source == null) return result;
+        for (ItemRecentGroup group : source) {
+            boolean hasBlocked = false;
+            if (group.arrRecent != null) {
+                for (ItemRecent recent : group.arrRecent) {
+                    if (recent.type == 6) {
+                        hasBlocked = true;
+                        break;
+                    }
+                }
+            }
+            if (hasBlocked) result.add(group);
+        }
+        return result;
+    }
 }

@@ -41,10 +41,13 @@ public class LayoutSchedulePreview extends LinearLayout {
         void onManageScheduleClicked(String phoneNumber);
     }
 
+    public interface OnRemoveScheduleClickListener {
+        void onRemoveScheduleClicked(String phoneNumber);
+    }
+
     // How many complete slot cards should be visible before scrolling.
     // Change this single number to show more/fewer at a glance.
     private static final int VISIBLE_SLOT_COUNT = 3;
-
     private LinearLayout llSlots;
     private ScrollView slotScrollView;
     private TextView tvSelectedDate;
@@ -56,7 +59,9 @@ public class LayoutSchedulePreview extends LinearLayout {
     private int calendarHeight = 0;
     private int slotUnitHeight = 0; // one card + its trailing gap
     private TextView tvManageSchedule;
+    private TextView tvRemoveSchedule;
     private OnManageScheduleClickListener manageScheduleListener;
+    private OnRemoveScheduleClickListener removeScheduleListener;
     private String currentPhoneNumber;
     private LinearLayout emptyStateView;
     private TextView tvEmptyTitle;
@@ -93,12 +98,33 @@ public class LayoutSchedulePreview extends LinearLayout {
         tvScheduleName = findViewById(R.id.tvScheduleName);
         tvScheduleName.setTextColor(Color.parseColor("#007AFF"));
 
+        LinearLayout pillManage = findViewById(R.id.pillManageSchedule);
+        ImageView ivManage = findViewById(R.id.ivManageSchedule);
         tvManageSchedule = findViewById(R.id.tvManageSchedule);
+
+        int blueBg = Color.parseColor(theme ? "#E8F1FF" : "#1A3A5C");
+        pillManage.setBackground(pillDrawable(blueBg));
+        ivManage.setColorFilter(Color.parseColor("#007AFF"));
         tvManageSchedule.setTextColor(Color.parseColor("#007AFF"));
-        tvManageSchedule.setText("Manage Schedule  \u203A");
-        tvManageSchedule.setOnClickListener(v -> {
+        tvManageSchedule.setText("Manage");
+        pillManage.setOnClickListener(v -> {
             if (manageScheduleListener != null) {
                 manageScheduleListener.onManageScheduleClicked(currentPhoneNumber);
+            }
+        });
+
+        LinearLayout pillRemove = findViewById(R.id.pillRemoveSchedule);
+        ImageView ivRemove = findViewById(R.id.ivRemoveSchedule);
+        TextView tvRemoveSchedule = findViewById(R.id.tvRemoveSchedule);
+
+        int redBg = Color.parseColor(theme ? "#FFE9E9" : "#4A1E1E");
+        pillRemove.setBackground(pillDrawable(redBg));
+        ivRemove.setColorFilter(Color.parseColor("#FF3B30"));
+        tvRemoveSchedule.setTextColor(Color.parseColor("#FF3B30"));
+        tvRemoveSchedule.setText("Remove");
+        pillRemove.setOnClickListener(v -> {
+            if (removeScheduleListener != null) {
+                removeScheduleListener.onRemoveScheduleClicked(currentPhoneNumber);
             }
         });
 
@@ -493,5 +519,16 @@ public class LayoutSchedulePreview extends LinearLayout {
                 value,
                 getResources().getDisplayMetrics()
         );
+    }
+
+    public void setOnRemoveScheduleClickListener(OnRemoveScheduleClickListener listener) {
+        this.removeScheduleListener = listener;
+    }
+
+    private GradientDrawable pillDrawable(int bgColor) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(bgColor);
+        d.setCornerRadius(dp(100));
+        return d;
     }
 }

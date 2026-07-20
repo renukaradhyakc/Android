@@ -13,6 +13,8 @@ import com.thelinkphone.app.custom.LayoutRecent;
 import com.thelinkphone.app.custom.TextW;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.item.ItemSimInfo;
+import com.thelinkphone.app.utils.CallBlockReasonResolver;
+import com.thelinkphone.app.utils.CallDisplayMode;
 
 
 import java.util.ArrayList;
@@ -26,10 +28,10 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private final ArrayList<ItemRecentGroup> arrShow;
     private final ArrayList<ItemSimInfo> arrSim;
     private boolean isChoose;
-    private boolean isMiss;
+    private int mode = CallDisplayMode.ALL;
     private final RecentItemClick recentItemClick;
     private final boolean theme;
-
+    private CallBlockReasonResolver blockReasonResolver;
     
     public interface RecentItemClick {
         void onDel(ItemRecentGroup itemRecentGroup);
@@ -46,6 +48,10 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         return i == 0 ? 0 : 1;
     }
 
+    public void setBlockReasonResolver(CallBlockReasonResolver resolver) {
+        this.blockReasonResolver = resolver;
+    }
+
     public AdapterRecent(ArrayList<ItemRecentGroup> arrayList, ArrayList<ItemSimInfo> arrayList2, boolean z, RecentItemClick recentItemClick) {
         this.arrGroup = arrayList;
         this.arrShow = new ArrayList<>(arrayList);
@@ -57,16 +63,8 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     public void addNewData() {
         long start = System.currentTimeMillis();
         Log.d("ADAPTER_PERF", "addNewData itemCount=" + getItemCount());
-        if (this.isMiss) {
-            showMiss(true);
-            return;
-        }
-        this.arrShow.clear();
-        this.arrShow.addAll(this.arrGroup);
-        Log.d("ADAPTER_PERF", "addNewData arrShow=" + arrShow.size());
-        Log.d("ADAPTER_PERF", "before notifyDataSetChanged = " + (System.currentTimeMillis() - start) + " ms");
-        notifyDataSetChanged();
-        Log.d("ADAPTER_PERF", "after notifyDataSetChanged");
+        setMode(this.mode);
+        Log.d("ADAPTER_PERF", "addNewData arrShow=" + arrShow.size() + " in " + (System.currentTimeMillis() - start) + " ms");
     }
 
     public void setChoose(boolean z) {
@@ -74,39 +72,35 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         notifyItemRangeChanged(0, getItemCount(), true);
     }
 
-    public void showMiss(boolean z) {
-        this.isMiss = z;
+    public void setMode(int newMode) {
+        long start = System.currentTimeMillis();
+        this.mode = newMode;
         this.arrShow.clear();
-        if (z) {
-            final HashMap<ItemRecentGroup, Long> missedTimeMap = new java.util.HashMap<>();
-            Iterator<ItemRecentGroup> it = this.arrGroup.iterator();
-            while (it.hasNext()) {
-                ItemRecentGroup next = it.next();
-                long latestMissedTime = 0;
-                for (int i = 0; i < next.arrRecent.size(); i++) {
-                    if (next.arrRecent.get(i).type == 3 && next.arrRecent.get(i).time > latestMissedTime) {
-                        latestMissedTime = next.arrRecent.get(i).time;
+        if (mode == CallDisplayMode.ALL) {
+            this.arrShow.addAll(this.arrGroup);
+        } else {
+            final int targetType = (mode == CallDisplayMode.MISSED) ? 3 : 6;
+            final HashMap<ItemRecentGroup, Long> matchTimeMap = new HashMap<>();
+            for (ItemRecentGroup group : this.arrGroup) {
+                long latestMatchTime = 0;
+                for (int i = 0; i < group.arrRecent.size(); i++) {
+                    if (group.arrRecent.get(i).type == targetType && group.arrRecent.get(i).time > latestMatchTime) {
+                        latestMatchTime = group.arrRecent.get(i).time;
                     }
                 }
-                if (latestMissedTime > 0) {
-                    missedTimeMap.put(next, latestMissedTime);
-                    this.arrShow.add(next);
+                if (latestMatchTime > 0) {
+                    matchTimeMap.put(group, latestMatchTime);
+                    this.arrShow.add(group);
                 }
             }
-            Collections.sort(this.arrShow, new java.util.Comparator<ItemRecentGroup>() {
-                @Override
-                public int compare(ItemRecentGroup a, ItemRecentGroup b) {
-                    return Long.compare(missedTimeMap.get(b), missedTimeMap.get(a));
-                }
-            });
-        } else {
-            this.arrShow.addAll(this.arrGroup);
+            Collections.sort(this.arrShow, (a, b) -> Long.compare(matchTimeMap.get(b), matchTimeMap.get(a)));
         }
+        Log.d("ADAPTER_PERF", "setMode(" + mode + ") arrShow=" + arrShow.size() + " in " + (System.currentTimeMillis() - start) + " ms");
         notifyDataSetChanged();
     }
 
-    public boolean isMiss() {
-        return this.isMiss;
+    public int getMode() {
+        return this.mode;
     }
 
     public void removeRecent(ItemRecentGroup itemRecentGroup) {
@@ -157,7 +151,7 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     }
                 }
             }
-            holderItem.layoutRecent.setItemRecent(itemRecentGroup, i2, this.isChoose, this.theme, this.isMiss);
+            holderItem.layoutRecent.setItemRecent(itemRecentGroup, i2, this.isChoose, this.theme, this.mode, blockReasonResolver);
             if (this.isChoose) {
                 holderItem.sw.setSwipeFlags(0);
                 holderItem.sw.closeRightMenu(true);

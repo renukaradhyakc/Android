@@ -22,6 +22,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+import android.widget.Toast;
+
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -53,11 +55,14 @@ import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.item.ItemSchedulePreview;
 import com.thelinkphone.app.item.ItemSimInfo;
 import com.thelinkphone.app.mapper.ScheduleMapper;
+import com.thelinkphone.app.model.GenericResponse;
 import com.thelinkphone.app.model.PhoneScheduleResponse;
 import com.thelinkphone.app.repository.PhoneScheduleRepository;
 import com.thelinkphone.app.utils.ActionUtils;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
+import com.thelinkphone.app.utils.CallBlockReasonResolver;
+import com.thelinkphone.app.utils.CallDisplayMode;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -81,7 +86,9 @@ public class FragmentInfo extends Fragment {
     private int title;
     private LayoutSchedulePreview schedulePreview;
     private ViewInfo viewInfo;
-    private boolean missedOnly;
+    private int displayMode;
+    private PhoneScheduleRepository scheduleRepository;
+    private String authToken;
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
         public final void onActivityResult(Object obj) {
@@ -108,13 +115,13 @@ public class FragmentInfo extends Fragment {
         return fragmentInfo;
     }
 
-    public static FragmentInfo newInstance(ItemContact itemContact, ItemRecentGroup itemRecentGroup, int i, boolean missedOnly) {
+    public static FragmentInfo newInstance(ItemContact itemContact, ItemRecentGroup itemRecentGroup, int i, int displayMode) {
         FragmentInfo fragmentInfo = new FragmentInfo();
         Bundle bundle = new Bundle();
         bundle.putString("dataf", new Gson().toJson(itemContact));
         bundle.putString("dataG", new Gson().toJson(itemRecentGroup));
         bundle.putInt("title", i);
-        bundle.putBoolean("missedOnly", missedOnly);
+        bundle.putInt("displayMode", displayMode);
         fragmentInfo.setArguments(bundle);
         return fragmentInfo;
     }
@@ -125,6 +132,7 @@ public class FragmentInfo extends Fragment {
         if (getArguments() != null) {
             this.title = getArguments().getInt("title");
             String string = getArguments().getString("dataf");
+            this.displayMode = getArguments().getInt("displayMode", CallDisplayMode.ALL);
             if (string != null && !string.isEmpty()) {
                 this.itemContact = (ItemContact) new Gson().fromJson(string, new TypeToken<ItemContact>() { 
                 }.getType());
@@ -134,10 +142,15 @@ public class FragmentInfo extends Fragment {
                 this.itemRecentGroup = (ItemRecentGroup) new Gson().fromJson(string2, new TypeToken<ItemRecentGroup>() { 
                 }.getType());
             }
-            this.missedOnly = getArguments().getBoolean("missedOnly", false);
         }
         if (this.itemContact == null) {
             this.itemContact = new ItemContact("", getString(R.string.unknown), "", new ArrayList());
+        }
+        SharedPreferences prefs = requireContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
+        authToken = prefs.getString("auth_token", null);
+        if (authToken != null) {
+            scheduleRepository = new PhoneScheduleRepository(
+                    ApiClient.getClient().create(ApiService.class), "Bearer " + authToken);
         }
     }
 
@@ -226,6 +239,7 @@ public class FragmentInfo extends Fragment {
         private final TextW tvBlock;
         private final TextW tvName;
         private final ViewItemInfo viewItemSchedule;
+        private CallBlockReasonResolver blockReasonResolver;
 
         public ViewInfo(Context context) {
             super(context);
@@ -414,6 +428,7 @@ public class FragmentInfo extends Fragment {
 //                    linearLayout3.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), (widthScreen * 3.0f) / 100.0f));
 //                    textW4.setTextColor(-1);
 //                }
+                this.blockReasonResolver = CallBlockReasonResolver.load(context);
                 addRecentsGroupedByDay(linearLayout3, context, FragmentInfo.this.itemRecentGroup.arrRecent, this.theme);
             }
             LinearLayout linearLayout4 = new LinearLayout(context);
@@ -437,6 +452,40 @@ public class FragmentInfo extends Fragment {
                 }
             });
 
+            schedulePreview.setOnRemoveScheduleClickListener(phone -> {
+                if (phone == null) return;
+                new DialogNotification(getContext(), R.string.remove_schedule_title,
+                        R.string.remove_schedule_message, theme, new DialogResult() {
+                    @Override
+                    public void onActionClick() {
+                        if (authToken == null) {
+                            Toast.makeText(getContext(), "Session expired. Please log in again.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        scheduleRepository.deleteSchedule(phone, new Callback<GenericResponse>() {
+                            @Override
+                            public void onResponse(Call<GenericResponse> call, Response<GenericResponse> response) {
+                                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                                    if (!isAdded() || getContext() == null) return;
+                                    Toast.makeText(getContext(), "Schedule removed", Toast.LENGTH_SHORT).show();
+                                    loadSchedule(); // refresh — LayoutSchedulePreview already shows "No schedule set" when null
+                                } else {
+                                    String msg = (response.body() != null && response.body().getMessage() != null)
+                                            ? response.body().getMessage() : "Couldn't remove schedule. Please try again.";
+                                    Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<GenericResponse> call, Throwable t) {
+                                if (!isAdded() || getContext() == null) return;
+                                Toast.makeText(getContext(), "Network error", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }).show();
+            });
 
             LinearLayout linearLayout5 = new LinearLayout(context);
             linearLayout5.setOrientation(LinearLayout.VERTICAL);
@@ -843,60 +892,6 @@ public class FragmentInfo extends Fragment {
                 FragmentInfo.this.contactResult.onFavoritesChange();
             }
         }
-
-        private void onBlock() {
-            boolean z;
-            ItemContact next = null;
-            Iterator<ItemContact> it = this.arrBlock.iterator();
-            do {
-                z = true;
-                if (!it.hasNext()) {
-                    break;
-                }
-                next = it.next();
-                boolean equals = FragmentInfo.this.itemContact.getId().equals(next.getId());
-                if (FragmentInfo.this.itemContact.getArrPhone().isEmpty() || FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber() == null || next.getArrPhone().isEmpty() || next.getArrPhone().get(0).getNumber() == null || !PhoneNumberUtils.compare(FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber(), next.getArrPhone().get(0).getNumber())) {
-                    z = false;
-                }
-                if (equals) {
-                    break;
-                }
-            } while (!z);
-            this.arrBlock.remove(next);
-            MyShare.putBlockNumber(getContext(), this.arrBlock);
-            updateBlock();
-            if (z) {
-                if (Build.VERSION.SDK_INT >= 29) {
-                    RoleManager roleManager = (RoleManager) getContext().getSystemService(Context.ROLE_SERVICE);
-                    if (roleManager.isRoleHeld("android.app.role.CALL_SCREENING")) {
-                        showDialogBlock();
-                        return;
-                    }
-                    FragmentInfo.this.lPer.launch(roleManager.createRequestRoleIntent("android.app.role.CALL_SCREENING"));
-                    return;
-                }
-                showDialogBlock();
-            }
-        }
-
-
-        public void showDialogBlock() {
-            new DialogNotification(getContext(), this.theme, new DialogResult() { 
-                @Override 
-                public final void onActionClick() {
-                    ViewInfo.this.m135x35d397f0();
-                }
-            }).show();
-        }
-
-
-
-        public  void m135x35d397f0() {
-            this.arrBlock.add(new ItemContact(FragmentInfo.this.itemContact.getId(), FragmentInfo.this.itemContact.getArrPhone()));
-            MyShare.putBlockNumber(getContext(), this.arrBlock);
-            updateBlock();
-        }
-
         @Override 
         public void onNumberResult(ItemPhone itemPhone) {
             makeCall(itemPhone.getNumber());
@@ -937,6 +932,67 @@ public class FragmentInfo extends Fragment {
             this.tvBlock.setText(R.string.block_this_caller);
         }
 
+        private void onBlock() {
+            if (isBlocked()) {
+                unblockContact();
+            } else {
+                if (Build.VERSION.SDK_INT >= 29) {
+                    RoleManager roleManager = (RoleManager) getContext().getSystemService(Context.ROLE_SERVICE);
+                    if (roleManager.isRoleHeld("android.app.role.CALL_SCREENING")) {
+                        showDialogBlock();
+                    } else {
+                        FragmentInfo.this.lPer.launch(roleManager.createRequestRoleIntent("android.app.role.CALL_SCREENING"));
+                    }
+                } else {
+                    showDialogBlock();
+                }
+            }
+        }
+
+        private boolean isBlocked() {
+            for (ItemContact c : arrBlock) {
+                if (matchesCurrentContact(c)) return true;
+            }
+            return false;
+        }
+
+        private void unblockContact() {
+            Iterator<ItemContact> it = arrBlock.iterator();
+            while (it.hasNext()) {
+                if (matchesCurrentContact(it.next())) {
+                    it.remove();
+                    break;
+                }
+            }
+            MyShare.putBlockNumber(getContext(), arrBlock);
+            updateBlock();
+        }
+
+        private boolean matchesCurrentContact(ItemContact candidate) {
+            if (FragmentInfo.this.itemContact.getId() != null
+                    && FragmentInfo.this.itemContact.getId().equals(candidate.getId())) {
+                return true;
+            }
+            return !FragmentInfo.this.itemContact.getArrPhone().isEmpty()
+                    && FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber() != null
+                    && !candidate.getArrPhone().isEmpty()
+                    && candidate.getArrPhone().get(0).getNumber() != null
+                    && PhoneNumberUtils.compare(
+                    FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber(),
+                    candidate.getArrPhone().get(0).getNumber());
+        }
+
+        public void showDialogBlock() {
+            new DialogNotification(getContext(), this.theme, new DialogResult() {
+                @Override
+                public void onActionClick() {
+                    arrBlock.add(new ItemContact(FragmentInfo.this.itemContact.getId(), FragmentInfo.this.itemContact.getArrPhone()));
+                    MyShare.putBlockNumber(getContext(), arrBlock);
+                    updateBlock();
+                }
+            }).show();
+        }
+
         private void addRecentsGroupedByDay(LinearLayout container, Context context, ArrayList<ItemRecent> arrRecent, boolean theme) {
             Calendar cal = Calendar.getInstance();
             int lastYear = -1;
@@ -950,7 +1006,8 @@ public class FragmentInfo extends Fragment {
             LinearLayout currentDayBlock = null;
 
             for (ItemRecent recent : arrRecent) {
-                if (missedOnly && recent.type != 3) continue;
+                if (displayMode == CallDisplayMode.MISSED && recent.type != 3) continue;
+                if (displayMode == CallDisplayMode.BLOCKED && recent.type != 6) continue;
 
                 cal.setTimeInMillis(recent.time);
                 int year = cal.get(java.util.Calendar.YEAR);
@@ -978,7 +1035,7 @@ public class FragmentInfo extends Fragment {
                 }
 
                 LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
-                layoutShowRecent.setRecent(recent, theme);
+                layoutShowRecent.setRecent(recent, theme, blockReasonResolver);
                 currentDayBlock.addView(layoutShowRecent, -1, -2);
             }
         }
@@ -993,20 +1050,16 @@ public class FragmentInfo extends Fragment {
 
             String phone = FragmentInfo.this.itemContact.getArrPhone().get(0).getNumber();
 
-            SharedPreferences prefs = getContext().getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
-            String authToken = prefs.getString("auth_token", null);
             if (authToken == null || authToken.isEmpty()) {
                 schedulePreview.setVisibility(GONE);
                 viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
                 return;
             }
-            String token = "Bearer " + authToken;
 
-            PhoneScheduleRepository repository = new PhoneScheduleRepository(ApiClient.getClient().create(ApiService.class), token);
-
-            repository.getSchedule(phone, new Callback<PhoneScheduleResponse>() {
+            scheduleRepository.getSchedule(phone, new Callback<PhoneScheduleResponse>() {
                 @Override
                 public void onResponse(Call<PhoneScheduleResponse> call, Response<PhoneScheduleResponse> response) {
+                    if (!isAdded() || getContext() == null) return;
                     if (!response.isSuccessful() || response.body() == null) {
                         viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);
                         schedulePreview.setVisibility(GONE);
@@ -1019,6 +1072,7 @@ public class FragmentInfo extends Fragment {
 
                 @Override
                 public void onFailure(Call<PhoneScheduleResponse> call, Throwable t) {
+                    if (!isAdded() || getContext() == null) return;
                     Log.e("Schedule", "Failed to load schedule", t);
                     schedulePreview.setVisibility(GONE);
                     viewItemSchedule.setInfo(R.drawable.ic_schedule, R.string.schedule, true, theme);

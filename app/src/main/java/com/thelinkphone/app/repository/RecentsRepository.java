@@ -32,7 +32,7 @@ public class RecentsRepository {
         return lastLoadedTime;
     }
 
-    public static void clear() {
+    public static void clearCache() {
         cache = null;
         lastLoadedTime = 0;
     }

@@ -34,6 +34,7 @@ import com.thelinkphone.app.item.ItemFavorites;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.item.ItemSimInfo;
 import com.thelinkphone.app.repository.RecentsRepository;
+import com.thelinkphone.app.utils.CallBlockReasonResolver;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -79,6 +80,7 @@ public class FragmentRecents extends BaseFragment {
         private final TextW tvRemoveAll;
         private volatile boolean isLoading = false;
         private boolean isNavigating = false;
+        private CallBlockReasonResolver blockReasonResolver;
 
         public ViewFragmentRecents(Context context) {
             super(context);
@@ -136,8 +138,8 @@ public class FragmentRecents extends BaseFragment {
             ViewModeRecent viewModeRecent = new ViewModeRecent(context);
             viewModeRecent.setModeResult(new ViewModeRecent.ModeResult() { 
                 @Override 
-                public final void onMode(boolean z) {
-                    ViewFragmentRecents.this.m151x2a773972(z);
+                public final void onMode(int mode) {
+                    ViewFragmentRecents.this.m151x2a773972(mode);
                 }
             });
             linearLayout.addView(viewModeRecent, -2, -2);
@@ -170,10 +172,10 @@ public class FragmentRecents extends BaseFragment {
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
             searchBar.setOnClickListener(v -> {
-                Log.d("RECENTS_SEARCH", "Search bar tapped, missedOnly=" + adapterRecent.isMiss());
+                Log.d("RECENTS_SEARCH", "Search bar tapped, missedOnly=" + adapterRecent.getMode());
                 if (getActivity() instanceof ActivityHome) {
                     ActivityHome activity = (ActivityHome) getActivity();
-                    FragmentRecentsSearch newInstance = FragmentRecentsSearch.newInstance(adapterRecent.isMiss());
+                    FragmentRecentsSearch newInstance = FragmentRecentsSearch.newInstance(adapterRecent.getMode());
                     newInstance.setContactResult(FragmentRecents.this.contactResult);
                     activity.showFragment(newInstance, true);
                 }
@@ -227,8 +229,8 @@ public class FragmentRecents extends BaseFragment {
 
 
 
-        public  void m151x2a773972(boolean z) {
-            this.adapterRecent.showMiss(!z);
+        public  void m151x2a773972(int mode) {
+            this.adapterRecent.setMode(mode);
         }
 
         private int dp(int value) {
@@ -269,6 +271,8 @@ public class FragmentRecents extends BaseFragment {
         public void loadAllRecent() {
 
             Log.d("RECENTS_CACHE", "loadAllRecent() called");
+            blockReasonResolver = CallBlockReasonResolver.load(getContext());
+            adapterRecent.setBlockReasonResolver(blockReasonResolver);
             if (RecentsRepository.hasCache()) {
 
                 Log.d("RECENTS_CACHE", "CACHE HIT");
@@ -399,15 +403,15 @@ public class FragmentRecents extends BaseFragment {
 
             if (FragmentRecents.this.getActivity() instanceof ActivityHome) {
                 ActivityHome activity = (ActivityHome) FragmentRecents.this.getActivity();
-                boolean missedOnly = adapterRecent.isMiss();
+                int displayMode = adapterRecent.getMode();
                 ItemContact contactWithNumber = ReadContact.getContactWithNumber(getContext(), itemRecentGroup.arrRecent.get(0).number);
                 if (contactWithNumber != null) {
-                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.back, missedOnly);
+                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, itemRecentGroup, R.string.back, displayMode);
                     newInstance.setContactResult(FragmentRecents.this.contactResult);
                     activity.showFragment(newInstance, true);
                 }
                 else {
-                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(itemRecentGroup, missedOnly);
+                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(itemRecentGroup, displayMode);
                     newInstance2.setContactResult(FragmentRecents.this.contactResult);
                     activity.showFragment(newInstance2, true);
                 }
@@ -415,7 +419,7 @@ public class FragmentRecents extends BaseFragment {
         }
 
         private void onRemoveAll() {
-            new DialogNotification(getContext(), R.string.delete_all_recents, R.string.delete_up, this.theme, new DialogResult() { 
+            new DialogNotification(getContext(), R.string.delete_all_recents, R.string.delete_all_recents_message, this.theme, new DialogResult() {
                 @Override 
                 public final void onActionClick() {
                     ViewFragmentRecents.this.m153x10def8b4();

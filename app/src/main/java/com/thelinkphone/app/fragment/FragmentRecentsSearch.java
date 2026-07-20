@@ -25,45 +25,47 @@ import com.thelinkphone.app.custom.TextW;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.repository.RecentsRepository;
+import com.thelinkphone.app.utils.CallDisplayMode;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.ReadContact;
 import com.thelinkphone.app.utils.RecentSearchUtils;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class FragmentRecentsSearch extends BaseFragment {
     private ViewFragmentRecentsSearch view;
 
-    public static FragmentRecentsSearch newInstance(boolean missedOnly) {
+    public static FragmentRecentsSearch newInstance(int mode) {
         FragmentRecentsSearch fragment = new FragmentRecentsSearch();
-        android.os.Bundle args = new android.os.Bundle();
-        args.putBoolean(ViewFragmentRecentsSearch.ARG_MISSED_ONLY, missedOnly);
+        Bundle args = new Bundle();
+        args.putInt(ViewFragmentRecentsSearch.ARG_MODE, mode);
         fragment.setArguments(args);
         return fragment;
     }
 
     @Override
     public View onCreateView(LayoutInflater layoutInflater, ViewGroup viewGroup, Bundle bundle) {
-        boolean missedOnly = getArguments() != null && getArguments().getBoolean(ViewFragmentRecentsSearch.ARG_MISSED_ONLY, false);
+        int mode = getArguments() != null ? getArguments().getInt(ViewFragmentRecentsSearch.ARG_MODE, CallDisplayMode.ALL) : CallDisplayMode.ALL;
         if (this.view == null) {
-            this.view = new ViewFragmentRecentsSearch(layoutInflater.getContext(), missedOnly);
+            this.view = new ViewFragmentRecentsSearch(layoutInflater.getContext(), mode);
         }
         return this.view;
     }
 
     public class ViewFragmentRecentsSearch extends RelativeLayout {
         private final boolean theme;
-        private final boolean missedOnly;
+        private final int mode;
         private final EditText etSearch;
         private final LinearLayout historyContainer;
         private final RecyclerView rvResults;
         private final AdapterRecentSearch adapterRecentSearch;
         private final TextW tvNoResults;
-        private static final String ARG_MISSED_ONLY = "missed_only";
+        private static final String ARG_MODE = "search_mode";
 
-        public ViewFragmentRecentsSearch(Context context, boolean missedOnly) {
+        public ViewFragmentRecentsSearch(Context context, int mode) {
             super(context);
-            this.missedOnly = missedOnly;
+            this.mode = mode;
             this.theme = MyShare.getTheme(context);
             int contentMargin = dp(16);
 
@@ -79,7 +81,7 @@ public class FragmentRecentsSearch extends BaseFragment {
 
             TextW tvScopeLabel = new TextW(context);
             tvScopeLabel.setId(View.generateViewId());
-            tvScopeLabel.setText(missedOnly ? "Searching in Missed Calls" : "Searching in All Calls");
+            tvScopeLabel.setText(mode == CallDisplayMode.MISSED ? "Searching in Missed Calls" : mode ==CallDisplayMode.BLOCKED ? "Searching in Blocked Calls" : "Searching in All Calls");
             tvScopeLabel.setupText(400, 3.2f);
             tvScopeLabel.setTextColor(Color.parseColor("#8A8A8E"));
             tvScopeLabel.setPadding(contentMargin, 0, contentMargin, dp(8));
@@ -122,7 +124,7 @@ public class FragmentRecentsSearch extends BaseFragment {
             historyContainer.setId(View.generateViewId());
             historyContainer.setOrientation(LinearLayout.VERTICAL);
             LayoutParams historyParams = new LayoutParams(-1, -2);
-            historyParams.addRule(3, topBar.getId());
+            historyParams.addRule(RelativeLayout.BELOW, tvScopeLabel.getId());
             addView(historyContainer, historyParams);
 
             // --- Results list (shown when query is non-empty) ---
@@ -131,12 +133,12 @@ public class FragmentRecentsSearch extends BaseFragment {
             rvResults.setId(View.generateViewId());
             rvResults.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
             ArrayList<ItemRecentGroup> resultsBacking = new ArrayList<>();
-            AdapterRecentSearch adapterRecentSearch = new AdapterRecentSearch(resultsBacking, theme, missedOnly, this::onResultTapped);
+            AdapterRecentSearch adapterRecentSearch = new AdapterRecentSearch(resultsBacking, theme, mode, this::onResultTapped);
             this.adapterRecentSearch = adapterRecentSearch;
             rvResults.setAdapter(adapterRecentSearch);
             rvResults.setVisibility(View.GONE);
             LayoutParams rvParams = new LayoutParams(-1, -1);
-            rvParams.addRule(3, topBar.getId());
+            rvParams.addRule(RelativeLayout.BELOW, tvScopeLabel.getId());
             addView(rvResults, rvParams);
 
             TextW tvNoResults = new TextW(context);
@@ -148,7 +150,7 @@ public class FragmentRecentsSearch extends BaseFragment {
             tvNoResults.setTextColor(Color.parseColor("#aaaaaa"));
             tvNoResults.setVisibility(View.GONE);
             LayoutParams noResultsParams = new LayoutParams(-1, -1);
-            noResultsParams.addRule(3, topBar.getId());
+            noResultsParams.addRule(RelativeLayout.BELOW, tvScopeLabel.getId());
             addView(tvNoResults, noResultsParams);
 
             renderHistory();
@@ -182,8 +184,14 @@ public class FragmentRecentsSearch extends BaseFragment {
             historyContainer.setVisibility(View.GONE);
 
             ArrayList<ItemRecentGroup> cache = RecentsRepository.getCache();
-            ArrayList<ItemRecentGroup> scoped = missedOnly ? RecentSearchUtils.filterMissedGroups(cache) : cache;
-
+            ArrayList<ItemRecentGroup> scoped;
+            if (mode == CallDisplayMode.MISSED) {
+                scoped = RecentSearchUtils.filterMissedGroups(cache);
+            } else if (mode == CallDisplayMode.BLOCKED) {
+                scoped = RecentSearchUtils.filterBlockedGroups(cache);
+            } else {
+                scoped = cache;
+            }
             ArrayList<ItemRecentGroup> filtered = new ArrayList<>();
             if (scoped != null) {
                 for (ItemRecentGroup group : scoped) {
@@ -193,7 +201,7 @@ public class FragmentRecentsSearch extends BaseFragment {
                 }
             }
 
-            Log.d("SEARCH_MATCH", "query='" + trimmed + "' missedOnly=" + missedOnly + " matches=" + filtered.size());
+            Log.d("SEARCH_MATCH", "query='" + trimmed + "' mode=" + mode + " matches=" + filtered.size());
 
             if (filtered.isEmpty()) {
                 rvResults.setVisibility(View.GONE);
@@ -273,11 +281,11 @@ public class FragmentRecentsSearch extends BaseFragment {
                 ItemContact contactWithNumber = ReadContact.getContactWithNumber(getContext(),
                         group.arrRecent.get(0).number);
                 if (contactWithNumber != null) {
-                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, group, R.string.back, false);
+                    FragmentInfo newInstance = FragmentInfo.newInstance(contactWithNumber, group, R.string.back, CallDisplayMode.ALL);
                     newInstance.setContactResult(FragmentRecentsSearch.this.contactResult);
                     activity.showFragment(newInstance, true);
                 } else {
-                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(group, false);
+                    FragmentInfoAnother newInstance2 = FragmentInfoAnother.newInstance(group, CallDisplayMode.ALL);
                     newInstance2.setContactResult(FragmentRecentsSearch.this.contactResult);
                     activity.showFragment(newInstance2, true);
                 }

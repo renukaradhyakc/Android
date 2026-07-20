@@ -49,6 +49,7 @@ import com.thelinkphone.app.model.QrRequest;
 import com.thelinkphone.app.service.IncomingCallPopupService;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
+import com.thelinkphone.app.utils.CallDisplayMode;
 import com.thelinkphone.app.utils.MyConst;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
@@ -614,7 +615,7 @@ public class ActivityHome extends AppCompatActivity {
 
 
         public  void m46x22192003(ItemContact itemContact, ItemRecentGroup itemRecentGroup) {
-            FragmentInfo newInstance = FragmentInfo.newInstance(itemContact, itemRecentGroup, R.string.back, false);
+            FragmentInfo newInstance = FragmentInfo.newInstance(itemContact, itemRecentGroup, R.string.back, CallDisplayMode.ALL);
             newInstance.setContactResult(ActivityHome.this.contactResult);
             ActivityHome.this.showFragment(newInstance, true);
         }

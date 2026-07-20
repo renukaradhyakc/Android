@@ -8,8 +8,10 @@ import android.widget.RelativeLayout;
 
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemRecent;
+import com.thelinkphone.app.utils.CallBlockReason;
+import com.thelinkphone.app.utils.CallBlockReasonResolver;
+import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
-
 
 
 public class LayoutShowRecent extends RelativeLayout {
@@ -51,7 +53,7 @@ public class LayoutShowRecent extends RelativeLayout {
         addView(textW3, layoutParams3);
     }
 
-    public void setRecent(ItemRecent itemRecent, boolean z) {
+    public void setRecent(ItemRecent itemRecent, boolean z, CallBlockReasonResolver resolver) {
         this.tvTime.setText(OtherUtils.longToTime(itemRecent.time));
         int i = itemRecent.type;
         if (i == 3) {
@@ -62,7 +64,14 @@ public class LayoutShowRecent extends RelativeLayout {
             this.tvStatus.setText(R.string.voicemails);
         } else if (i == 6) {
             this.tvDur.setVisibility(View.GONE);
-            this.tvStatus.setText(R.string.call_is_blocked);
+            int reason = resolver != null ? resolver.getReason(itemRecent.number, itemRecent.time) : CallBlockReason.NONE;
+            if (reason == CallBlockReason.OUTSIDE_SCHEDULE) {
+                this.tvStatus.setText(R.string.blocked_outside_schedule);
+            } else if (reason == CallBlockReason.API_FAILURE) {
+                this.tvStatus.setText(R.string.blocked_could_not_verify);
+            } else {
+                this.tvStatus.setText(R.string.call_is_blocked);
+            }
         } else if (i == 7) {
             this.tvDur.setVisibility(View.GONE);
             this.tvStatus.setText(R.string.call_another_device);

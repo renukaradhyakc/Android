@@ -39,7 +39,7 @@
     <string name="contacts">Contacts</string>
     <string name="events">Events</string>
     <string name="content_ads_video">To use this feature, please upgrade to the paid version or watch a rewarded ad.</string>
-    <string name="content_block">You will receive phone calls from people on the block list.</string>
+    <string name="content_block">You will no longer receive phone calls from this contact.</string>
     <string name="continue_pro">Continue</string>
     <string name="copy">Copy Number</string>
     <string name="copy_toast_msg">Link copied to clipboard</string>
@@ -51,6 +51,7 @@
     <string name="default_phone_app_prompt">Please make this app the default Phone app</string>
     <string name="delete">Delete</string>
     <string name="delete_all_recents">Delete all recent calls?</string>
+    <string name="delete_all_recents_message">All recent calls will be permanently deleted.</string>
     <string name="delete_up">DELETE</string>
     <string name="dialing">Dialing…</string>
     <string name="done">Done</string>
@@ -108,7 +109,7 @@
     <string name="message">message</string>
     <string name="message_up">Message</string>
     <string name="minute">m</string>
-    <string name="missed_call">Missed call</string>
+    <string name="missed_call">Missed</string>
     <string name="monday">Monday</string>
     <string name="more_app">More App</string>
     <string name="mute">mute</string>
@@ -200,4 +201,13 @@
 
     <string name="schedule">schedule</string>
     <string name="scheduled">scheduled</string>
+
+    <string name="remove">Remove</string>
+    <string name="remove_schedule_title">Remove Schedule?</string>
+    <string name="remove_schedule_message">Are you sure you want to remove the schedule for this number?</string>
+
+    <string name="blocked_outside_schedule">Blocked-Outside Schedule Call</string>
+    <string name="blocked_could_not_verify">Blocked-Couldnot Verify Schedule</string>
+
+    <string name="blocked_calls_tab">Blocked</string>
 </resources>

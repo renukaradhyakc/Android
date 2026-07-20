@@ -9,7 +9,12 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import com.thelinkphone.app.R;
+import com.thelinkphone.app.item.ItemRecent;
 import com.thelinkphone.app.item.ItemRecentGroup;
+import com.thelinkphone.app.utils.CallBlockReason;
+import com.thelinkphone.app.utils.CallBlockReasonResolver;
+import com.thelinkphone.app.utils.CallDisplayMode;
+import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.SearchHighlightUtils;
 
@@ -46,8 +51,8 @@ public class LayoutRecent extends RelativeLayout {
     private void init(Context context) {
         int widthScreen = OtherUtils.getWidthScreen(context) / 25;
         int i = (int) (widthScreen * 3.2f);
-        setOnLongClickListener(new OnLongClickListener() { 
-            @Override 
+        setOnLongClickListener(new OnLongClickListener() {
+            @Override
             public final boolean onLongClick(View view) {
                 return LayoutRecent.this.m85x48749e71(view);
             }
@@ -86,8 +91,8 @@ public class LayoutRecent extends RelativeLayout {
         imageView2.setId(153);
         this.imDel.setImageResource(R.drawable.ic_del);
         this.imDel.setPadding(widthScreen, 0, widthScreen, 0);
-        this.imDel.setOnClickListener(new OnClickListener() { 
-            @Override 
+        this.imDel.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 LayoutRecent.this.m86x49aaf150(view2);
             }
@@ -101,8 +106,8 @@ public class LayoutRecent extends RelativeLayout {
         imageView3.setId(154);
         this.imInfo.setImageResource(R.drawable.ic_info_fav);
         this.imInfo.setPadding(i2, 0, widthScreen, 0);
-        this.imInfo.setOnClickListener(new OnClickListener() { 
-            @Override 
+        this.imInfo.setOnClickListener(new OnClickListener() {
+            @Override
             public final void onClick(View view2) {
                 LayoutRecent.this.m87x4ae1442f(view2);
             }
@@ -146,8 +151,8 @@ public class LayoutRecent extends RelativeLayout {
         relativeLayout.addView(this.tvStatus, layoutParams9);
     }
 
-    
-    
+
+
     public  boolean m85x48749e71(View view) {
         this.favOnItemClick.onLongClick();
         return true;
@@ -159,18 +164,18 @@ public class LayoutRecent extends RelativeLayout {
             this.tvName.setText(SearchHighlightUtils.highlight(current.toString(), query));
         }
     }
-    
+
     public  void m86x49aaf150(View view) {
         this.favOnItemClick.onDel();
     }
 
-    
-    
+
+
     public  void m87x4ae1442f(View view) {
         this.favOnItemClick.onInfo();
     }
 
-    public void setItemRecent(ItemRecentGroup itemRecentGroup, int i, boolean z, boolean z2, boolean missedOnly) {
+    public void setItemRecent(ItemRecentGroup itemRecentGroup, int i, boolean z, boolean z2, int displayMode, CallBlockReasonResolver resolver) {
         long start = System.currentTimeMillis();
         if (z) {
             this.imDel.setVisibility(View.VISIBLE);
@@ -182,11 +187,16 @@ public class LayoutRecent extends RelativeLayout {
             this.imStatus.setVisibility(View.VISIBLE);
         }
         int i2 = itemRecentGroup.arrRecent.get(0).type;
+        int targetType = (displayMode == CallDisplayMode.MISSED) ? 3
+                : (displayMode == CallDisplayMode.BLOCKED) ? 6 : -1;
         Log.d("ROW_BIND", "name=" + itemRecentGroup.name + " type=" + i2);
-        if (missedOnly & i2 != 3) {
+
+        ItemRecent matchedEntry = itemRecentGroup.arrRecent.get(0);
+        if (targetType != -1 & i2 != targetType) {
             for (int idx = 0; idx < itemRecentGroup.arrRecent.size(); idx++) {
-                if (itemRecentGroup.arrRecent.get(idx).type == 3) {
-                    i2 = 3;
+                if (itemRecentGroup.arrRecent.get(idx).type == targetType) {
+                    i2 = targetType;
+                    matchedEntry = itemRecentGroup.arrRecent.get(idx);
                     break;
                 }
             }
@@ -211,7 +221,12 @@ public class LayoutRecent extends RelativeLayout {
                 break;
 
             case 6: // Blocked
-                this.imStatus.setImageResource(R.drawable.ic_call_block);
+                int reason = resolver != null ? resolver.getReason(matchedEntry.number, matchedEntry.time) : CallBlockReason.NONE;
+                if (reason == CallBlockReason.OUTSIDE_SCHEDULE || reason == CallBlockReason.API_FAILURE) {
+                    this.imStatus.setImageResource(R.drawable.ic_outside_schedule);
+                } else {
+                    this.imStatus.setImageResource(R.drawable.ic_call_block);
+                }
                 break;
 
             default:
@@ -243,13 +258,8 @@ public class LayoutRecent extends RelativeLayout {
             this.tvStatus.setText(str2 != null ? str2 : "");
         }
         long displayTime = itemRecentGroup.time;
-        if (missedOnly) {
-            for (int idx = 0; idx < itemRecentGroup.arrRecent.size(); idx++) {
-                if (itemRecentGroup.arrRecent.get(idx).type == 3) {
-                    displayTime = itemRecentGroup.arrRecent.get(idx).time;
-                    break;
-                }
-            }
+        if (targetType != -1) {
+            displayTime = matchedEntry.time;
         }
         this.tvTime.setText(OtherUtils.longToTime(getContext(), displayTime));
         if (i == 0) {

@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.thelinkphone.app.custom.FavOnItemClick;
 import com.thelinkphone.app.custom.LayoutRecent;
 import com.thelinkphone.app.item.ItemRecentGroup;
+import com.thelinkphone.app.utils.CallBlockReasonResolver;
 
 import java.util.ArrayList;
 
@@ -18,15 +19,20 @@ public class AdapterRecentSearch extends RecyclerView.Adapter<AdapterRecentSearc
 
     private final ArrayList<ItemRecentGroup> results;
     private final boolean theme;
-    private final boolean missedOnly;
+    private final int mode;
     private final OnResultClick onResultClick;
     private String currentQuery = "";
+    private CallBlockReasonResolver blockReasonResolver;
 
-    public AdapterRecentSearch(ArrayList<ItemRecentGroup> results, boolean theme, boolean missedOnly, OnResultClick onResultClick) {
+    public AdapterRecentSearch(ArrayList<ItemRecentGroup> results, boolean theme, int mode, OnResultClick onResultClick) {
         this.results = results;
         this.theme = theme;
-        this.missedOnly = missedOnly;
+        this.mode = mode;
         this.onResultClick = onResultClick;
+    }
+
+    public void setBlockReasonResolver(CallBlockReasonResolver resolver) {
+        this.blockReasonResolver = resolver;
     }
 
     public void updateResults(ArrayList<ItemRecentGroup> newResults, String query) {
@@ -49,7 +55,7 @@ public class AdapterRecentSearch extends RecyclerView.Adapter<AdapterRecentSearc
     public void onBindViewHolder(HolderResult holder, int position) {
         final ItemRecentGroup group = results.get(position);
 
-        holder.layoutRecent.setItemRecent(group, -1, false, theme, missedOnly);
+        holder.layoutRecent.setItemRecent(group, -1, false, theme, mode, blockReasonResolver);
         holder.layoutRecent.applySearchHighlight(currentQuery);
 
         holder.layoutRecent.setFavOnItemClick(new FavOnItemClick() {

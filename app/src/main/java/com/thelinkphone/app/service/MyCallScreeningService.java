@@ -16,6 +16,7 @@ import com.thelinkphone.app.item.ItemPhone;
 import com.thelinkphone.app.model.Event;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
+import com.thelinkphone.app.utils.CallBlockReason;
 import com.thelinkphone.app.utils.CheckEventTimeListener;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.ReadContact;
@@ -323,6 +324,7 @@ public class MyCallScreeningService extends CallScreeningService {
 
                         } else {
                             Log.d(TAG, "Unknown number + API failure - blocking for safety");
+                            MyShare.addBlockReason(MyCallScreeningService.this, phoneNumber, CallBlockReason.API_FAILURE);
                             blockCall(details);
                             launchBlockedPopup(callMode, null, phoneNumber, false);
                         }
@@ -351,6 +353,7 @@ public class MyCallScreeningService extends CallScreeningService {
                     launchActivityCall(callMode, event, phoneNumber);
                 } else {
                     Log.d(TAG, "Unknown number — outside schedule, blocking");
+                    MyShare.addBlockReason(MyCallScreeningService.this, phoneNumber, CallBlockReason.OUTSIDE_SCHEDULE);
                     blockCall(details);
                     launchBlockedPopup(callMode,event,phoneNumber,isManuallyBlocked);
                 }

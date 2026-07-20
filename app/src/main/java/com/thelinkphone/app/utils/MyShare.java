@@ -2,6 +2,9 @@ package com.thelinkphone.app.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.telephony.PhoneNumberUtils;
+
+import com.thelinkphone.app.item.ItemBlockReason;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemFavorites;
 import com.thelinkphone.app.item.ItemNote;
@@ -152,6 +155,9 @@ public class MyShare {
     private static final String KEY_SCAN_TAB_MODE = "scanner_bill_mode";
     private static final String KEY_SEARCH_HISTORY = "recent_search_history";
     private static final int MAX_SEARCH_HISTORY = 20;
+    private static final String KEY_BLOCK_REASONS = "arr_block_reasons";
+    private static final int MAX_BLOCK_REASON_RECORDS = 10000;
+    private static final long BLOCK_MATCH_WINDOW_MS = 15_000; // tolerance between screening time and call-log write time
 
     public static void putCallSetting(Context context, int callSetting) {
         share(context).edit().putInt("call_setting", callSetting).apply();
@@ -281,5 +287,36 @@ public class MyShare {
     public static void clearSearchHistory(Context context) {
         share(context).edit().remove(KEY_SEARCH_HISTORY).apply();
         android.util.Log.d("SEARCH_HISTORY", "clearSearchHistory called");
+    }
+
+    public static void addBlockReason(Context context, String number, int reason) {
+        if (number == null || number.isEmpty()) return;
+        ArrayList<ItemBlockReason> records = getBlockReasons(context);
+        records.add(0, new ItemBlockReason(number, System.currentTimeMillis(), reason));
+        while (records.size() > MAX_BLOCK_REASON_RECORDS) {
+            records.remove(records.size() - 1);
+        }
+        share(context).edit().putString(KEY_BLOCK_REASONS, new Gson().toJson(records)).apply();
+    }
+
+    public static ArrayList<ItemBlockReason> getBlockReasons(Context context) {
+        String json = share(context).getString(KEY_BLOCK_REASONS, "");
+        if (!json.isEmpty()) {
+            ArrayList<ItemBlockReason> list = new Gson().fromJson(json,
+                    new TypeToken<ArrayList<ItemBlockReason>>() {}.getType());
+            if (list != null) return list;
+        }
+        return new ArrayList<>();
+    }
+
+    public static int getBlockReason(Context context, String number, long callTime) {
+        if (number == null || number.isEmpty()) return CallBlockReason.NONE;
+        for (ItemBlockReason r : getBlockReasons(context)) {
+            if (android.telephony.PhoneNumberUtils.compare(number, r.getNumber())
+                    && Math.abs(r.getTimestamp() - callTime) <= BLOCK_MATCH_WINDOW_MS) {
+                return r.getReason();
+            }
+        }
+        return CallBlockReason.NONE;
     }
 }

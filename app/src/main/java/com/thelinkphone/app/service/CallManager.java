@@ -9,6 +9,7 @@ import android.telecom.Call;
 import android.telecom.InCallService;
 import android.util.Log;
 
+import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.MyShare;
 
 import java.util.List;
@@ -152,6 +153,9 @@ public class CallManager {
                 if (context != null) {
                     MyShare.clearCallInfo(context);
                 }
+                
+                RecentsRepository.clearCache();
+                Log.d("CallManager", "Recents cache invalidated after call ended");
 
                 this.inCallService = null;
                 this.mAudioManager = null;
