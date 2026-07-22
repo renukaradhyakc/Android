@@ -63,6 +63,12 @@ public class LayoutRecent extends RelativeLayout {
         this.tvName.setupText(600, 4.2f);
         int i2 = widthScreen / 2;
         this.tvName.setPadding(0, i2, 0, 0);
+        this.tvName.setSingleLine(true);
+        this.tvName.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
+        this.tvName.setMarqueeRepeatLimit(-1);
+        this.tvName.setSelected(true); // marquee only animates on a "selected" TextView
+        this.tvName.setFocusable(true);
+        this.tvName.setFocusableInTouchMode(true);
         RelativeLayout relativeLayout = new RelativeLayout(context);
         relativeLayout.setId(955);
         TextW textW2 = new TextW(context);
@@ -247,9 +253,9 @@ public class LayoutRecent extends RelativeLayout {
         if (str == null) {
             str = "";
         }
-//        if (itemRecentGroup.arrRecent.size() > 1) {
-//            str = str + " (" + itemRecentGroup.arrRecent.size() + ")";
-//        }
+        if (displayMode == CallDisplayMode.ALL && matchedEntry.repeatCount >= 2) {
+            str = str + " (" + matchedEntry.repeatCount + ")";
+        }
         this.tvName.setText(str);
         if (itemRecentGroup.nameType != null && !itemRecentGroup.nameType.isEmpty()) {
             this.tvStatus.setText(itemRecentGroup.nameType);

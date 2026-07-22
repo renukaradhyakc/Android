@@ -62,7 +62,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 
 
-public class ActivityHome extends AppCompatActivity {
+public class ActivityHome extends BaseActivityUi {
     private static final String TAG = "ActivityHome";
     private ArrayList<ItemContact> arrAllContact;
     private final ContactResult contactResult = new AnonymousClass1();
@@ -97,7 +97,7 @@ public class ActivityHome extends AppCompatActivity {
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_home);
-
+        applySystemBarInsets(R.id.ll_main);
         initializeSession();
         getDataCall();
         handleDeepLink(); // Handle deep links for LinkPhone calls
@@ -315,7 +315,7 @@ public class ActivityHome extends AppCompatActivity {
         rlMain.setBackgroundColor(-16777216);
         this.llFragment = (LinearLayout) findViewById(R.id.ll_fragment);
         boolean theme = MyShare.getTheme(this);
-        getWindow().setStatusBarColor(0);
+        //getWindow().setStatusBarColor(0);
 
         if (theme) {
             getWindow().setNavigationBarColor(Color.parseColor("#EFEFEF"));

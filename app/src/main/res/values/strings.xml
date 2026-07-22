@@ -210,4 +210,7 @@
     <string name="blocked_could_not_verify">Blocked-Couldnot Verify Schedule</string>
 
     <string name="blocked_calls_tab">Blocked</string>
+    
+    <string name="view_all">View all</string>
+    <string name="call_history">Call History</string>
 </resources>

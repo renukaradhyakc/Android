@@ -14,6 +14,7 @@ import com.google.gson.Gson;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemPhone;
 import com.thelinkphone.app.model.Event;
+import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.CallBlockReason;
@@ -201,6 +202,9 @@ public class MyCallScreeningService extends CallScreeningService {
                 .setSkipNotification(false)
                 .build();
         respondToCall(details, response);
+
+        RecentsRepository.clearCache();
+        Log.d("CallManager", "Recents cache invalidated after call ended");
 
         // Delete call log entry for blocked calls in Phonelink Scheduled mode
 //        deleteBlockedCallLog(details);

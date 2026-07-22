@@ -51,6 +51,7 @@ import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.CallBlockReasonResolver;
 import com.thelinkphone.app.utils.CallDisplayMode;
+import com.thelinkphone.app.utils.CallLogGroupHelper;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -233,18 +234,21 @@ public class FragmentInfoAnother extends Fragment {
             int i2 = (widthScreen * 18) / 100;
             this.theme = MyShare.getTheme(context);
             this.arrBlock = MyShare.getArrBlock(getContext());
+            this.blockReasonResolver = CallBlockReasonResolver.load(context);
+            int i3 = i / 2;
+            int statusBarInset = widthScreen / 20;
             ImageView imageView = new ImageView(context);
             imageView.setId(View.generateViewId());
             imageView.setImageResource(R.drawable.ic_back);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             imageView.setOnClickListener(new OnClickListener() { 
                 @Override 
                 public final void onClick(View view) {
                     ViewInfoAnother.this.m138x9f01e15a(view);
                 }
             });
-            LayoutParams layoutParams = new LayoutParams((int) (i * 1.5f), i * 3);
-            int i3 = i / 2;
-            layoutParams.setMargins(i3, MyShare.getSizeNotification(context), 0, 0);
+            LayoutParams layoutParams = new LayoutParams((int) (i * 1.5f), (int) (i * 1.3f));
+            layoutParams.setMargins(i3, statusBarInset, 0, 0);
             addView(imageView, layoutParams);
             TextW textW3 = new TextW(context);
             textW3.setText(R.string.back);
@@ -403,7 +407,17 @@ public class FragmentInfoAnother extends Fragment {
 //                        layoutShowRecent.setRecent(it.next(), this.theme);
 //                        linearLayout4.addView(layoutShowRecent, -1, -2);
 //                    }
-                    addRecentsGroupedByDay(linearLayout4, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme);
+                    CallLogGroupHelper.addRecentsGroupedByDay(
+                            linearLayout4, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme,
+                            FragmentInfoAnother.this.displayMode, this.blockReasonResolver, 3,
+                            () -> {
+                                if (getActivity() instanceof ActivityHome) {
+                                    FragmentCallLogs f = FragmentCallLogs.newInstance(
+                                            FragmentInfoAnother.this.itemRecentGroup, FragmentInfoAnother.this.displayMode);
+                                    f.setContactResult(FragmentInfoAnother.this.contactResult);
+                                    ((ActivityHome) getActivity()).showFragment(f, true);
+                                }
+                            });
                     LinearLayout linearLayout5 = new LinearLayout(context);
                     linearLayout5.setOrientation(LinearLayout.VERTICAL);
                     LinearLayout.LayoutParams layoutParams10 = new LinearLayout.LayoutParams(i7, -2);
@@ -579,8 +593,17 @@ public class FragmentInfoAnother extends Fragment {
 //                layoutShowRecent.setRecent(it.next(), this.theme);
 //                linearLayout42.addView(layoutShowRecent, -1, -2);
 //            }
-            this.blockReasonResolver = CallBlockReasonResolver.load(context);
-            addRecentsGroupedByDay(linearLayout42, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme);
+            CallLogGroupHelper.addRecentsGroupedByDay(
+                    linearLayout42, context, FragmentInfoAnother.this.itemRecentGroup.arrRecent, this.theme,
+                    FragmentInfoAnother.this.displayMode, this.blockReasonResolver, 3,
+                    () -> {
+                        if (getActivity() instanceof ActivityHome) {
+                            FragmentCallLogs f = FragmentCallLogs.newInstance(
+                                    FragmentInfoAnother.this.itemRecentGroup, FragmentInfoAnother.this.displayMode);
+                            f.setContactResult(FragmentInfoAnother.this.contactResult);
+                            ((ActivityHome) getActivity()).showFragment(f, true);
+                        }
+                    });
             Log.d("INFO_DEBUG", "Debug2");
             schedulePreview = new LayoutSchedulePreview(context);
             LinearLayout.LayoutParams scheduleParams = new LinearLayout.LayoutParams(i72, -2);

@@ -196,6 +196,10 @@ public class ReadContact {
         query.close();
 
         result.addAll(groupMap.values());
+        CallBlockReasonResolver resolver = CallBlockReasonResolver.load(context);
+        for (ItemRecentGroup group : result) {
+            computeRepeatCount(group, resolver);
+        }
         Log.d("RECENTS_PERF", "groupMap size = " + groupMap.size());
 
         android.util.Log.d("RECENTS_PERF", "loop finished in " + (System.currentTimeMillis() - loopStart) + " ms");
@@ -323,6 +327,26 @@ public class ReadContact {
 //        }
 //        return arrayList;
 //    }
+
+    private static void computeRepeatCount(ItemRecentGroup group, CallBlockReasonResolver resolver) {
+        ArrayList<ItemRecent> list = group.arrRecent;
+        if (list == null || list.isEmpty()) return;
+
+        ItemRecent top = list.get(0); // most recent call — cursor is date DESC, groups built in that order
+        int topOutcome = CallOutcome.resolve(top.type, top.number, top.time, resolver);
+        if (topOutcome == CallOutcome.OTHER) {
+            top.repeatCount = 1; // incoming/outgoing/cancelled never get a badge
+            return;
+        }
+
+        int count = 1;
+        for (int i = 1; i < list.size(); i++) {
+            ItemRecent next = list.get(i);
+            if (CallOutcome.resolve(next.type, next.number, next.time, resolver) != topOutcome) break;
+            count++;
+        }
+        top.repeatCount = count;
+    }
 
     public static void removeRecents(final Context context, final String[] strArr) {
         new Thread(new Runnable() {

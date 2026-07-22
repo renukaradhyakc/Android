@@ -63,6 +63,7 @@ import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.CallBlockReasonResolver;
 import com.thelinkphone.app.utils.CallDisplayMode;
+import com.thelinkphone.app.utils.CallLogGroupHelper;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
@@ -262,24 +263,26 @@ public class FragmentInfo extends Fragment {
             this.arrViewNumber = new ArrayList<>();
             this.tvBlock = new TextW(context);
             this.edtNote = new EditW(context);
-            this.handler = new Handler(new Handler.Callback() { 
-                @Override 
+            this.handler = new Handler(new Handler.Callback() {
+                @Override
                 public final boolean handleMessage(Message message) {
                     return ViewInfo.this.m120xfc74ef22(message);
                 }
             });
+            int i3 = i / 2;
+            int statusBarInset = widthScreen / 20;
             ImageView imageView = new ImageView(context);
             imageView.setId(View.generateViewId());
             imageView.setImageResource(R.drawable.ic_back);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             imageView.setOnClickListener(new OnClickListener() { 
                 @Override 
                 public final void onClick(View view) {
                     ViewInfo.this.m121xd8366ae3(view);
                 }
             });
-            LayoutParams layoutParams = new LayoutParams((int) (i * 1.5f), i * 3);
-            int i3 = i / 2;
-            layoutParams.setMargins(i3, MyShare.getSizeNotification(context), 0, 0);
+            LayoutParams layoutParams = new LayoutParams((int) (i * 1.5f), (int) (i * 1.3f));
+            layoutParams.setMargins(i3, statusBarInset, 0, 0);
             addView(imageView, layoutParams);
             TextW textW = new TextW(context);
             textW.setText(FragmentInfo.this.title);
@@ -429,7 +432,17 @@ public class FragmentInfo extends Fragment {
 //                    textW4.setTextColor(-1);
 //                }
                 this.blockReasonResolver = CallBlockReasonResolver.load(context);
-                addRecentsGroupedByDay(linearLayout3, context, FragmentInfo.this.itemRecentGroup.arrRecent, this.theme);
+                CallLogGroupHelper.addRecentsGroupedByDay(
+                        linearLayout3, context, FragmentInfo.this.itemRecentGroup.arrRecent, this.theme,
+                        FragmentInfo.this.displayMode, this.blockReasonResolver, 3,
+                        () -> {
+                            if (getActivity() instanceof ActivityHome) {
+                                FragmentCallLogs f = FragmentCallLogs.newInstance(
+                                        FragmentInfo.this.itemRecentGroup, FragmentInfo.this.displayMode);
+                                f.setContactResult(FragmentInfo.this.contactResult);
+                                ((ActivityHome) getActivity()).showFragment(f, true);
+                            }
+                        });
             }
             LinearLayout linearLayout4 = new LinearLayout(context);
             this.llNumber = linearLayout4;
@@ -991,53 +1004,6 @@ public class FragmentInfo extends Fragment {
                     updateBlock();
                 }
             }).show();
-        }
-
-        private void addRecentsGroupedByDay(LinearLayout container, Context context, ArrayList<ItemRecent> arrRecent, boolean theme) {
-            Calendar cal = Calendar.getInstance();
-            int lastYear = -1;
-            int lastDayOfYear = -1;
-            int widthScreen = OtherUtils.getWidthScreen(context);
-            int pad = widthScreen / 25;
-            float radius = (widthScreen * 3.0f) / 100.0f;
-            Log.d("THEME_DEBUG inside method", "theme = " + this.theme);
-            Log.d("THEME_DEBUG inside method", "MyShare.getTheme = " + MyShare.getTheme(context));
-            int bgColor = theme ? -1 : Color.parseColor("#424141");
-            LinearLayout currentDayBlock = null;
-
-            for (ItemRecent recent : arrRecent) {
-                if (displayMode == CallDisplayMode.MISSED && recent.type != 3) continue;
-                if (displayMode == CallDisplayMode.BLOCKED && recent.type != 6) continue;
-
-                cal.setTimeInMillis(recent.time);
-                int year = cal.get(java.util.Calendar.YEAR);
-                int dayOfYear = cal.get(java.util.Calendar.DAY_OF_YEAR);
-
-                if (year != lastYear || dayOfYear != lastDayOfYear) {
-                    currentDayBlock = new LinearLayout(context);
-                    currentDayBlock.setOrientation(LinearLayout.VERTICAL);
-                    currentDayBlock.setBackground(OtherUtils.bgIcon(bgColor, radius));
-                    currentDayBlock.setPadding(pad, pad / 2, pad, pad / 2);
-
-                    LinearLayout.LayoutParams blockParams = new LinearLayout.LayoutParams(-1, -2);
-                    blockParams.setMargins(0, pad, 0, 0);
-                    container.addView(currentDayBlock, blockParams);
-
-                    TextW header = new TextW(context);
-                    header.setupText(400, 3.3f);
-                    header.setText(OtherUtils.longToTimeTitle(context, recent.time));
-                    header.setPadding(0, pad / 2, 0, pad / 2);
-                    header.setTextColor(theme ? Color.parseColor("#8A8A8E") : Color.parseColor("#F5F5F5"));
-                    currentDayBlock.addView(header, -1, -2);
-
-                    lastYear = year;
-                    lastDayOfYear = dayOfYear;
-                }
-
-                LayoutShowRecent layoutShowRecent = new LayoutShowRecent(context);
-                layoutShowRecent.setRecent(recent, theme, blockReasonResolver);
-                currentDayBlock.addView(layoutShowRecent, -1, -2);
-            }
         }
 
         private void loadSchedule() {

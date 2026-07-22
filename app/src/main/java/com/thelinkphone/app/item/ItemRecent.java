@@ -20,6 +20,8 @@ public class ItemRecent {
     public int type;
     @SerializedName("typeNumber")
     public String typeNumber;
+    @SerializedName("repeatCount")
+    public int repeatCount = 1;
 
     public ItemRecent(String str, String str2, String str3, long j, long j2, String str4, int i, String str5) {
         this.id = str;

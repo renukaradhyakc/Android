@@ -109,7 +109,7 @@ public class FragmentRecents extends BaseFragment {
             });
             LayoutParams layoutParams = new LayoutParams(-2, -2);
             layoutParams.addRule(21);
-            layoutParams.setMargins(0, MyShare.getSizeNotification(context), 0, 0);
+            layoutParams.setMargins(0, 0, 0, 0);
             addView(textW, layoutParams);
             TextW textW2 = new TextW(context);
             this.tvRemoveAll = textW2;
@@ -125,7 +125,7 @@ public class FragmentRecents extends BaseFragment {
                 }
             });
             LayoutParams layoutParams2 = new LayoutParams(-2, -2);
-            layoutParams2.setMargins(0, MyShare.getSizeNotification(context), 0, 0);
+            layoutParams2.setMargins(0, 0, 0, 0);
             addView(textW2, layoutParams2);
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setId(View.generateViewId());

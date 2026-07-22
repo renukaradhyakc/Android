@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
 
+import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 
 import android.os.Environment;
@@ -104,6 +105,12 @@ public class EventsFragment extends Fragment {
 
         webview = (WebView) view.findViewById(R.id.webview);
         webview.setWebViewClient(new WebViewClient());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            webview.setFitsSystemWindows(false);
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(webview, (v, insets) -> insets);
 
         webview.setBackgroundColor(Color.WHITE);
         webview.getSettings().setJavaScriptEnabled(true);
