@@ -370,6 +370,16 @@ public class OtherUtils {
         Toast.makeText(context, (int) R.string.copy, Toast.LENGTH_SHORT).show();
     }
 
+    public static void copyToClip(Context context, String str, String clipLabel, int toastMessageResId) {
+        if (str == null || str.isEmpty()) {
+            return;
+        }
+        vibrator(context);
+        ((ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE))
+                .setPrimaryClip(ClipData.newPlainText(clipLabel, str));
+        Toast.makeText(context, toastMessageResId, Toast.LENGTH_SHORT).show();
+    }
+
     public static void sendMessage(Context context, String str) {
         if (str == null || str.isEmpty()) {
             return;

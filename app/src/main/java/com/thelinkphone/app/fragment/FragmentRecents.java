@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.telecom.PhoneAccountHandle;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -33,6 +35,9 @@ import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemFavorites;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.item.ItemSimInfo;
+import com.thelinkphone.app.model.ContactLookupResult;
+import com.thelinkphone.app.repository.ContactLookupCache;
+import com.thelinkphone.app.repository.ContactLookupRepository;
 import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.CallBlockReasonResolver;
 import com.thelinkphone.app.utils.MyShare;
@@ -42,6 +47,8 @@ import com.thelinkphone.app.utils.SimUtils;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class FragmentRecents extends BaseFragment {
@@ -81,6 +88,8 @@ public class FragmentRecents extends BaseFragment {
         private volatile boolean isLoading = false;
         private boolean isNavigating = false;
         private CallBlockReasonResolver blockReasonResolver;
+        private final TextW tvStatsLeft;
+        private final TextW tvStatsRight;
 
         public ViewFragmentRecents(Context context) {
             super(context);
@@ -185,6 +194,27 @@ public class FragmentRecents extends BaseFragment {
             searchBarParams.addRule(3, linearLayout.getId());
             searchBarParams.setMargins(contentMargin, dp(4), contentMargin, dp(10));
             addView(searchBar, searchBarParams);
+            LinearLayout statsRow = new LinearLayout(context);
+            statsRow.setId(View.generateViewId());
+            statsRow.setOrientation(LinearLayout.HORIZONTAL);
+
+            TextW tvStatsLeft = new TextW(context);
+            this.tvStatsLeft = tvStatsLeft;
+            tvStatsLeft.setupText(400, 3.6f);
+            tvStatsLeft.setTextColor(Color.parseColor("#007AFF"));
+            statsRow.addView(tvStatsLeft, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+            TextW tvStatsRight = new TextW(context);
+            this.tvStatsRight = tvStatsRight;
+            tvStatsRight.setupText(400, 3.6f);
+            tvStatsRight.setTextColor(Color.parseColor("#FF8000"));
+            tvStatsRight.setGravity(Gravity.END);
+            statsRow.addView(tvStatsRight, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+            LayoutParams statsRowParams = new LayoutParams(-1, -2);
+            statsRowParams.addRule(3, searchBar.getId());
+            statsRowParams.setMargins(contentMargin, 0, contentMargin, dp(6));
+            addView(statsRow, statsRowParams);
             // --- end search bar ---
             TextW textW3 = new TextW(context);
             this.tvEmpty = textW3;
@@ -195,13 +225,13 @@ public class FragmentRecents extends BaseFragment {
             textW3.setVisibility(View.GONE);
             LayoutParams layoutParams4 = new LayoutParams(-1, -1);
             layoutParams4.setMargins(contentMargin, 0, contentMargin, 0);
-            layoutParams4.addRule(3, searchBar.getId());
+            layoutParams4.addRule(3, statsRow.getId());
             addView(textW3, layoutParams4);
             SwipeMenuRecyclerView swipeMenuRecyclerView = new SwipeMenuRecyclerView(context);
             swipeMenuRecyclerView.setAdapter(adapterRecent);
             swipeMenuRecyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
             LayoutParams layoutParams5 = new LayoutParams(-1, -1);
-            layoutParams5.addRule(3, searchBar.getId());
+            layoutParams5.addRule(3, statsRow.getId());
             addView(swipeMenuRecyclerView, layoutParams5);
             Log.d("RECENTS_UI", "RecyclerView attached");
             if (theme) {
@@ -279,14 +309,16 @@ public class FragmentRecents extends BaseFragment {
                 isNavigating=false;
                 arrRecent.clear();
                 arrRecent.addAll(RecentsRepository.getCache());
+                resetBadgeAnimationFlags();
 
                 Log.d("RECENTS_CACHE", "Loaded from cache. size=" + arrRecent.size());
 
                 checkList();
                 adapterRecent.addNewData();
+                updateStatsView(countCallalinkUsers());
 
                 Log.d("RECENTS_CACHE", "UI updated from cache");
-
+                resolveCallalinkBadges();
                 return;
             }
 
@@ -320,11 +352,14 @@ public class FragmentRecents extends BaseFragment {
             Log.d("RECENTS_UI", "UI handler received message");
             long uiStart = System.currentTimeMillis();
             isLoading = false;
+            resetBadgeAnimationFlags();
 
             checkList();
             Log.d("RECENTS_UI", "checkList finished in " + (System.currentTimeMillis() - uiStart) + " ms");
             this.adapterRecent.addNewData();
+            updateStatsView(countCallalinkUsers());
             Log.d("RECENTS_UI", "adapterRecent.addNewData finished in " + (System.currentTimeMillis() - uiStart) + " ms");
+            resolveCallalinkBadges();
             return true;
         }
 
@@ -336,6 +371,7 @@ public class FragmentRecents extends BaseFragment {
             Log.d("RECENTS_CACHE", "Reading CallLog");
             ArrayList<ItemRecentGroup> data = ReadContact.getAllRecents(getContext());
             Log.d("RECENTS_CACHE", "CallLog loaded. size=" + data.size());
+            applyCachedBadges(data);
             this.arrRecent.clear();
             this.arrRecent.addAll(data);
             RecentsRepository.setCache(data);
@@ -434,6 +470,83 @@ public class FragmentRecents extends BaseFragment {
             this.adapterRecent.removeAll();
             checkList();
             updateEdit();
+        }
+
+        private void applyCachedBadges(ArrayList<ItemRecentGroup> groups) {
+            for (ItemRecentGroup group : groups) {
+                if (group.normalizedNumber == null) continue;
+                ContactLookupResult cached = ContactLookupCache.get(getContext(), group.normalizedNumber);
+                group.applyContactLookup(cached);
+            }
+        }
+
+        private void resolveCallalinkBadges() {
+            if (arrRecent.isEmpty()) return;
+
+            Map<String, ItemRecentGroup> numberToGroup = new HashMap<>();
+            for (ItemRecentGroup group : arrRecent) {
+                if (group.normalizedNumber != null) {
+                    numberToGroup.put(group.normalizedNumber, group);
+                }
+            }
+
+            long start = System.currentTimeMillis();
+            Log.d("CONTACT_LOOKUP_PERF", "resolve() START uniqueNumbers=" + numberToGroup.size());
+
+            ContactLookupRepository.resolve(getContext(), new ArrayList<>(numberToGroup.keySet()), updatedNumbers -> {
+                long elapsed = System.currentTimeMillis() - start;
+
+                for (String number : updatedNumbers) {
+                    ItemRecentGroup group = numberToGroup.get(number);
+                    if (group != null) {
+                        group.applyContactLookup(ContactLookupCache.get(getContext(), number));
+                    }
+                }
+
+                int positiveCount = 0;
+                int negativeCount = 0;
+                for (ItemRecentGroup group : arrRecent) {
+                    if (group.isCallalinkUser) positiveCount++; else negativeCount++;
+                }
+                updateStatsView(positiveCount);
+
+                Log.d("CONTACT_LOOKUP_PERF", "resolve() END elapsed=" + elapsed + "ms"
+                        + " requested=" + numberToGroup.size()
+                        + " fetchedFromApi=" + updatedNumbers.size()
+                        + " cacheHits=" + (numberToGroup.size() - updatedNumbers.size()));
+
+                Log.d("CONTACT_LOOKUP_STATS", "CallaLink users=" + positiveCount
+                        + " Non-CallaLink=" + negativeCount
+                        + " totalInRecents=" + arrRecent.size());
+
+                if (!updatedNumbers.isEmpty()) {
+                    adapterRecent.notifyCallalinkUpdated(updatedNumbers);
+                }
+            });
+        }
+
+        private void resetBadgeAnimationFlags() {
+            for (ItemRecentGroup group : arrRecent) {
+                group.badgeAnimationPlayed = false;
+            }
+        }
+
+        private void updateStatsView(int callalinkCount) {
+            int total = arrRecent.size();
+            tvStatsLeft.setText("Total Callers- " + total);
+            tvStatsRight.setText("CallaLink Users- " + callalinkCount);
+
+            int visibility = arrRecent.isEmpty() ? View.GONE : View.VISIBLE;
+            tvStatsLeft.setVisibility(visibility);
+            tvStatsRight.setVisibility(visibility);
+        }
+
+        private int countCallalinkUsers() {
+            int count = 0;
+            for (ItemRecentGroup group : arrRecent) {
+                if (group.isCallalinkUser) count++;
+            }
+            return count;
         }
     }
 }

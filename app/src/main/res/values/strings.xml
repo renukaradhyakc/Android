@@ -27,6 +27,8 @@
     <string name="call_ending">Call Ending</string>
     <string name="call_is_blocked">Call is blocked</string>
     <string name="call_is_canceled">Call is canceled</string>
+    <string name="call_is_rejected">Call rejected</string>
+    <string name="call_didnot_connect">Call didn\'t connect</string>
     <string name="call_log">Call Logs</string>
     <string name="call_pro">iCall Pro</string>
     <string name="call_screen">iCall OS16</string>
@@ -41,8 +43,8 @@
     <string name="content_ads_video">To use this feature, please upgrade to the paid version or watch a rewarded ad.</string>
     <string name="content_block">You will no longer receive phone calls from this contact.</string>
     <string name="continue_pro">Continue</string>
-    <string name="copy">Copy Number</string>
-    <string name="copy_toast_msg">Link copied to clipboard</string>
+    <string name="copy">Number Copied</string>
+    <string name="link_copied">Link copied</string>
     <string name="custom">Custom</string>
     <string name="custom_lock">Customizable Lock</string>
     <string name="dark_themes">Dark Themes</string>
@@ -109,7 +111,7 @@
     <string name="message">message</string>
     <string name="message_up">Message</string>
     <string name="minute">m</string>
-    <string name="missed_call">Missed</string>
+    <string name="missed_call">Missed call</string>
     <string name="monday">Monday</string>
     <string name="more_app">More App</string>
     <string name="mute">mute</string>

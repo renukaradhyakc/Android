@@ -19,6 +19,15 @@ public class Event {
     @SerializedName("username")
     private String username;
 
+    @SerializedName("id")
+    private Integer id;
+
+    @SerializedName("domain_url")
+    private String domainUrl;
+
+    @SerializedName("last_name")
+    private String lastName;
+
     // --- Getters ---
     public boolean isWithinTime() {
         return isWithinTime;
@@ -60,4 +69,10 @@ public class Event {
     public void setUsername(String username) {
         this.username = username;
     }
+
+    public Integer getId() { return id; }
+
+    public String getDomainUrl() { return domainUrl; }
+
+    public String getLastName() { return lastName; }
 }

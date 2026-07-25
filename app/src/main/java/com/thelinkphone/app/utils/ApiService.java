@@ -1,6 +1,8 @@
 package com.thelinkphone.app.utils;
 
 import com.thelinkphone.app.model.BillUploadResponse;
+import com.thelinkphone.app.model.ContactLookupRequest;
+import com.thelinkphone.app.model.ContactLookupResponse;
 import com.thelinkphone.app.model.Event;
 import com.thelinkphone.app.model.EventResponse;
 import com.thelinkphone.app.model.GenericResponse;
@@ -126,5 +128,11 @@ public interface ApiService {
     Call<ScheduleResponse> getScheduleDetails(
             @Header("Authorization") String token,
             @Path("id") int scheduleId
+    );
+
+    @POST("callalink/lookup")
+    Call<ContactLookupResponse> lookupContacts(
+            @Header("Authorization") String token,
+            @Body ContactLookupRequest request
     );
 }

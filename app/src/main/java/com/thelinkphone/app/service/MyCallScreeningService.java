@@ -13,7 +13,9 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemPhone;
+import com.thelinkphone.app.model.ContactLookupResult;
 import com.thelinkphone.app.model.Event;
+import com.thelinkphone.app.repository.ContactLookupCache;
 import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
@@ -22,7 +24,9 @@ import com.thelinkphone.app.utils.CheckEventTimeListener;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.ReadContact;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Call screening service that implements two modes:
@@ -270,6 +274,7 @@ public class MyCallScreeningService extends CallScreeningService {
                 if (response.isSuccessful() && response.body() != null) {
                     Event event = response.body();
                     Log.d(TAG, "API Response: " + new Gson().toJson(response.body()));
+                    cacheContactLookupFromEvent(getApplicationContext(), phoneNumber, event);
                     listener.onEventCheckComplete(event,false);
                 } else {
                     Log.e(TAG, "API call failed or empty response - Response code: " + response.code());
@@ -380,6 +385,27 @@ public class MyCallScreeningService extends CallScreeningService {
         if (namePhoto != null && !namePhoto[0].isEmpty()) return namePhoto[0];
         if (event != null && event.getUsername() != null && !event.getUsername().isEmpty()) return event.getUsername();
         return "Unknown Caller";
+    }
+
+    private void cacheContactLookupFromEvent(Context context, String phoneNumber, Event event) {
+        if (event == null) return;
+
+        String normalized = ReadContact.normalizeNumber(phoneNumber);
+
+        ContactLookupResult result = new ContactLookupResult();
+        result.setUser(event.isCallalinkUser());
+        if (event.isCallalinkUser()) {
+            result.setId(event.getId());
+            result.setFirstName(event.getUsername());
+            result.setLastName(event.getLastName());
+            result.setDomainUrl(event.getDomainUrl());
+        }
+
+        Map<String, ContactLookupResult> single = new HashMap<>();
+        single.put(normalized, result);
+
+        ContactLookupCache.putAllInMemory(context, single);
+        ContactLookupCache.persist(context);
     }
 }
 

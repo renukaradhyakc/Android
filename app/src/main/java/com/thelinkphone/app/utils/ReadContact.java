@@ -187,6 +187,7 @@ public class ReadContact {
 
             if (group == null) {
                 group = new ItemRecentGroup(recent, name, photo);
+                group.normalizedNumber = key;
                 groupMap.put(key, group);
             } else {
                 group.addRecent(recent);
@@ -536,7 +537,7 @@ public class ReadContact {
     public static void clearMissedCallBadge(final Context context, final String phoneNumber) {
         // Already running in background thread from CallService - no need for new thread
         try {
-            android.util.Log.d("ReadContact", "Clearing missed call badge for: " + phoneNumber);
+            Log.d("ReadContact", "Clearing missed call badge for: " + phoneNumber);
 
             // Use only the most effective method to avoid ANR
             clearSystemMissedCallBadge(context, phoneNumber);
@@ -550,7 +551,7 @@ public class ReadContact {
             }
 
         } catch (Exception e) {
-            android.util.Log.e("ReadContact", "Error clearing missed call badge: " + e.getMessage());
+            Log.e("ReadContact", "Error clearing missed call badge: " + e.getMessage());
         }
     }
 

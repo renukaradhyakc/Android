@@ -34,9 +34,12 @@ import com.thelinkphone.app.custom.LayoutChooseSimInfo;
 import com.thelinkphone.app.custom.LayoutSchedulePreview;
 import com.thelinkphone.app.custom.LayoutShowRecent;
 import com.thelinkphone.app.custom.TextW;
+import com.thelinkphone.app.custom.ViewItemCallalinkLink;
 import com.thelinkphone.app.custom.ViewItemInfo;
+import com.thelinkphone.app.custom.ViewQrBadgeOverlay;
 import com.thelinkphone.app.dialog.DialogNotification;
 import com.thelinkphone.app.dialog.DialogResult;
+import com.thelinkphone.app.dialog.DialogShowQr;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemRecent;
 import com.thelinkphone.app.item.ItemRecentGroup;
@@ -278,11 +281,23 @@ public class FragmentInfoAnother extends Fragment {
             scrollView.addView(linearLayout, -1, -2);
             ImageView imageView2 = new ImageView(context);
             imageView2.setImageResource(R.drawable.ic_no_contact);
-            linearLayout.addView(imageView2, i2, i2);
+
+            ViewQrBadgeOverlay avatarOverlay = new ViewQrBadgeOverlay(context, imageView2, i2);
+            linearLayout.addView(avatarOverlay, i2, i2);
+
+            String qrLink = FragmentInfoAnother.this.itemRecentGroup.getCallalinkLink();
+            if (qrLink != null) {
+                avatarOverlay.setBadgeVisible(true);
+                String qrName = FragmentInfoAnother.this.itemRecentGroup.getDisplayNameForQr();
+                avatarOverlay.setOnBadgeClick(v -> new DialogShowQr(getContext(), qrLink, qrName, this.theme).show());
+            }
             TextW textW4 = new TextW(context);
             textW4.setupText(400, 7.0f);
             textW4.setSingleLine();
-            textW4.setEllipsize(TextUtils.TruncateAt.END);
+            textW4.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+            textW4.setMarqueeRepeatLimit(-1);
+            textW4.setHorizontallyScrolling(true);
+            textW4.setSelected(true);
             textW4.setPadding(i, i / 8, i, 0);
             String str = FragmentInfoAnother.this.itemRecentGroup.arrRecent.get(0).number;
             Log.d("INFO_DEBUG", "number = " + str);
@@ -605,6 +620,12 @@ public class FragmentInfoAnother extends Fragment {
                         }
                     });
             Log.d("INFO_DEBUG", "Debug2");
+            // --- CallaLink link ---
+            ViewItemCallalinkLink viewCallalinkLink = new ViewItemCallalinkLink(context);
+            LinearLayout.LayoutParams callalinkParams = new LinearLayout.LayoutParams(i72, -2);
+            callalinkParams.setMargins(0, i, 0, 0);
+            linearLayout.addView(viewCallalinkLink, callalinkParams);
+            viewCallalinkLink.setLink(FragmentInfoAnother.this.itemRecentGroup.getCallalinkLink(), FragmentInfoAnother.this.itemRecentGroup.getDisplayNameForQr());
             schedulePreview = new LayoutSchedulePreview(context);
             LinearLayout.LayoutParams scheduleParams = new LinearLayout.LayoutParams(i72, -2);
             scheduleParams.setMargins(0, i, 0, 0);
@@ -710,6 +731,7 @@ public class FragmentInfoAnother extends Fragment {
                 linearLayout52.setBackground(OtherUtils.bgIcon(-1, radius2));
                 view2.setBackgroundColor(Color.parseColor("#dedede"));
                 textW102.setBackground(OtherUtils.bgIcon(-1, radius2));
+                viewCallalinkLink.setBackground(OtherUtils.bgIcon(-1, radius2));
             } else {
                 setBackgroundColor(Color.parseColor("#2C2C2C"));
                 textW4.setTextColor(-1);
@@ -717,6 +739,7 @@ public class FragmentInfoAnother extends Fragment {
                 linearLayout52.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
                 view2.setBackgroundColor(Color.parseColor("#5c5c5c"));
                 textW102.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
+                viewCallalinkLink.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), radius2));
             }
             updateBlock();
             loadSchedule();

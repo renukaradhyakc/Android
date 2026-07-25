@@ -38,12 +38,15 @@ import com.thelinkphone.app.custom.LayoutListSim;
 import com.thelinkphone.app.custom.LayoutSchedulePreview;
 import com.thelinkphone.app.custom.LayoutShowRecent;
 import com.thelinkphone.app.custom.TextW;
+import com.thelinkphone.app.custom.ViewItemCallalinkLink;
 import com.thelinkphone.app.custom.ViewItemInfo;
 import com.thelinkphone.app.custom.ViewItemNumber;
+import com.thelinkphone.app.custom.ViewQrBadgeOverlay;
 import com.thelinkphone.app.dialog.DialogAddFav;
 import com.thelinkphone.app.dialog.DialogChooseNumber;
 import com.thelinkphone.app.dialog.DialogNotification;
 import com.thelinkphone.app.dialog.DialogResult;
+import com.thelinkphone.app.dialog.DialogShowQr;
 import com.thelinkphone.app.dialog.DialogShowSim;
 import com.thelinkphone.app.dialog.FavResult;
 import com.thelinkphone.app.item.ItemContact;
@@ -332,12 +335,25 @@ public class FragmentInfo extends Fragment {
             AvatarPeople avatarPeople = new AvatarPeople(context);
             this.av = avatarPeople;
             avatarPeople.setTextSize(12.0f);
-            linearLayout.addView(avatarPeople, i2, i2);
+
+            ViewQrBadgeOverlay avatarOverlay = new ViewQrBadgeOverlay(context, avatarPeople, i2);
+            linearLayout.addView(avatarOverlay, i2, i2);
+
+            String qrLink = (FragmentInfo.this.itemRecentGroup != null)
+                    ? FragmentInfo.this.itemRecentGroup.getCallalinkLink() : null;
+            if (qrLink != null) {
+                avatarOverlay.setBadgeVisible(true);
+                String qrName = FragmentInfo.this.itemRecentGroup.getDisplayNameForQr();
+                avatarOverlay.setOnBadgeClick(v -> new DialogShowQr(getContext(), qrLink, qrName, theme).show());
+            }
             TextW textW3 = new TextW(context);
             this.tvName = textW3;
             textW3.setupText(400, 7.0f);
             textW3.setSingleLine();
-            textW3.setEllipsize(TextUtils.TruncateAt.END);
+            textW3.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+            textW3.setMarqueeRepeatLimit(-1);
+            textW3.setHorizontallyScrolling(true);
+            textW3.setSelected(true);
             textW3.setPadding(i, i / 8, i, 0);
             linearLayout.addView(textW3, -2, -2);
             if (availableSIMCardLabels.size() > 1) {
@@ -452,6 +468,16 @@ public class FragmentInfo extends Fragment {
             layoutParams12.setMargins(0, i, 0, 0);
             linearLayout.addView(linearLayout4, layoutParams12);
 
+            ViewItemCallalinkLink viewCallalinkLink = new ViewItemCallalinkLink(context);
+            LinearLayout.LayoutParams callalinkParams = new LinearLayout.LayoutParams(i6, -2);
+            callalinkParams.setMargins(0, i, 0, 0);
+            linearLayout.addView(viewCallalinkLink, callalinkParams);
+
+            if (FragmentInfo.this.itemRecentGroup != null) {
+                viewCallalinkLink.setLink(FragmentInfo.this.itemRecentGroup.getCallalinkLink(), FragmentInfo.this.itemRecentGroup.getDisplayNameForQr());
+            } else {
+                viewCallalinkLink.setVisibility(View.GONE);
+            }
 
             schedulePreview = new LayoutSchedulePreview(context);
             LinearLayout.LayoutParams scheduleParams = new LinearLayout.LayoutParams(i6, -2);
@@ -602,6 +628,7 @@ public class FragmentInfo extends Fragment {
                 linearLayout6.setBackground(OtherUtils.bgIcon(-1, f));
                 linearLayout5.setBackground(OtherUtils.bgIcon(-1, f));
                 this.tvBlock.setBackground(OtherUtils.bgIcon(-1, f));
+                viewCallalinkLink.setBackground(OtherUtils.bgIcon(-1, f));
                 this.tvName.setTextColor(-16777216);
                 textW5.setTextColor(-16777216);
                 this.edtNote.setTextColor(-16777216);
@@ -614,6 +641,7 @@ public class FragmentInfo extends Fragment {
                 linearLayout6.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
                 linearLayout5.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
                 this.tvBlock.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
+                viewCallalinkLink.setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2));
                 this.tvName.setTextColor(-1);
                 textW5.setTextColor(-1);
                 this.edtNote.setTextColor(-1);

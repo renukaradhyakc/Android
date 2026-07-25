@@ -75,9 +75,12 @@ public class LayoutShowRecent extends RelativeLayout {
         } else if (i == 7) {
             this.tvDur.setVisibility(View.GONE);
             this.tvStatus.setText(R.string.call_another_device);
+        }else if (i == 5) {
+            this.tvDur.setVisibility(View.GONE);
+            this.tvStatus.setText(R.string.call_is_rejected);
         } else if (itemRecent.dur <= 0) {
             this.tvDur.setVisibility(View.GONE);
-            this.tvStatus.setText(R.string.call_is_canceled);
+            this.tvStatus.setText(R.string.call_didnot_connect);
         } else {
             this.tvDur.setVisibility(View.VISIBLE);
             if (itemRecent.type == 2) {

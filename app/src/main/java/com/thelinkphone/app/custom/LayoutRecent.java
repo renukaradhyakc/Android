@@ -1,12 +1,24 @@
 package com.thelinkphone.app.custom;
 
+import static androidx.core.util.TypedValueCompat.dpToPx;
+
+import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Outline;
+import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewOutlineProvider;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+
+import androidx.core.content.ContextCompat;
 
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.item.ItemRecent;
@@ -14,7 +26,6 @@ import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.utils.CallBlockReason;
 import com.thelinkphone.app.utils.CallBlockReasonResolver;
 import com.thelinkphone.app.utils.CallDisplayMode;
-import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.SearchHighlightUtils;
 
@@ -28,6 +39,9 @@ public class LayoutRecent extends RelativeLayout {
     private TextW tvName;
     private TextW tvStatus;
     private TextW tvTime;
+    private ImageView imCallalinkBadge;
+    private Runnable pendingBadgeSpinRunnable;
+    private ObjectAnimator badgeSpinAnimator;
 
     public void setFavOnItemClick(FavOnItemClick favOnItemClick) {
         this.favOnItemClick = favOnItemClick;
@@ -64,11 +78,7 @@ public class LayoutRecent extends RelativeLayout {
         int i2 = widthScreen / 2;
         this.tvName.setPadding(0, i2, 0, 0);
         this.tvName.setSingleLine(true);
-        this.tvName.setEllipsize(android.text.TextUtils.TruncateAt.MARQUEE);
-        this.tvName.setMarqueeRepeatLimit(-1);
-        this.tvName.setSelected(true); // marquee only animates on a "selected" TextView
-        this.tvName.setFocusable(true);
-        this.tvName.setFocusableInTouchMode(true);
+        this.tvName.setEllipsize(android.text.TextUtils.TruncateAt.END);
         RelativeLayout relativeLayout = new RelativeLayout(context);
         relativeLayout.setId(955);
         TextW textW2 = new TextW(context);
@@ -78,6 +88,24 @@ public class LayoutRecent extends RelativeLayout {
         this.tvTime.setTextColor(Color.parseColor("#a8a8a8"));
         this.tvTime.setGravity(16);
         this.tvTime.setPadding(widthScreen, 0, 0, 0);
+        int badgeSize = (int) (widthScreen * 1.5f);
+        ImageView imCallalinkBadge = new ImageView(context);
+        this.imCallalinkBadge = imCallalinkBadge;
+        imCallalinkBadge.setId(157);
+        imCallalinkBadge.setImageResource(R.drawable.ic_callalink_user_badge);
+        imCallalinkBadge.setVisibility(View.GONE);
+        imCallalinkBadge.setOutlineProvider(new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setOval(0, 0, view.getWidth(), view.getHeight());
+            }
+        });
+        imCallalinkBadge.setClipToOutline(true);
+        imCallalinkBadge.setElevation(dpToPx(8));
+        LayoutParams layoutParamsBadge = new LayoutParams(badgeSize, badgeSize);
+        layoutParamsBadge.addRule(RelativeLayout.ALIGN_START, this.tvName.getId());
+        layoutParamsBadge.addRule(RelativeLayout.ALIGN_TOP, this.tvName.getId());
+        addView(this.imCallalinkBadge, layoutParamsBadge);
         View view = new View(context);
         view.setId(152);
         view.setBackgroundColor(Color.parseColor("#8A8A8E"));
@@ -182,6 +210,16 @@ public class LayoutRecent extends RelativeLayout {
     }
 
     public void setItemRecent(ItemRecentGroup itemRecentGroup, int i, boolean z, boolean z2, int displayMode, CallBlockReasonResolver resolver) {
+        if (this.pendingBadgeSpinRunnable != null) {
+            this.imCallalinkBadge.removeCallbacks(this.pendingBadgeSpinRunnable);
+            this.pendingBadgeSpinRunnable = null;
+        }
+        if (this.badgeSpinAnimator != null) {
+            this.badgeSpinAnimator.cancel();
+            this.badgeSpinAnimator = null;
+        }
+        this.imCallalinkBadge.setRotation(0f);
+
         long start = System.currentTimeMillis();
         if (z) {
             this.imDel.setVisibility(View.VISIBLE);
@@ -195,7 +233,7 @@ public class LayoutRecent extends RelativeLayout {
         int i2 = itemRecentGroup.arrRecent.get(0).type;
         int targetType = (displayMode == CallDisplayMode.MISSED) ? 3
                 : (displayMode == CallDisplayMode.BLOCKED) ? 6 : -1;
-        Log.d("ROW_BIND", "name=" + itemRecentGroup.name + " type=" + i2);
+//        Log.d("ROW_BIND", "name=" + itemRecentGroup.name + " type=" + i2);
 
         ItemRecent matchedEntry = itemRecentGroup.arrRecent.get(0);
         if (targetType != -1 & i2 != targetType) {
@@ -226,6 +264,10 @@ public class LayoutRecent extends RelativeLayout {
                 this.imStatus.setImageResource(R.drawable.ic_status_missed_call);
                 break;
 
+            case 5: // Rejected
+                this.imStatus.setImageResource(R.drawable.ic_status_missed_call);
+                break;
+
             case 6: // Blocked
                 int reason = resolver != null ? resolver.getReason(matchedEntry.number, matchedEntry.time) : CallBlockReason.NONE;
                 if (reason == CallBlockReason.OUTSIDE_SCHEDULE || reason == CallBlockReason.API_FAILURE) {
@@ -239,7 +281,7 @@ public class LayoutRecent extends RelativeLayout {
                 this.imStatus.setImageResource(0);
                 break;
         }
-        if (i2 == 3 || i2 == 6) {
+        if (i2 == 3 || i2 == 6 || i2==5) {
             this.tvName.setTextColor(Color.parseColor("#FF2828"));
         } else if (z2) {
             this.tvName.setTextColor(-16777216);
@@ -253,7 +295,7 @@ public class LayoutRecent extends RelativeLayout {
         if (str == null) {
             str = "";
         }
-        if (displayMode == CallDisplayMode.ALL && matchedEntry.repeatCount >= 2) {
+        if (matchedEntry.repeatCount >= 2) {
             str = str + " (" + matchedEntry.repeatCount + ")";
         }
         this.tvName.setText(str);
@@ -277,6 +319,89 @@ public class LayoutRecent extends RelativeLayout {
         } else {
             this.imSim.setVisibility(View.GONE);
         }
-        Log.d("ROW_BIND", "setItemRecent = " + (System.currentTimeMillis() - start) + " ms");
+//        Log.d("ROW_BIND", "setItemRecent = " + (System.currentTimeMillis() - start) + " ms");
+
+        if (itemRecentGroup.isCallalinkUser) {
+            this.imCallalinkBadge.setVisibility(View.VISIBLE);
+
+            if (itemRecentGroup.badgeAnimationPlayed) {
+                this.imCallalinkBadge.setImageResource(R.drawable.ic_verified);
+            } else {
+                this.imCallalinkBadge.setImageResource(R.drawable.ic_callalink_user_badge);
+
+                final ItemRecentGroup groupRef = itemRecentGroup;
+                Runnable spinRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        ObjectAnimator spin = ObjectAnimator.ofFloat(
+                                LayoutRecent.this.imCallalinkBadge, View.ROTATION, 0f, 360f);
+                        spin.setDuration(600);
+                        spin.setInterpolator(new AccelerateDecelerateInterpolator());
+                        spin.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                            boolean swapped = false;
+                            @Override
+                            public void onAnimationUpdate(ValueAnimator animation) {
+                                if (!swapped && animation.getAnimatedFraction() >= 0.5f) {
+                                    swapped = true;
+                                    LayoutRecent.this.imCallalinkBadge.setImageResource(
+                                            R.drawable.ic_verified);
+                                }
+                            }
+                        });
+                        LayoutRecent.this.badgeSpinAnimator = spin;
+                        spin.start();
+                        groupRef.badgeAnimationPlayed = true;
+                    }
+                };
+                this.pendingBadgeSpinRunnable = spinRunnable;
+                this.imCallalinkBadge.postDelayed(spinRunnable, 1000);
+            }
+
+            final String finalStr = str;
+            this.tvName.post(new Runnable() {
+                @Override
+                public void run() {
+                    int nameBoxWidthPx = LayoutRecent.this.tvName.getWidth();
+                    if (nameBoxWidthPx <= 0) {
+                        nameBoxWidthPx = (int) (OtherUtils.getWidthScreen(getContext()) * 0.55f);
+                    }
+
+                    int badgeSizePx = (int) (OtherUtils.getWidthScreen(getContext()) / 25f * 1.6f);
+                    int gapPx = OtherUtils.getWidthScreen(getContext()) / 25 / 3;
+                    int reservedRightPx = badgeSizePx + gapPx;
+
+                    LayoutRecent.this.tvName.setPadding(
+                            LayoutRecent.this.tvName.getPaddingLeft(),
+                            LayoutRecent.this.tvName.getPaddingTop(),
+                            reservedRightPx,
+                            LayoutRecent.this.tvName.getPaddingBottom());
+
+                    int availableContentWidthPx = Math.max(0, nameBoxWidthPx - reservedRightPx);
+                    float fullTextWidthPx = LayoutRecent.this.tvName.getPaint().measureText(finalStr);
+                    int badgeLeftMargin = LayoutRecent.this.tvName.getPaddingLeft()
+                            + (int) Math.min(fullTextWidthPx, availableContentWidthPx) + gapPx;
+
+                    int paddingTopPx = LayoutRecent.this.tvName.getPaddingTop();
+                    Paint.FontMetrics fm = LayoutRecent.this.tvName.getPaint().getFontMetrics();
+                    int textCenterFromTopPx = (int) ((fm.descent - fm.ascent) / 2f);
+                    int badgeTopMargin = paddingTopPx + textCenterFromTopPx - (badgeSizePx / 2);
+
+                    LayoutParams badgeParams = (LayoutParams) LayoutRecent.this.imCallalinkBadge.getLayoutParams();
+                    badgeParams.leftMargin = badgeLeftMargin;
+                    badgeParams.topMargin = badgeTopMargin;
+                    LayoutRecent.this.imCallalinkBadge.setLayoutParams(badgeParams);
+                }
+            });
+
+        } else {
+            this.imCallalinkBadge.setVisibility(View.GONE);
+            this.tvName.setPadding(this.tvName.getPaddingLeft(), this.tvName.getPaddingTop(),
+                    0, this.tvName.getPaddingBottom());
+        }
+    }
+
+    private int dpToPx(float dp) {
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
+                getResources().getDisplayMetrics());
     }
 }

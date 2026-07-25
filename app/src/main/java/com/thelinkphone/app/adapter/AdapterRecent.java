@@ -127,7 +127,7 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (i == 0) {
             return new HolderTop(new LayoutItemTopRecent(viewGroup.getContext()));
         }
-        Log.d("VH_CREATE", "onCreateViewHolder = " + (System.currentTimeMillis()-start) + " ms");
+//        Log.d("VH_CREATE", "onCreateViewHolder = " + (System.currentTimeMillis()-start) + " ms");
         return new HolderItem(LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.item_recent, viewGroup, false));
     }
 
@@ -174,8 +174,15 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
     }
 
-    
-    
+    public void notifyCallalinkUpdated(java.util.Set<String> updatedNumbers) {
+        for (int i = 0; i < arrShow.size(); i++) {
+            ItemRecentGroup group = arrShow.get(i);
+            if (group.normalizedNumber != null && updatedNumbers.contains(group.normalizedNumber)) {
+                notifyItemChanged(i + 1); // +1 for the header view at position 0
+            }
+        }
+    }
+
     public class HolderItem extends RecyclerView.ViewHolder {
         LayoutRecent layoutRecent;
         SwipeLayout sw;
@@ -229,7 +236,7 @@ public class AdapterRecent extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     HolderItem.this.m60xb6fabf5e(view2);
                 }
             });
-            Log.d("VH_CREATE", "HolderItem ctor = " + (System.currentTimeMillis()-start) + " ms");
+//            Log.d("VH_CREATE", "HolderItem ctor = " + (System.currentTimeMillis()-start) + " ms");
         }
 
         
