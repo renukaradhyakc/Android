@@ -9,6 +9,7 @@ import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.api.BuildConfig;
+import com.thelinkphone.app.utils.AnalyticsHelper;
 
 public class MyAppClass extends Application {
 
@@ -19,6 +20,7 @@ public class MyAppClass extends Application {
     public void onCreate() {
         super.onCreate();
         myContext = this;
+        AnalyticsHelper.init(this);
 
         // Configure RevenueCat
         PurchasesConfiguration.Builder builder = new PurchasesConfiguration.Builder(this, REVENUECAT_API_KEY);

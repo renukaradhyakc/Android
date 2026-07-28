@@ -47,6 +47,7 @@ import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemRecentGroup;
 import com.thelinkphone.app.model.QrRequest;
 import com.thelinkphone.app.service.IncomingCallPopupService;
+import com.thelinkphone.app.utils.AnalyticsHelper;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.CallDisplayMode;
@@ -92,6 +93,7 @@ public class ActivityHome extends BaseActivityUi {
     private boolean isAccessChecked = false;
     private boolean hasAccess = false;
     private ViewTabMode viewTabMode;
+    private boolean blockPermissionChecked = false;
 
     @Override
     public void onCreate(Bundle bundle) {
@@ -345,8 +347,6 @@ public class ActivityHome extends BaseActivityUi {
 
         // Initialize privacy protection based on call settings
         initializePrivacyProtection();
-
-        getBlockPermission();
     }
 
     private void initializePrivacyProtection() {
@@ -387,6 +387,7 @@ public class ActivityHome extends BaseActivityUi {
                // showDialogBlock();
                 return;
             }
+            AnalyticsHelper.logEvent("caller_id_permission_shown"); // Event #12
             ActivityHome.this.lPer.launch(roleManager.createRequestRoleIntent("android.app.role.CALL_SCREENING"));
             return;
         }
@@ -400,8 +401,12 @@ public class ActivityHome extends BaseActivityUi {
     });
 
     public  void m137x75ef4b8f(ActivityResult activityResult) {
+        Bundle params = new Bundle();
+        params.putString("result", activityResult.getResultCode() == -1 ? "callalink" : "declined");
+        AnalyticsHelper.logEvent("caller_id_permission_result", params); // Event #13
+
         if (activityResult.getResultCode() == -1) {
-          //  this.viewInfoAnother.showDialogBlock();
+            //  this.viewInfoAnother.showDialogBlock();
         }
     }
 
@@ -652,6 +657,7 @@ public class ActivityHome extends BaseActivityUi {
         if (OtherUtils.checkPer(this) || !OtherUtils.checkPermission(this)) {
             startActivity(new Intent(this, ActivityRequestPermission.class));
             finish();
+            return;
         }
 
         String currentToken = sharedPreferences.getString("auth_token", null);
@@ -660,6 +666,13 @@ public class ActivityHome extends BaseActivityUi {
         if (currentToken == null || currentEmail == null || currentEmail.trim().isEmpty()) {
             startActivity(new Intent(this, LoginActivity.class));
             return;
+        }
+
+        AnalyticsHelper.reachedHome = true;
+
+        if (!blockPermissionChecked) {
+            blockPermissionChecked = true;
+            getBlockPermission();
         }
 
         if (!currentToken.equals(token) || !currentEmail.equals(email)) {

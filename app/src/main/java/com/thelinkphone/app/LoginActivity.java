@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.thelinkphone.app.model.LoginResponse;
 import com.thelinkphone.app.model.TimeZoneResponse;
+import com.thelinkphone.app.utils.AnalyticsHelper;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.google.gson.JsonObject;
@@ -47,7 +48,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        AnalyticsHelper.logEvent("login_screen_viewed"); // Event #4
 //        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
 //            @Override
 //            public void handleOnBackPressed() {
@@ -70,6 +71,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loginUser() {
+        AnalyticsHelper.logEvent("login_attempt"); // Event #5
         String email = emailEditText.getText().toString();
         String password = passwordEditText.getText().toString();
 
@@ -80,6 +82,7 @@ public class LoginActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     LoginResponse loginResponse = response.body();
                     if (loginResponse.getToken() != null) {
+                        AnalyticsHelper.logEvent("login_success"); // Event #6
                         // Login successful, proceed with WebView loading
                         //   loadWebView(loginResponse.getToken());
                         saveToken(loginResponse.getToken(),loginResponse.getDomain_url(), loginResponse.getPhone_number(), loginResponse.getTimezone());
@@ -91,6 +94,9 @@ public class LoginActivity extends AppCompatActivity {
 
 
                     } else {
+                        Bundle params = new Bundle();
+                        params.putString("reason", "no_token");
+                        AnalyticsHelper.logEvent("login_failure", params); // Event #7
                         Toast.makeText(LoginActivity.this, response.message(), Toast.LENGTH_SHORT).show();
                     }
                 } else if (response.code() == 422) {
@@ -99,18 +105,27 @@ public class LoginActivity extends AppCompatActivity {
                         String errorBody = response.errorBody().string();
                         JsonObject jsonObject = JsonParser.parseString(errorBody).getAsJsonObject();
                         String errorMessage = jsonObject.get("message").getAsString();
+                        Bundle params = new Bundle();
+                        params.putString("reason", "validation_error");
+                        AnalyticsHelper.logEvent("login_failure", params); // Event #7
                         Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                     } catch (IOException e) {
                         e.printStackTrace();
                         Toast.makeText(LoginActivity.this, "An error occurred", Toast.LENGTH_SHORT).show();
                     }
                 } else {
+                    Bundle params = new Bundle();
+                    params.putString("reason", "server_error");
+                    AnalyticsHelper.logEvent("login_failure", params); // Event #7
                     Toast.makeText(LoginActivity.this, "Login Failed", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<LoginResponse> call, Throwable t) {
+                Bundle params = new Bundle();
+                params.putString("reason", "network_error");
+                AnalyticsHelper.logEvent("login_failure", params); // Event #7
                 Toast.makeText(LoginActivity.this, "Login Failed", Toast.LENGTH_SHORT).show();
             }
         });
@@ -155,5 +170,15 @@ public class LoginActivity extends AppCompatActivity {
                     finish();
                 }
             });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!AnalyticsHelper.reachedHome) {
+            Bundle params = new Bundle();
+            params.putString("last_screen", "LoginActivity");
+            AnalyticsHelper.logEvent("app_abandoned_pre_login", params);
+        }
     }
 }

@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
 
 import com.thelinkphone.app.custom.TextW;
+import com.thelinkphone.app.utils.AnalyticsHelper;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 
@@ -23,6 +24,8 @@ import com.thelinkphone.app.utils.OtherUtils;
 public class ActivityRequestPermission extends BaseActivity {
     private boolean onDone;
     private ViewPer viewPer;
+    private boolean movingToNextScreen = false;
+    private boolean showingSystemPicker = false;
     private final String[] per = {"android.permission.READ_CONTACTS", "android.permission.CALL_PHONE", "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.READ_PHONE_STATE", "android.permission.READ_PHONE_NUMBERS"};
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
@@ -53,11 +56,25 @@ public class ActivityRequestPermission extends BaseActivity {
             }
         }
         this.viewPer.modeDefault();
+        AnalyticsHelper.logEvent("default_dialer_prompt_shown"); // Event #1
     }
 
-
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!movingToNextScreen && !showingSystemPicker) {
+            Bundle params = new Bundle();
+            params.putString("last_screen", "ActivityRequestPermission");
+            AnalyticsHelper.logEvent("app_abandoned_pre_login", params);
+        }
+    }
 
     public  void m49xbd3b9769(ActivityResult activityResult) {
+        showingSystemPicker = false;
+        Bundle params = new Bundle();
+        params.putString("result", activityResult.getResultCode() == -1 ? "callalink_selected" : "cancelled");
+        AnalyticsHelper.logEvent("default_dialer_result", params); // Event #3
+
         if (activityResult.getResultCode() == -1) {
             onStartMain();
         }
@@ -68,6 +85,7 @@ public class ActivityRequestPermission extends BaseActivity {
             return;
         }
         this.onDone = true;
+        movingToNextScreen = true;
         startActivity(new Intent(this, ActivityHome.class));
         finish();
     }
@@ -140,7 +158,9 @@ public class ActivityRequestPermission extends BaseActivity {
         public  void m50x99bbc5dd(View view) {
             getSize();
             if (this.modeDefault) {
+                AnalyticsHelper.logEvent("default_dialer_prompt_tapped"); // Event #2
                 ActivityRequestPermission activityRequestPermission = ActivityRequestPermission.this;
+                activityRequestPermission.showingSystemPicker = true;
                 OtherUtils.requestDefault(activityRequestPermission, activityRequestPermission.launcher);
                 return;
             }
