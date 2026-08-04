@@ -8,10 +8,10 @@
 
     <!-- SCROLL AREA -->
     <ScrollView
+        android:id="@+id/scrollContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:layout_marginBottom="120dp"
         android:scrollbars="none">
 
         <LinearLayout
@@ -43,7 +43,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Unlock all of our exclusive features by subscribing to\nCallaLink Premium"
+                android:text="@string/paywall_subtitle"
                 android:textAlignment="center"
                 android:textSize="15sp"
                 android:lineHeight="22dp"
@@ -116,26 +116,12 @@
                                         android:textSize="16sp"
                                         android:textColor="@color/paywall_text_primary"/>
 
-                                    <TextView
-                                        android:id="@+id/discount_yearly"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="19%"
-                                        android:textSize="10sp"
-                                        android:textColor="#FFFFFF"
-                                        android:background="@drawable/bg_discount_badge"
-                                        android:paddingStart="6dp"
-                                        android:paddingEnd="6dp"
-                                        android:paddingTop="2dp"
-                                        android:paddingBottom="2dp"
-                                        android:layout_marginStart="8dp"/>
                                 </LinearLayout>
 
                                 <TextView
-                                    android:id="@+id/price_per_month_yearly"
+                                    android:id="@+id/billing_frequency_yearly"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Only $0.82/mo"
                                     android:textSize="13sp"
                                     android:textColor="@color/paywall_text_secondary"
                                     android:layout_marginTop="2dp"/>
@@ -199,25 +185,11 @@
                                         android:textSize="16sp"
                                         android:textColor="@color/paywall_text_primary"/>
 
-                                    <TextView
-                                        android:id="@+id/discount_halfyearly"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="19%"
-                                        android:textSize="10sp"
-                                        android:textColor="#FFFFFF"
-                                        android:background="@drawable/bg_discount_badge"
-                                        android:paddingStart="6dp"
-                                        android:paddingEnd="6dp"
-                                        android:paddingTop="2dp"
-                                        android:paddingBottom="2dp"
-                                        android:layout_marginStart="8dp"/>
                                 </LinearLayout>
                                 <TextView
-                                    android:id="@+id/price_per_month_halfyearly"
+                                    android:id="@+id/billing_frequency_halfyearly"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Only $0.82/mo"
                                     android:textSize="13sp"
                                     android:textColor="@color/paywall_text_secondary"
                                     android:layout_marginTop="2dp"/>
@@ -281,26 +253,11 @@
                                         android:textSize="16sp"
                                         android:textColor="@color/paywall_text_primary"/>
 
-                                    <TextView
-                                        android:id="@+id/discount_quarterly"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="19%"
-                                        android:textSize="10sp"
-                                        android:textColor="#FFFFFF"
-                                        android:background="@drawable/bg_discount_badge"
-                                        android:paddingStart="6dp"
-                                        android:paddingEnd="6dp"
-                                        android:paddingTop="2dp"
-                                        android:paddingBottom="2dp"
-                                        android:layout_marginStart="8dp"/>
-
                                 </LinearLayout>
                                 <TextView
-                                    android:id="@+id/price_per_month_quarterly"
+                                    android:id="@+id/billing_frequency_quarterly"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Only $0.82/mo"
                                     android:textSize="13sp"
                                     android:textColor="@color/paywall_text_secondary"
                                     android:layout_marginTop="2dp"/>
@@ -362,26 +319,11 @@
                                         android:textStyle="bold"
                                         android:textSize="16sp"
                                         android:textColor="@color/paywall_text_primary"/>
-
-                                    <TextView
-                                        android:id="@+id/discount_monthly"
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
-                                        android:text="19%"
-                                        android:textSize="10sp"
-                                        android:textColor="#FFFFFF"
-                                        android:background="@drawable/bg_discount_badge"
-                                        android:paddingStart="6dp"
-                                        android:paddingEnd="6dp"
-                                        android:paddingTop="2dp"
-                                        android:paddingBottom="2dp"
-                                        android:layout_marginStart="8dp"/>
                                 </LinearLayout>
                                 <TextView
-                                    android:id="@+id/price_per_month_monthly"
+                                    android:id="@+id/billing_frequency_monthly"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Only $0.82/mo"
                                     android:textSize="13sp"
                                     android:textColor="@color/paywall_text_secondary"
                                     android:layout_marginTop="2dp"/>
@@ -694,6 +636,16 @@
         android:paddingBottom="20dp"
         android:layout_gravity="bottom"
         android:elevation="20dp">
+
+        <!-- NEW: renewal disclosure -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/paywall_renewal_disclosure"
+            android:textSize="12sp"
+            android:textColor="@color/paywall_text_secondary"
+            android:textAlignment="center"
+            android:lineHeight="12dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnContinue"

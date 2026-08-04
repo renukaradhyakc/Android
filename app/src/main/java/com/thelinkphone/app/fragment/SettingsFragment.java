@@ -1,6 +1,8 @@
 package com.thelinkphone.app.fragment;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -25,7 +27,7 @@ import com.thelinkphone.app.utils.SpamProtectionManager;
 public class SettingsFragment extends Fragment {
 
     private static final String TAG = "SettingsFragment";
-    ConstraintLayout mCallsBtn, mQRBtn, mPrivacyBtn, mRecordBtn, mBlockBtn, mProBtn;
+    ConstraintLayout mCallsBtn, mQRBtn, mPrivacyBtn, mRecordBtn, mBlockBtn, mProBtn, mManageSubBtn;
     private SpamProtectionManager spamProtectionManager;
 
     public SettingsFragment() {
@@ -50,6 +52,7 @@ public class SettingsFragment extends Fragment {
         mBlockBtn = view.findViewById(R.id.Settings_Block);
         mRecordBtn = view.findViewById(R.id.Settings_Recording);
         mProBtn = view.findViewById(R.id.Settings_PRO);
+        mManageSubBtn = view.findViewById(R.id.Settings_ManageSubscription);
 
         // Initialize spam protection manager
         spamProtectionManager = new SpamProtectionManager(getContext());
@@ -119,6 +122,30 @@ public class SettingsFragment extends Fragment {
                 Intent toPaywallAct = new Intent(getContext(), ActivityPaywall.class);
                 toPaywallAct.putExtra("ENTRY_SOURCE", "SETTINGS");
                 startActivity(toPaywallAct);
+            }
+        });
+
+        mManageSubBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences accessPrefs = getContext().getSharedPreferences("paywall_subscription_cache", Context.MODE_PRIVATE);
+                String sku = accessPrefs.getString("subscription_sku", null);
+                StringBuilder urlBuilder = new StringBuilder("https://play.google.com/store/account/subscriptions?package=")
+                        .append(getContext().getPackageName());
+                if (sku != null) {
+                    urlBuilder.append("&sku=").append(sku);
+                }
+                String url = urlBuilder.toString();
+                Intent toManageSub = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                toManageSub.setPackage("com.android.vending");
+
+                try {
+                    startActivity(toManageSub);
+                } catch (android.content.ActivityNotFoundException e) {
+                    // Fallback: Play Store app not installed/available — open in browser without setPackage
+                    Intent fallback = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url));
+                    startActivity(fallback);
+                }
             }
         });
 

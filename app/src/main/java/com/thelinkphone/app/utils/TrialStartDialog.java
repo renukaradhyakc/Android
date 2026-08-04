@@ -3,8 +3,6 @@ package com.thelinkphone.app.utils;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,6 +41,10 @@ public class TrialStartDialog extends Dialog {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.dialog_trial_info);
 
+        if (getWindow() != null) {
+            getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
         setCanceledOnTouchOutside(false);
         setCancelable(false);
 
@@ -50,9 +52,6 @@ public class TrialStartDialog extends Dialog {
         tvMessage = findViewById(R.id.tvTrialMessage);
         btnStartTrial = findViewById(R.id.btnStartTrial);
         btnMaybeLater = findViewById(R.id.btnMaybeLater);
-
-        tvTitle.setText("14-Day Free Trial");
-        tvMessage.setText("Try all premium features completely free for 14 days. No credit card required!");
 
         btnStartTrial.setOnClickListener(v -> startTrial());
         btnMaybeLater.setOnClickListener(v -> {
@@ -65,7 +64,7 @@ public class TrialStartDialog extends Dialog {
 
     private void startTrial() {
         btnStartTrial.setEnabled(false);
-        btnStartTrial.setText("Starting Trial...");
+        btnStartTrial.setText(R.string.trial_starting);
 
         Call<Object> call = apiService.startTrial(email);
         call.enqueue(new Callback<Object>() {
@@ -78,15 +77,15 @@ public class TrialStartDialog extends Dialog {
                     }
                 } else {
                     btnStartTrial.setEnabled(true);
-                    btnStartTrial.setText("Start Free Trial");
-                    Toast.makeText(getContext(), "Trial already used or error occurred", Toast.LENGTH_SHORT).show();
+                    btnStartTrial.setText(R.string.trial_dialog_start_button);
+                    Toast.makeText(getContext(), R.string.trial_error_generic, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<Object> call, Throwable t) {
                 btnStartTrial.setEnabled(true);
-                btnStartTrial.setText("Start Free Trial");
+                btnStartTrial.setText(R.string.trial_dialog_start_button);
                 Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
