@@ -229,7 +229,15 @@
     <string name="paywall_billing_frequency">Billed %1$s every %2$s</string>
 
     <string name="period_12_months">12 months</string>
-    <string name="period_6_months">6 months</string>
-    <string name="period_3_months">3 months</string>
+    <string name="period_8_months">8 months</string>
+    <string name="period_4_months">4 months</string>
     <string name="period_1_month">1 month</string>
+
+    <string name="plan_title_annual">10+2 Premium</string>
+    <string name="plan_title_half_yearly">6+2 Premium</string>
+    <string name="plan_title_quarterly">3+1 Premium</string>
+
+    <string name="plan_explainer_annual">Pay for 10 months, get 2 months free</string>
+    <string name="plan_explainer_half_yearly">Pay for 6 months, get 2 months free</string>
+    <string name="plan_explainer_quarterly">Pay for 3 months, get 1 month free</string>
 </resources>

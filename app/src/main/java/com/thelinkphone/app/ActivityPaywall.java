@@ -276,17 +276,17 @@ public class ActivityPaywall extends AppCompatActivity {
                         } else if (identifier.equals("$rc_three_month")) {
                             quarterlyProduct=product;
                             planPackageMap.put("quarterly",pkg);
-                            tvQuarterlyName.setText("Quarterly Premium");
+                            tvQuarterlyName.setText(getString(R.string.plan_title_quarterly));
                             tvQuarterlyPrice.setText(product.getPrice().getFormatted());
                         } else if (identifier.equals("$rc_six_month")){
                             halfyearlyProduct=product;
                             planPackageMap.put("half_yearly",pkg);
-                            tvHalfYearlyName.setText("Half-Yearly Premium");
+                            tvHalfYearlyName.setText(getString(R.string.plan_title_half_yearly));
                             tvHalfYearlyPrice.setText(product.getPrice().getFormatted());
                         } else if (identifier.equals("$rc_annual")) {
                             annualProduct=product;
                             planPackageMap.put("annual",pkg);
-                            tvAnnualName.setText("Annual Premium");
+                            tvAnnualName.setText(getString(R.string.plan_title_annual));
                             tvAnnualPrice.setText(product.getPrice().getFormatted());
                         }
                     }
@@ -295,9 +295,9 @@ public class ActivityPaywall extends AppCompatActivity {
                         if (annualProduct != null)
                             setBillingFrequency(annualProduct, billingFreqYearly, getString(R.string.period_12_months));
                         if (halfyearlyProduct != null)
-                            setBillingFrequency(halfyearlyProduct, billingFreqHalfYearly, getString(R.string.period_6_months));
+                            setBillingFrequency(halfyearlyProduct, billingFreqHalfYearly, getString(R.string.period_8_months));
                         if (quarterlyProduct != null)
-                            setBillingFrequency(quarterlyProduct, billingFreqQuarterly, getString(R.string.period_3_months));
+                            setBillingFrequency(quarterlyProduct, billingFreqQuarterly, getString(R.string.period_4_months));
                         if (monthlyProduct != null)
                             setBillingFrequency(monthlyProduct, billingFreqMonthly, getString(R.string.period_1_month));
                     }

@@ -119,6 +119,18 @@
                                 </LinearLayout>
 
                                 <TextView
+                                    android:id="@+id/explainerAnnual"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/plan_explainer_annual"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/primary_purple"
+                                    android:paddingTop="2dp"
+                                    android:paddingBottom="2dp"
+                                    android:background="@drawable/bg_discount_badge"
+                                    android:layout_marginTop="1dp"/>
+
+                                <TextView
                                     android:id="@+id/billing_frequency_yearly"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -186,6 +198,19 @@
                                         android:textColor="@color/paywall_text_primary"/>
 
                                 </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/explainerHalfYearly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/plan_explainer_half_yearly"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/primary_purple"
+                                    android:paddingTop="2dp"
+                                    android:paddingBottom="2dp"
+                                    android:background="@drawable/bg_discount_badge"
+                                    android:layout_marginTop="1dp"/>
+
                                 <TextView
                                     android:id="@+id/billing_frequency_halfyearly"
                                     android:layout_width="wrap_content"
@@ -254,6 +279,19 @@
                                         android:textColor="@color/paywall_text_primary"/>
 
                                 </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/explainerQuarterly"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/plan_explainer_quarterly"
+                                    android:textSize="12sp"
+                                    android:textColor="@color/primary_purple"
+                                    android:paddingTop="2dp"
+                                    android:paddingBottom="2dp"
+                                    android:background="@drawable/bg_discount_badge"
+                                    android:layout_marginTop="1dp"/>
+
                                 <TextView
                                     android:id="@+id/billing_frequency_quarterly"
                                     android:layout_width="wrap_content"
