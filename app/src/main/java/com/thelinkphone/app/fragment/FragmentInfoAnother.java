@@ -34,6 +34,7 @@ import com.thelinkphone.app.custom.LayoutChooseSimInfo;
 import com.thelinkphone.app.custom.LayoutSchedulePreview;
 import com.thelinkphone.app.custom.LayoutShowRecent;
 import com.thelinkphone.app.custom.TextW;
+import com.thelinkphone.app.custom.ViewFragmentUnifiedSchedule;
 import com.thelinkphone.app.custom.ViewItemCallalinkLink;
 import com.thelinkphone.app.custom.ViewItemInfo;
 import com.thelinkphone.app.custom.ViewQrBadgeOverlay;
@@ -655,6 +656,7 @@ public class FragmentInfoAnother extends Fragment {
                                 if (!isAdded() || getContext() == null) return;
                                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                                     Toast.makeText(getContext(), "Schedule removed", Toast.LENGTH_SHORT).show();
+                                    ViewFragmentUnifiedSchedule.invalidateCache(getContext());
                                     loadSchedule(); // refresh — LayoutSchedulePreview already shows "No schedule set" when null
                                 } else {
                                     String msg = (response.body() != null && response.body().getMessage() != null)

@@ -1,7 +1,9 @@
 package com.thelinkphone.app.utils;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -58,5 +60,24 @@ public class TimeFormatUtils {
     }
 
     private TimeFormatUtils() {
+    }
+
+    public static Calendar combineDateAndTime(String dateStr, String timeStr) {
+        Calendar timeCal = parseTimeOnly(timeStr);
+        if (timeCal == null || dateStr == null) return null;
+
+        try {
+            SimpleDateFormat dateFmt = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            Date date = dateFmt.parse(dateStr.trim());
+            Calendar combined = Calendar.getInstance();
+            combined.setTime(date);
+            combined.set(Calendar.HOUR_OF_DAY, timeCal.get(Calendar.HOUR_OF_DAY));
+            combined.set(Calendar.MINUTE, timeCal.get(Calendar.MINUTE));
+            combined.set(Calendar.SECOND, 0);
+            combined.set(Calendar.MILLISECOND, 0);
+            return combined;
+        } catch (ParseException e) {
+            return null;
+        }
     }
 }

@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import com.google.gson.Gson;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.custom.DropDown;
+import com.thelinkphone.app.custom.ViewFragmentUnifiedSchedule;
 import com.thelinkphone.app.item.ItemTimeSlot;
 import com.thelinkphone.app.item.ItemWeekDaySchedule;
 import com.thelinkphone.app.custom.LayoutWeekDayRow;
@@ -400,6 +401,7 @@ public class FragmentScheduleEditor extends Fragment {
                 if (!isAdded()) return;
                 if (response.isSuccessful()) {
                     Toast.makeText(context, "Schedule saved", Toast.LENGTH_SHORT).show();
+                    ViewFragmentUnifiedSchedule.invalidateCache(getContext());
                     if (getActivity() != null) getActivity().onBackPressed();
                 } else {
                     Toast.makeText(context, "Failed to save schedule", Toast.LENGTH_SHORT).show();
@@ -424,90 +426,6 @@ public class FragmentScheduleEditor extends Fragment {
         SharedPreferences prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE);
         String authToken = prefs.getString("auth_token", null);
         if (authToken == null) return;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         PhoneScheduleRepository repository = new PhoneScheduleRepository(
                 ApiClient.getClient().create(ApiService.class), "Bearer " + authToken);
 
@@ -517,6 +435,7 @@ public class FragmentScheduleEditor extends Fragment {
                 if (!isAdded()) return;
                 if (response.isSuccessful()) {
                     Toast.makeText(context, "Schedule assigned", Toast.LENGTH_SHORT).show();
+                    ViewFragmentUnifiedSchedule.invalidateCache(getContext());
                     if (getActivity() != null) getActivity().onBackPressed();
                 } else {
                     Toast.makeText(context, "Failed to assign schedule", Toast.LENGTH_SHORT).show();

@@ -240,4 +240,13 @@
     <string name="plan_explainer_annual">Pay for 10 months, get 2 months free</string>
     <string name="plan_explainer_half_yearly">Pay for 6 months, get 2 months free</string>
     <string name="plan_explainer_quarterly">Pay for 3 months, get 1 month free</string>
+
+    <string name="given_by_me">My Schedules</string>
+    <string name="given_to_me">Assigned to Me</string>
+
+    <string name="email_copied">Email copied</string>
+    <string name="number_copied">Number copied</string>
+
+    <string name="unified_schedule_hint_by_me">Schedules which you\'ve assigned to others.</string>
+    <string name="unified_schedule_hint_to_me">Schedules assigned by others to you.</string>
 </resources>

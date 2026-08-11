@@ -15,6 +15,7 @@ import com.thelinkphone.app.model.ScheduleResponse;
 import com.thelinkphone.app.model.TimeZoneResponse;
 import com.thelinkphone.app.model.TrialStatusResponse;
 import com.thelinkphone.app.model.BillStatusResponse;
+import com.thelinkphone.app.model.UnifiedScheduleResponse;
 
 import java.util.Map;
 
@@ -134,5 +135,10 @@ public interface ApiService {
     Call<ContactLookupResponse> lookupContacts(
             @Header("Authorization") String token,
             @Body ContactLookupRequest request
+    );
+
+    @GET("unified-schedules")
+    Call<UnifiedScheduleResponse> getUnifiedSchedules(
+            @Header("Authorization") String token
     );
 }

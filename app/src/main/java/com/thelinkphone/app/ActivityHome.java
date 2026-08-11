@@ -40,6 +40,7 @@ import com.thelinkphone.app.fragment.FragmentInfo;
 import com.thelinkphone.app.fragment.FragmentPad;
 import com.thelinkphone.app.fragment.FragmentRecents;
 import com.thelinkphone.app.fragment.FragmentSetting;
+import com.thelinkphone.app.fragment.FragmentUnifiedSchedule;
 import com.thelinkphone.app.fragment.ScanFrag;
 import com.thelinkphone.app.fragment.ScheduledEventsFrag;
 import com.thelinkphone.app.fragment.SettingsFragment;
@@ -75,6 +76,7 @@ public class ActivityHome extends BaseActivityUi {
     private BillCaptureFragment billCaptureFragment;
 
     private ScheduledEventsFrag scheduledEventsFrag;
+    private FragmentUnifiedSchedule fragmentUnifiedSchedule;
     private EventsFragment eventsFragment;
     private FragmentSetting fragmentSetting;
     private SettingsFragment mSettingsFrag;
@@ -268,7 +270,7 @@ public class ActivityHome extends BaseActivityUi {
         if ((action.equals("android.intent.action.DIAL") || action.equals("android.intent.action.VIEW")) && intent.getData() != null && intent.getDataString() != null && intent.getDataString().contains("tel:")) {
             String dataString = intent.getDataString();
             this.number = Uri.decode(dataString).substring(dataString.indexOf("tel:") + 4);
-            this.layoutPos = 3;
+            this.layoutPos = 4;
         }
     }
 
@@ -455,12 +457,17 @@ public class ActivityHome extends BaseActivityUi {
             }
             showFragment(this.fragmentFavorites, false);*/
         } else if (i == 1) {
-            if (this.scheduledEventsFrag == null) {
+            /*if (this.scheduledEventsFrag == null) {
                 ScheduledEventsFrag scheduledEventsFrag = new ScheduledEventsFrag();
                 this.scheduledEventsFrag = scheduledEventsFrag;
-//                fragmentRecents.setContactResult(this.contactResult);
+            //  fragmentRecents.setContactResult(this.contactResult);
             }
-            showFragment(this.scheduledEventsFrag, false);
+            showFragment(this.scheduledEventsFrag, false);*/
+            if (this.fragmentUnifiedSchedule == null) {
+                FragmentUnifiedSchedule fragmentUnifiedSchedule = new FragmentUnifiedSchedule();
+                this.fragmentUnifiedSchedule = fragmentUnifiedSchedule;
+            }
+            showFragment(this.fragmentUnifiedSchedule, false);
         } else if (i == 2) {
             if (this.eventsFragment == null) {
                 EventsFragment eventsFragment = new EventsFragment();

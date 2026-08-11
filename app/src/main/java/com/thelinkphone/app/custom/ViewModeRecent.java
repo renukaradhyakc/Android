@@ -21,6 +21,7 @@ public class ViewModeRecent extends RelativeLayout {
     private final boolean theme;
     private final ArrayList<TextW> tabs = new ArrayList<>();
     private final ImageView vRun;
+    private int[] customLabels;
 
     
     public interface ModeResult {
@@ -91,6 +92,65 @@ public class ViewModeRecent extends RelativeLayout {
         updateLayout();
     }
 
+    public ViewModeRecent(Context context, int[] labelResIds) {
+        super(context);
+        this.customLabels = labelResIds;
+        int widthScreen = OtherUtils.getWidthScreen(context);
+        int i = widthScreen / 60;
+        int tabWidth = widthScreen / labelResIds.length;
+        boolean theme = MyShare.getTheme(context);
+        this.theme = theme;
+        LayoutTransition layoutTransition = new LayoutTransition();
+        layoutTransition.setDuration(400L);
+        layoutTransition.enableTransitionType(LayoutTransition.CHANGING);
+        setLayoutTransition(layoutTransition);
+        int i3 = widthScreen / 200;
+        ImageView imageView = new ImageView(context);
+        this.vRun = imageView;
+        imageView.setPadding(i3, i3, i3, i3);
+        addView(imageView, new LayoutParams(tabWidth, -1));
+
+        TextW previous = null;
+        for (int idx = 0; idx < labelResIds.length; idx++) {
+            TextW tab = new TextW(context);
+            tab.setId(View.generateViewId());
+            tab.setupText(400, 2.9f);
+            tab.setGravity(1);
+            tab.setPadding(0, i, 0, i);
+            tab.setText(labelResIds[idx]);
+            final int modeForTab = idx;
+            tab.setOnClickListener(v -> onTabClick(modeForTab));
+            tabs.add(tab);
+
+            LayoutParams lp = new LayoutParams(tabWidth, -2);
+            if (previous != null) {
+                lp.addRule(RelativeLayout.RIGHT_OF, previous.getId());
+            }
+            addView(tab, lp);
+            previous = tab;
+        }
+
+        LayoutParams runParams = (LayoutParams) imageView.getLayoutParams();
+        runParams.addRule(RelativeLayout.ALIGN_TOP, tabs.get(0).getId());
+        runParams.addRule(RelativeLayout.ALIGN_BOTTOM, tabs.get(0).getId());
+        runParams.addRule(RelativeLayout.ALIGN_LEFT, tabs.get(0).getId());
+        imageView.setLayoutParams(runParams);
+
+        if (theme) {
+            float f = widthScreen;
+            setBackground(OtherUtils.bgIcon(Color.parseColor("#DCDCDC"), f / 50.0f));
+            imageView.setImageDrawable(OtherUtils.bgIcon(-1, f / 60.0f));
+            for (TextW tab : tabs) {
+                tab.setTextColor(-16777216);
+            }
+        } else {
+            float f2 = widthScreen;
+            setBackground(OtherUtils.bgIcon(Color.parseColor("#424141"), f2 / 50.0f));
+            imageView.setImageDrawable(OtherUtils.bgIcon(Color.parseColor("#B8B8B8"), f2 / 60.0f));
+        }
+        updateLayout();
+    }
+
     private void onTabClick(int mode) {
         if (mode == currentMode) return;
         currentMode = mode;
@@ -109,6 +169,12 @@ public class ViewModeRecent extends RelativeLayout {
                 boolean active = (i == currentMode);
                 tabs.get(i).setTextColor(active ? Color.parseColor("#2C2C2C") : -1);
             }
+        }
+    }
+
+    public void setTabTextSize(float sizeParam) {
+        for (TextW tab : tabs) {
+            tab.setupText(400, sizeParam);
         }
     }
 }
