@@ -1,5 +1,12 @@
 package com.thelinkphone.app.utils;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
+
+import okhttp3.Dns;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -16,6 +23,21 @@ public class ApiClient {
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
 
             OkHttpClient okHttpClient = new OkHttpClient.Builder()
+
+                    .dns(new Dns() {
+                        @Override
+                        public List<InetAddress> lookup(String hostname) throws UnknownHostException {
+                            List<InetAddress> addresses = Dns.SYSTEM.lookup(hostname);
+                            List<InetAddress> ipv4Only = new ArrayList<>();
+                            for (InetAddress addr : addresses) {
+                                if (addr instanceof Inet4Address) {
+                                    ipv4Only.add(addr);
+                                }
+                            }
+                            return ipv4Only.isEmpty() ? addresses : ipv4Only;
+                        }
+                    })
+
                     .addInterceptor(interceptor)
                     .addInterceptor(chain -> {
                         okhttp3.Request request = chain.request().newBuilder()

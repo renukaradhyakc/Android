@@ -160,13 +160,11 @@ public class LoginActivity extends AppCompatActivity {
                         sharedPreferences.edit().putString(TIMEZONE_LIST_KEY, json).apply();
                         Log.d(TAG, "Saved " + response.body().getTimezones().size() + " timezones");
                     }
-                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
                 public void onFailure(Call<TimeZoneResponse> call, Throwable t) {
-                    Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                     finish();
                 }
             });

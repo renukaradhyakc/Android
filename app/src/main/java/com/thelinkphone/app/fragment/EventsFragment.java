@@ -75,6 +75,7 @@ public class EventsFragment extends Fragment {
     private static final String TOKEN_KEY = "auth_token";
     private static final String EMAIL_KEY = "user_email";
     public static String billUrl = null;
+    private boolean isFirstLoad = true;
 
 
     public EventsFragment() {
@@ -93,6 +94,7 @@ public class EventsFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_events, container, false);
+        isFirstLoad = true;
 
         if (getActivity() != null) {
             getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
@@ -297,7 +299,7 @@ public class EventsFragment extends Fragment {
 //        });
 //
 //        /* ---------- EXISTING WEBVIEW LOAD (UNCHANGED) ---------- */
-        loadWebView();
+//        loadWebView();
 
 //        webview.setWebViewClient(new WebViewClient() {
 //            @Override
@@ -413,6 +415,13 @@ public class EventsFragment extends Fragment {
             return true;
         }
 
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            view.requestLayout();
+            view.invalidate();
+        }
+
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
             webview.setVisibility(View.GONE);
 
@@ -515,6 +524,16 @@ public class EventsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
+
+        if (!isAdded() || webview == null) return;
+
+        webview.onResume();
+
+        if (isFirstLoad) {
+            isFirstLoad = false;
+            webview.post(this::loadWebView);
+        }
 
 //        if (!isAdded()) return;
 //
