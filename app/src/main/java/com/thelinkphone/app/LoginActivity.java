@@ -13,6 +13,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.thelinkphone.app.model.LoginResponse;
 import com.thelinkphone.app.model.TimeZoneResponse;
 import com.thelinkphone.app.utils.AnalyticsHelper;
@@ -75,6 +76,16 @@ public class LoginActivity extends AppCompatActivity {
         String email = emailEditText.getText().toString();
         String password = passwordEditText.getText().toString();
 
+        if (email.isEmpty()) {
+            Toast.makeText(this, "Please enter email", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (password.isEmpty()) {
+            Toast.makeText(this, "Please enter password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         Call<LoginResponse> call = apiService.login(email, password);
         call.enqueue(new Callback<LoginResponse>() {
             @Override
@@ -104,7 +115,28 @@ public class LoginActivity extends AppCompatActivity {
                     try {
                         String errorBody = response.errorBody().string();
                         JsonObject jsonObject = JsonParser.parseString(errorBody).getAsJsonObject();
-                        String errorMessage = jsonObject.get("message").getAsString();
+                        String errorMessage;
+                        if (jsonObject.has("message") && !jsonObject.get("message").isJsonNull()) {
+                            errorMessage = jsonObject.get("message").getAsString();
+                        } else if (jsonObject.has("errors")) {
+                            JsonElement errorsElement = jsonObject.get("errors");
+                            if (errorsElement.isJsonArray() && errorsElement.getAsJsonArray().size() > 0) {
+                                errorMessage = errorsElement.getAsJsonArray().get(0).getAsString();
+                            } else if (errorsElement.isJsonObject()) {
+                                JsonObject errors = errorsElement.getAsJsonObject();
+                                errorMessage = "Please check your input";
+                                for (String key : errors.keySet()) {
+                                    if (errors.get(key).isJsonArray() && errors.get(key).getAsJsonArray().size() > 0) {
+                                        errorMessage = errors.get(key).getAsJsonArray().get(0).getAsString();
+                                        break;
+                                    }
+                                }
+                            } else {
+                                errorMessage = "Please check your input";
+                            }
+                        } else {
+                            errorMessage = "Please enter valid credentials";
+                        }
                         Bundle params = new Bundle();
                         params.putString("reason", "validation_error");
                         AnalyticsHelper.logEvent("login_failure", params); // Event #7

@@ -38,6 +38,7 @@ import com.thelinkphone.app.adapter.LinkPreviewAdapter;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 public class IncomingCallPopupService extends Service {
 
@@ -77,6 +78,7 @@ public class IncomingCallPopupService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        FirebaseCrashlytics.getInstance().log("popup_create | IncomingCallPopupService.onCreate() called");
         ensureFirebaseInitialized();
         createNotificationChannel();
 //        startForeground(NOTIFICATION_ID, buildNotification());
@@ -88,6 +90,7 @@ public class IncomingCallPopupService extends Service {
             // to foreground. Log and continue rather than let this propagate and
             // kill the process the way the unguarded version did.
             Log.e(TAG, "startForeground failed in onCreate: " + e.getMessage(), e);
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
@@ -197,6 +200,7 @@ public class IncomingCallPopupService extends Service {
             Log.d(TAG, "Popup position: x=" + params.x + " y=" + params.y + " width=" + params.width + " height=" + params.height + " gravity=" + params.gravity + " alpha=" + popupView.getAlpha() + " visibility=" + popupView.getVisibility());
             isVisible = true;
             Log.d(TAG, "DEBUG 3: View added to WindowManager.");
+            FirebaseCrashlytics.getInstance().log("popup_layout_shown | mode=" + mode + " username=" + username);
 
             makeDraggable(popupView, params, windowManager);
             applyTheme(mode, username, isCallALinkUser, isWithinSchedule, isAContact);
@@ -208,52 +212,58 @@ public class IncomingCallPopupService extends Service {
             // --- 4. Guaranteed Animation Start with Delay (Dual Animator) ---
             new Handler().postDelayed(() -> {
 
-                // Re-set VISIBLE: This is the trigger.
-                popupView.setVisibility(View.VISIBLE);
-                Log.d(TAG, "DEBUG 4A: Visibility set to VISIBLE. Starting animation sequence.");
+                try {
 
-                // --- A) Animate Window Position (Horizontal Slide) using ValueAnimator ---
-                android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator.ofInt(screenWidth, 0);
-                xAnimator.setDuration(400);
-                xAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator());
+                    // Re-set VISIBLE: This is the trigger.
+                    popupView.setVisibility(View.VISIBLE);
+                    Log.d(TAG, "DEBUG 4A: Visibility set to VISIBLE. Starting animation sequence.");
 
-                xAnimator.addUpdateListener(animation -> {
-                    params.x = (Integer) animation.getAnimatedValue();
-                    try {
-                        // Update the window position on every frame
-                        windowManager.updateViewLayout(popupView, params);
-                    } catch (IllegalArgumentException e) {
-                    }
-                });
+                    // --- A) Animate Window Position (Horizontal Slide) using ValueAnimator ---
+                    android.animation.ValueAnimator xAnimator = android.animation.ValueAnimator.ofInt(screenWidth, 0);
+                    xAnimator.setDuration(400);
+                    xAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator());
 
-                xAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationStart(android.animation.Animator animation) {
-                        Log.d(TAG, "DEBUG 4B: Animation officially started (Sliding X).");
-                    }
+                    xAnimator.addUpdateListener(animation -> {
+                        params.x = (Integer) animation.getAnimatedValue();
+                        try {
+                            // Update the window position on every frame
+                            windowManager.updateViewLayout(popupView, params);
+                        } catch (IllegalArgumentException e) {
+                        }
+                    });
 
-                    @Override
-                    public void onAnimationEnd(android.animation.Animator animation) {
-                        Log.d(TAG, "DEBUG 4C: Animation completed (Sliding X).");
-                        Log.d(TAG, "Animation finished. alpha=" + popupView.getAlpha() + " translationX=" + popupView.getTranslationX());
-                    }
-                });
-                xAnimator.start();
+                    xAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(android.animation.Animator animation) {
+                            Log.d(TAG, "DEBUG 4B: Animation officially started (Sliding X).");
+                        }
 
-                // --- B) Animate View Properties (Alpha and Scale) using ViewPropertyAnimator
-                // ---
-                popupView.animate()
-                        .alpha(1f)
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .setDuration(400)
-                        .setInterpolator(new android.view.animation.DecelerateInterpolator())
-                        .start();
+                        @Override
+                        public void onAnimationEnd(android.animation.Animator animation) {
+                            Log.d(TAG, "DEBUG 4C: Animation completed (Sliding X).");
+                            Log.d(TAG, "Animation finished. alpha=" + popupView.getAlpha() + " translationX=" + popupView.getTranslationX());
+                        }
+                    });
+                    xAnimator.start();
 
+                    // --- B) Animate View Properties (Alpha and Scale) using ViewPropertyAnimator
+                    // ---
+                    popupView.animate()
+                            .alpha(1f)
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(400)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .start();
+                } catch (Exception e) {
+                        Log.e(TAG, "Error in delayed popup animation: " + e.getMessage(), e);
+                        FirebaseCrashlytics.getInstance().recordException(e);
+                }
             }, 10); // 10ms delay ensures addView is fully processed
 
         } catch (Exception e) {
             Log.e(TAG, "Error showing popup: " + e.getMessage(), e);
+            FirebaseCrashlytics.getInstance().recordException(e);
             stopSelf();
         }
     }

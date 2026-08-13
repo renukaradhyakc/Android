@@ -12,7 +12,11 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.PowerManager;
 import android.provider.MediaStore;
+import android.util.Log;
+
 import androidx.core.app.NotificationCompat;
+
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.thelinkphone.app.ActivityCall;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.broadcase.MyCallReceiver;
@@ -40,19 +44,20 @@ public class MyNotificationManager {
 
     public void setupNotification(final boolean z) {
         final String phoneCall = CallManager.getInstance().getPhoneCall();
-        android.util.Log.d("MyNotificationManager", "Setting up notification for: " + phoneCall);
+        Log.d("MyNotificationManager", "Setting up notification for: " + phoneCall);
+        FirebaseCrashlytics.getInstance().log("notification_setup | headsUp=" + z);
 
         // Try to get contact info first for immediate display
         CallerInfoManager.CallerInfo contactInfo = CallerInfoManager.getContactInfoSync(this.c, phoneCall);
         if (contactInfo != null) {
-            android.util.Log.d("MyNotificationManager", "Found contact info: " + contactInfo.getDisplayName());
+            Log.d("MyNotificationManager", "Found contact info: " + contactInfo.getDisplayName());
             setupNotificationWithCallerInfo(z, phoneCall, contactInfo);
         } else {
             // Use enhanced caller info lookup
             CallerInfoManager.getCallerInfo(this.c, phoneCall, new CallerInfoManager.CallerInfoCallback() {
                 @Override
                 public void onCallerInfoRetrieved(CallerInfoManager.CallerInfo callerInfo) {
-                    android.util.Log.d("MyNotificationManager", "Retrieved caller info: " + callerInfo.getDisplayName());
+                    Log.d("MyNotificationManager", "Retrieved caller info: " + callerInfo.getDisplayName());
                     setupNotificationWithCallerInfo(z, phoneCall, callerInfo);
                 }
             });
@@ -140,7 +145,7 @@ public class MyNotificationManager {
 
     private void setupNotificationWithCallerInfo(boolean isHeadsUp, String phoneNumber, CallerInfoManager.CallerInfo callerInfo) {
         try {
-            android.util.Log.d("MyNotificationManager", "Setting up notification with caller info: " + callerInfo.getDisplayName());
+            Log.d("MyNotificationManager", "Setting up notification with caller info: " + callerInfo.getDisplayName());
 
             int state = CallManager.getInstance().getState();
             boolean shouldShowHeadsUp = ((PowerManager) this.c.getSystemService(Context.POWER_SERVICE)).isInteractive() && state == 2 && isHeadsUp;
@@ -232,10 +237,11 @@ public class MyNotificationManager {
             }
 
             this.manager.notify(CALL_NOTIFICATION_ID, builder.build());
-            android.util.Log.d("MyNotificationManager", "Notification displayed for: " + displayName);
+            Log.d("MyNotificationManager", "Notification displayed for: " + displayName);
 
         } catch (Exception e) {
-            android.util.Log.e("MyNotificationManager", "Error setting up notification: " + e.getMessage());
+            Log.e("MyNotificationManager", "Error setting up notification: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
             e.printStackTrace();
         }
     }

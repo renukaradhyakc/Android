@@ -5,10 +5,11 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.LogLevel;
-import com.revenuecat.purchases.api.BuildConfig;
+import com.thelinkphone.app.BuildConfig;
 import com.thelinkphone.app.utils.AnalyticsHelper;
 
 public class MyAppClass extends Application {
@@ -20,6 +21,23 @@ public class MyAppClass extends Application {
     public void onCreate() {
         super.onCreate();
         myContext = this;
+
+        FirebaseApp.initializeApp(this);
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true);
+
+        final Thread.UncaughtExceptionHandler defaultHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            try {
+                FirebaseCrashlytics.getInstance().log("Uncaught exception on thread: " + thread.getName());
+                FirebaseCrashlytics.getInstance().recordException(throwable);
+            } catch (Exception e) {
+                Log.e("MyAppClass", "Failed to record crash to Crashlytics", e);
+            }
+            if (defaultHandler != null) {
+                defaultHandler.uncaughtException(thread, throwable); // let Crashlytics' own handler still run
+            }
+        });
+
         AnalyticsHelper.init(this);
 
         // Configure RevenueCat

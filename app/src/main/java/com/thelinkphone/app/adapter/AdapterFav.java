@@ -3,6 +3,8 @@ package com.thelinkphone.app.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.aitsuki.swipe.SwipeLayout;
 import com.thelinkphone.app.R;
@@ -108,7 +110,7 @@ public class AdapterFav extends RecyclerView.Adapter<AdapterFav.Holder> {
             });
             TextW textW = (TextW) view.findViewById(R.id.right_menu);
             textW.setupText(400, 4.0f);
-            textW.setTextColor(-1);
+            textW.setTextColor(ContextCompat.getColor(view.getContext(), R.color.white));
             textW.setOnClickListener(new View.OnClickListener() { 
                 @Override 
                 public final void onClick(View view2) {

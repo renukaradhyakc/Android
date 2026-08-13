@@ -7,6 +7,8 @@ import android.os.PowerManager;
 import android.telecom.Call;
 import android.telecom.InCallService;
 import android.util.Log;
+
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.thelinkphone.app.ActivityCall;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.ReadContact;
@@ -57,7 +59,8 @@ public class CallService extends InCallService {
                 this.callNotificationManager.setupNotification(false);
                 startActivity(ActivityCall.makeIntent(this));
                 return;
-            } catch (ActivityNotFoundException unused) {
+            } catch (ActivityNotFoundException e) {
+                FirebaseCrashlytics.getInstance().recordException(e);
                 this.callNotificationManager.setupNotification(true);
                 return;
             }
@@ -127,6 +130,7 @@ public class CallService extends InCallService {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        FirebaseCrashlytics.getInstance().log("service_destroyed | CallService.onDestroy() called");
         this.callNotificationManager.cancelNotification();
 
         // Privacy protection is managed by call settings

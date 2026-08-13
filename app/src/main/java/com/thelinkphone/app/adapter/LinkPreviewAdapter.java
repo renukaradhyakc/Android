@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.thelinkphone.app.R;
+import com.thelinkphone.app.utils.MyConst;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,8 +69,8 @@ public class LinkPreviewAdapter extends RecyclerView.Adapter<LinkPreviewAdapter.
             displayTitle = displayTitle.substring(0, 10) + "...";
         }
         holder.tvTitle.setText(displayTitle);
-        
-        String faviconUrl = "https://www.google.com/s2/favicons?domain=" + link.url + "&sz=128";
+
+        String faviconUrl = String.format(MyConst.FAVICON_URL_TEMPLATE, link.url);
         
         Glide.with(holder.itemView.getContext())
             .load(faviconUrl)
@@ -79,7 +81,7 @@ public class LinkPreviewAdapter extends RecyclerView.Adapter<LinkPreviewAdapter.
         
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(v.getContext(), com.thelinkphone.app.WebViewActivity.class);
-            intent.putExtra("url", link.url);
+            intent.putExtra(MyConst.DATA_URL, link.url);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             v.getContext().startActivity(intent);
         });
@@ -109,7 +111,7 @@ public class LinkPreviewAdapter extends RecyclerView.Adapter<LinkPreviewAdapter.
                 conn.setRequestMethod("GET");
                 conn.setConnectTimeout(3000);
                 conn.setReadTimeout(3000);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+                conn.setRequestProperty("User-Agent", MyConst.USER_AGENT);
                 
                 java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(conn.getInputStream()));
                 StringBuilder html = new StringBuilder();

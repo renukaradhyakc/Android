@@ -10,6 +10,7 @@ import android.telecom.CallScreeningService;
 import android.telephony.PhoneNumberUtils;
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.gson.Gson;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemPhone;
@@ -46,11 +47,13 @@ public class MyCallScreeningService extends CallScreeningService {
     private static final String TAG = "MyCallScreeningService";
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
+    private long screenStartMs = 0;
 
     @Override
     public void onScreenCall(Call.Details details) {
         String decode = Uri.decode(details.getHandle().toString());
         String phoneNumber = (decode == null || !decode.startsWith("tel:")) ? "" : decode.substring(decode.indexOf("tel:") + 4);
+        FirebaseCrashlytics.getInstance().log("screen_start | numberHash=" + phoneNumber.hashCode());
 
         Log.d(TAG, "==================== CALL SCREENING START ====================");
         Log.d(TAG, "Raw handle: " + details.getHandle().toString());
@@ -81,6 +84,11 @@ public class MyCallScreeningService extends CallScreeningService {
         Log.d(TAG, "Manual block check result: " + isManuallyBlocked);
 
         checkEventAndProceed(details, phoneNumber, callSetting, isManuallyBlocked);
+
+        long syncElapsed = System.currentTimeMillis() - screenStartMs;
+        if (syncElapsed > 4000) {
+            FirebaseCrashlytics.getInstance().log("WARNING: onScreenCall setup itself took " + syncElapsed + "ms — close to 5s platform timeout");
+        }
 
         Log.d(TAG, "==================== CALL SCREENING END ====================");
     }
@@ -286,6 +294,7 @@ public class MyCallScreeningService extends CallScreeningService {
             @Override
             public void onFailure(retrofit2.Call<Event> call, Throwable t) {
                 Log.e(TAG, "API call failed: " + t.getMessage());
+                FirebaseCrashlytics.getInstance().recordException(t);
                 listener.onEventCheckComplete(null,false);
                 t.printStackTrace();
             }
@@ -307,10 +316,12 @@ public class MyCallScreeningService extends CallScreeningService {
         checkEventTime(token, phoneNumber, new CheckEventTimeListener() {
             @Override
             public void onEventCheckComplete(Event event,boolean apiFailed) {
+                long elapsed = screenStartMs == 0 ? -1 : (System.currentTimeMillis() - screenStartMs);
                 Log.d(TAG, "Event check complete for " + phoneNumber);
 
                 if (isManuallyBlocked) {
                     Log.d(TAG, "BLOCKING CALL - number is in manual block list: " + phoneNumber);
+                    FirebaseCrashlytics.getInstance().log("screen_decision=blocked (manual) | elapsedMs=" + elapsed);
                     blockCall(details);
                     launchBlockedPopup(callMode, event, phoneNumber, true);
                     return;
@@ -321,6 +332,7 @@ public class MyCallScreeningService extends CallScreeningService {
                     Log.e(TAG, "API failed for non-blocked call");
                     if (callMode == MyShare.CALL_SETTING_UNRESTRICTED) {
                         Log.d(TAG, "Unrestricted mode - allowing call despite API failure");
+                        FirebaseCrashlytics.getInstance().log("screen_decision=allowed (unrestricted) | elapsedMs=" + elapsed);
                         allowCall(details);
                         launchActivityCall(callMode, null, phoneNumber);
 
@@ -328,11 +340,13 @@ public class MyCallScreeningService extends CallScreeningService {
                         boolean isContact = isNumberInContacts(phoneNumber);
                         if (isContact) {
                             Log.d(TAG, "Known contact - allowing despite API failure");
+                            FirebaseCrashlytics.getInstance().log("screen_decision=allowed (contact, api failed) | elapsedMs=" + elapsed);
                             allowCall(details);
                             launchActivityCall(callMode, null, phoneNumber);
 
                         } else {
                             Log.d(TAG, "Unknown number + API failure - blocking for safety");
+                            FirebaseCrashlytics.getInstance().log("screen_decision=blocked (api failed) | elapsedMs=" + elapsed);
                             MyShare.addBlockReason(MyCallScreeningService.this, phoneNumber, CallBlockReason.API_FAILURE);
                             blockCall(details);
                             launchBlockedPopup(callMode, null, phoneNumber, false);
@@ -344,6 +358,7 @@ public class MyCallScreeningService extends CallScreeningService {
                 // For unrestricted mode → always allow (ignore schedule)
                 if (callMode == MyShare.CALL_SETTING_UNRESTRICTED) {
                     Log.d(TAG, "Unrestricted mode - allowing call");
+                    FirebaseCrashlytics.getInstance().log("screen_decision=allowed (unrestricted, normal path) | elapsedMs=" + elapsed);
                     allowCall(details);
                     launchActivityCall(callMode, event, phoneNumber);
                     return;
@@ -358,10 +373,12 @@ public class MyCallScreeningService extends CallScreeningService {
 //                } else
                 if (event != null && event.isWithinTime()) {
                     Log.d(TAG, "Unknown number — within schedule, allowing");
+                    FirebaseCrashlytics.getInstance().log("screen_decision=allowed (within schedule) | elapsedMs=" + elapsed);
                     allowCall(details);
                     launchActivityCall(callMode, event, phoneNumber);
                 } else {
                     Log.d(TAG, "Unknown number — outside schedule, blocking");
+                    FirebaseCrashlytics.getInstance().log("screen_decision=blocked (outside schedule) | elapsedMs=" + elapsed);
                     MyShare.addBlockReason(MyCallScreeningService.this, phoneNumber, CallBlockReason.OUTSIDE_SCHEDULE);
                     blockCall(details);
                     launchBlockedPopup(callMode,event,phoneNumber,isManuallyBlocked);
