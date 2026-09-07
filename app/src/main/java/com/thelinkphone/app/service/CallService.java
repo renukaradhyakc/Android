@@ -10,6 +10,7 @@ import android.util.Log;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.thelinkphone.app.ActivityCall;
+import com.thelinkphone.app.utils.AppBadgeManager;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.ReadContact;
 import com.thelinkphone.app.utils.SpamProtectionManager;
@@ -29,6 +30,7 @@ public class CallService extends InCallService {
             // Handle missed calls immediately for badge clearing
             if (i == Call.STATE_DISCONNECTED) {
 //                handleCallDisconnected(call);
+                handleMissedCallForBadge(call);
             }
         }
     };
@@ -196,6 +198,18 @@ public class CallService extends InCallService {
             return false; // For now, assume all disconnected calls are missed calls
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    private void handleMissedCallForBadge(Call call) {
+        try {
+            int disconnectCode = call.getDetails().getDisconnectCause().getCode();
+            if (disconnectCode == android.telecom.DisconnectCause.MISSED) {
+                AppBadgeManager.increment(this);
+                Log.d(TAG, "Missed call detected via DisconnectCause.MISSED - badge incremented");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking disconnect cause for badge: " + e.getMessage());
         }
     }
 }

@@ -57,8 +57,8 @@ public class OtherUtils {
     public static boolean checkPermission(Context context) {
         String[] strArr = { "android.permission.READ_CONTACTS", "android.permission.CALL_PHONE",
                 "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG",
-                "android.permission.READ_PHONE_STATE" };
-        for (int i = 0; i < 5; i++) {
+                "android.permission.READ_PHONE_STATE", "android.permission.POST_NOTIFICATIONS"};
+        for (int i = 0; i < 6; i++) {
             if (!checkPer(context, strArr[i])) {
                 return false;
             }

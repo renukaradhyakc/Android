@@ -27,6 +27,7 @@ import android.widget.TextView;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyShare;
 
@@ -48,6 +49,16 @@ public class BlockedPopupService extends Service {
 
     public static void showPopup(Context context,int callMode,String username,boolean isManuallyBlocked,String phoneNumber) {
         Log.d(TAG, "Static showPopup called with username: " + username + ", callMode: " + callMode + ", isManuallyBlocked: " + isManuallyBlocked);
+
+        boolean canDrawOverlay = android.provider.Settings.canDrawOverlays(context);
+        FirebaseCrashlytics.getInstance().log("blockedPopup_showPopup | canDrawOverlays=" + canDrawOverlay);
+
+        if (!canDrawOverlay) {
+            Log.w(TAG, "Overlay permission not granted — skipping blocked popup start");
+            FirebaseCrashlytics.getInstance().log("blockedPopup_showPopup | SKIPPED due to missing overlay permission");
+            return;
+        }
+
         Intent intent = new Intent(context, BlockedPopupService.class);
         intent.putExtra(USERNAME, username);
         intent.putExtra(CALL_MODE, callMode);
@@ -58,6 +69,7 @@ public class BlockedPopupService extends Service {
             Log.d(TAG, "Foreground service started successfully");
         } catch (Exception e) {
             Log.e(TAG, "Error starting service: " + e.getMessage(), e);
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 
@@ -76,6 +88,7 @@ public class BlockedPopupService extends Service {
             // to foreground. Log and continue rather than let this propagate and
             // kill the process the way the unguarded version did.
             Log.e(TAG, "startForeground failed in onCreate: " + e.getMessage(), e);
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
     }
 

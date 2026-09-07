@@ -1,5 +1,7 @@
 package com.thelinkphone.app.service;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,6 +22,8 @@ import com.thelinkphone.app.repository.ContactLookupCache;
 import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
+import com.thelinkphone.app.utils.AppBadgeManager;
+import com.thelinkphone.app.utils.CallAnalyticsHelper;
 import com.thelinkphone.app.utils.CallBlockReason;
 import com.thelinkphone.app.utils.CheckEventTimeListener;
 import com.thelinkphone.app.utils.MyShare;
@@ -28,6 +32,7 @@ import com.thelinkphone.app.utils.ReadContact;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Call screening service that implements two modes:
@@ -48,11 +53,17 @@ public class MyCallScreeningService extends CallScreeningService {
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
     private long screenStartMs = 0;
+    private static final ExecutorService screeningExecutor = newSingleThreadExecutor();
 
     @Override
     public void onScreenCall(Call.Details details) {
+        screenStartMs = System.currentTimeMillis(); // FIX: was never assigned before
+        final CallAnalyticsHelper callAnalytics = new CallAnalyticsHelper();
+
         String decode = Uri.decode(details.getHandle().toString());
         String phoneNumber = (decode == null || !decode.startsWith("tel:")) ? "" : decode.substring(decode.indexOf("tel:") + 4);
+
+        callAnalytics.logScreeningStarted(phoneNumber);
         FirebaseCrashlytics.getInstance().log("screen_start | numberHash=" + phoneNumber.hashCode());
 
         Log.d(TAG, "==================== CALL SCREENING START ====================");
@@ -80,10 +91,14 @@ public class MyCallScreeningService extends CallScreeningService {
         Log.d(TAG, "CALL MODE: " + (callSetting == MyShare.CALL_SETTING_UNRESTRICTED ? "UNRESTRICTED" : "PHONELINK_SCHEDULED"));
         Log.d(TAG, "Fetching event info for: " + phoneNumber);
 
-        final boolean isManuallyBlocked = isNumberManuallyBlocked(phoneNumber);
-        Log.d(TAG, "Manual block check result: " + isManuallyBlocked);
-
-        checkEventAndProceed(details, phoneNumber, callSetting, isManuallyBlocked);
+        final String finalPhoneNumber = phoneNumber;
+        final int finalCallSetting = callSetting;
+        screeningExecutor.execute(() -> {
+            boolean isManuallyBlocked = isNumberManuallyBlocked(finalPhoneNumber);
+            Log.d(TAG, "Manual block check result: " + isManuallyBlocked);
+            callAnalytics.logBlockCheckResult(isManuallyBlocked);
+            checkEventAndProceed(details, finalPhoneNumber, finalCallSetting, isManuallyBlocked, callAnalytics);
+        });
 
         long syncElapsed = System.currentTimeMillis() - screenStartMs;
         if (syncElapsed > 4000) {
@@ -93,9 +108,10 @@ public class MyCallScreeningService extends CallScreeningService {
         Log.d(TAG, "==================== CALL SCREENING END ====================");
     }
 
-    private void launchActivityCall(int callMode,Event event,String phoneNumber) {
-        Intent intent = new Intent(getApplicationContext(), com.thelinkphone.app.service.IncomingCallPopupService.class);
+    private void launchActivityCall(int callMode,Event event,String phoneNumber, CallAnalyticsHelper callAnalytics) {
+        Intent intent = new Intent(getApplicationContext(), IncomingCallPopupService.class);
         intent.putExtra("CALL_MODE", callMode);
+        intent.putExtra("CALL_ID", callAnalytics.getCallId());
 
         String displayName = "Unknown Caller";
         boolean isCallalinkUser = false;
@@ -109,7 +125,11 @@ public class MyCallScreeningService extends CallScreeningService {
 
         displayName=getDisplayName(phoneNumber,event);
 
-        if (isNumberInContacts(phoneNumber)) {
+        long contactLookupStartMs = System.currentTimeMillis();
+        isAContact = isNumberInContacts(phoneNumber);
+        callAnalytics.logContactLookupResult(isAContact, System.currentTimeMillis() - contactLookupStartMs);
+
+        if (isAContact) {
             isAContact=true;
             Log.d(TAG, "Found local contact: " + displayName);
         } else {
@@ -130,10 +150,27 @@ public class MyCallScreeningService extends CallScreeningService {
         MyShare.saveCallInfo(getApplicationContext(), displayName);
 
         Log.d("launchActivityCall", "Final name to display: " + displayName);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            getApplicationContext().startForegroundService(intent);
-        } else {
-            getApplicationContext().startService(intent);
+
+        boolean canDrawOverlay = android.provider.Settings.canDrawOverlays(getApplicationContext());
+        callAnalytics.logPopupAttempt("launchActivityCall", phoneNumber != null && !phoneNumber.isEmpty(), canDrawOverlay);
+        FirebaseCrashlytics.getInstance().log("launchActivityCall | canDrawOverlays=" + canDrawOverlay);
+
+        if (!canDrawOverlay) {
+            Log.w(TAG, "Overlay permission not granted — skipping popup start, notification will still show");
+            callAnalytics.logPopupResult("launchActivityCall", "skipped_no_overlay");
+            FirebaseCrashlytics.getInstance().log("launchActivityCall | SKIPPED popup start due to missing overlay permission");
+            return;
+        }
+
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                getApplicationContext().startForegroundService(intent);
+            } else {
+                getApplicationContext().startService(intent);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start IncomingCallPopupService: " + e.getMessage(), e);
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
 
     }
@@ -215,6 +252,8 @@ public class MyCallScreeningService extends CallScreeningService {
                 .build();
         respondToCall(details, response);
 
+        AppBadgeManager.increment(this);
+
         RecentsRepository.clearCache();
         Log.d("CallManager", "Recents cache invalidated after call ended");
 
@@ -272,19 +311,22 @@ public class MyCallScreeningService extends CallScreeningService {
         }
     }
 
-    private void checkEventTime(String token, String phoneNumber, CheckEventTimeListener listener) {
+    private void checkEventTime(String token, String phoneNumber, long apiCallStartMs, CallAnalyticsHelper callAnalytics, CheckEventTimeListener listener) {
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         retrofit2.Call<Event> call = apiService.checkEvent("Bearer " + token, phoneNumber);
 
         call.enqueue(new retrofit2.Callback<Event>() {
             @Override
             public void onResponse(retrofit2.Call<Event> call, retrofit2.Response<Event> response) {
+                long latencyMs = System.currentTimeMillis() - apiCallStartMs;
                 if (response.isSuccessful() && response.body() != null) {
+                    callAnalytics.logPermissionApiResult(latencyMs, response.code(), response.body().isWithinTime(), true);
                     Event event = response.body();
                     Log.d(TAG, "API Response: " + new Gson().toJson(response.body()));
                     cacheContactLookupFromEvent(getApplicationContext(), phoneNumber, event);
                     listener.onEventCheckComplete(event,false);
                 } else {
+                    callAnalytics.logPermissionApiResult(latencyMs, response.code(), false, false);
                     Log.e(TAG, "API call failed or empty response - Response code: " + response.code());
                     // On API error, use fallback behavior (block call)
                     listener.onEventCheckComplete(null,true);
@@ -293,7 +335,9 @@ public class MyCallScreeningService extends CallScreeningService {
 
             @Override
             public void onFailure(retrofit2.Call<Event> call, Throwable t) {
+                long latencyMs = System.currentTimeMillis() - apiCallStartMs;
                 Log.e(TAG, "API call failed: " + t.getMessage());
+                callAnalytics.logPermissionApiResult(latencyMs, -1, false, false);
                 FirebaseCrashlytics.getInstance().recordException(t);
                 listener.onEventCheckComplete(null,false);
                 t.printStackTrace();
@@ -301,7 +345,7 @@ public class MyCallScreeningService extends CallScreeningService {
         });
     }
 
-    private void checkEventAndProceed(Call.Details details, String phoneNumber, int callMode,boolean isManuallyBlocked) {
+    private void checkEventAndProceed(Call.Details details, String phoneNumber, int callMode,boolean isManuallyBlocked, CallAnalyticsHelper callAnalytics) {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
         String token = sharedPreferences.getString(TOKEN_KEY, "");
 
@@ -309,11 +353,12 @@ public class MyCallScreeningService extends CallScreeningService {
         if (token.isEmpty()) {
             Log.w(TAG, "Auth token missing");
             allowCall(details);
-            launchActivityCall(callMode, null, phoneNumber);
+            launchActivityCall(callMode, null, phoneNumber, callAnalytics);
             return;
         }
 
-        checkEventTime(token, phoneNumber, new CheckEventTimeListener() {
+        long apiCallStartMs = System.currentTimeMillis();
+        checkEventTime(token, phoneNumber, apiCallStartMs, callAnalytics, new CheckEventTimeListener() {
             @Override
             public void onEventCheckComplete(Event event,boolean apiFailed) {
                 long elapsed = screenStartMs == 0 ? -1 : (System.currentTimeMillis() - screenStartMs);
@@ -334,24 +379,26 @@ public class MyCallScreeningService extends CallScreeningService {
                         Log.d(TAG, "Unrestricted mode - allowing call despite API failure");
                         FirebaseCrashlytics.getInstance().log("screen_decision=allowed (unrestricted) | elapsedMs=" + elapsed);
                         allowCall(details);
-                        launchActivityCall(callMode, null, phoneNumber);
+                        launchActivityCall(callMode, null, phoneNumber, callAnalytics);
 
                     } else {
-                        boolean isContact = isNumberInContacts(phoneNumber);
-                        if (isContact) {
-                            Log.d(TAG, "Known contact - allowing despite API failure");
-                            FirebaseCrashlytics.getInstance().log("screen_decision=allowed (contact, api failed) | elapsedMs=" + elapsed);
-                            allowCall(details);
-                            launchActivityCall(callMode, null, phoneNumber);
+                        screeningExecutor.execute(() -> {
+                            boolean isContact = isNumberInContacts(phoneNumber);
+                            if (isContact) {
+                                Log.d(TAG, "Known contact - allowing despite API failure");
+                                FirebaseCrashlytics.getInstance().log("screen_decision=allowed (contact, api failed) | elapsedMs=" + elapsed);
+                                allowCall(details);
+                                launchActivityCall(callMode, null, phoneNumber, callAnalytics);
 
-                        } else {
-                            Log.d(TAG, "Unknown number + API failure - blocking for safety");
-                            FirebaseCrashlytics.getInstance().log("screen_decision=blocked (api failed) | elapsedMs=" + elapsed);
-                            MyShare.addBlockReason(MyCallScreeningService.this, phoneNumber, CallBlockReason.API_FAILURE);
-                            blockCall(details);
-                            launchBlockedPopup(callMode, null, phoneNumber, false);
+                            } else {
+                                Log.d(TAG, "Unknown number + API failure - blocking for safety");
+                                FirebaseCrashlytics.getInstance().log("screen_decision=blocked (api failed) | elapsedMs=" + elapsed);
+                                MyShare.addBlockReason(MyCallScreeningService.this, phoneNumber, CallBlockReason.API_FAILURE);
+                                blockCall(details);
+                                launchBlockedPopup(callMode, null, phoneNumber, false);
+                            }
+                    });
                         }
-                    }
                     return;
                 }
 
@@ -360,7 +407,7 @@ public class MyCallScreeningService extends CallScreeningService {
                     Log.d(TAG, "Unrestricted mode - allowing call");
                     FirebaseCrashlytics.getInstance().log("screen_decision=allowed (unrestricted, normal path) | elapsedMs=" + elapsed);
                     allowCall(details);
-                    launchActivityCall(callMode, event, phoneNumber);
+                    launchActivityCall(callMode, event, phoneNumber, callAnalytics);
                     return;
                 }
 
@@ -375,7 +422,7 @@ public class MyCallScreeningService extends CallScreeningService {
                     Log.d(TAG, "Unknown number — within schedule, allowing");
                     FirebaseCrashlytics.getInstance().log("screen_decision=allowed (within schedule) | elapsedMs=" + elapsed);
                     allowCall(details);
-                    launchActivityCall(callMode, event, phoneNumber);
+                    launchActivityCall(callMode, event, phoneNumber, callAnalytics);
                 } else {
                     Log.d(TAG, "Unknown number — outside schedule, blocking");
                     FirebaseCrashlytics.getInstance().log("screen_decision=blocked (outside schedule) | elapsedMs=" + elapsed);

@@ -9,6 +9,7 @@ import android.telecom.Call;
 import android.telecom.InCallService;
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.thelinkphone.app.repository.RecentsRepository;
 import com.thelinkphone.app.utils.MyShare;
 
@@ -64,8 +65,13 @@ public class CallManager {
 
         Call call2 = this.call;
         if (call2 != null) {
-            call2.unregisterCallback(this.callback);
-            this.call.disconnect();
+            try {
+                call2.unregisterCallback(this.callback);
+                call2.disconnect();
+            } catch (Exception e) {
+                Log.e("CallManager", "Error disconnecting previous call: " + e.getMessage(), e);
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
         }
         this.call = call;
         call.registerCallback(this.callback);
@@ -135,7 +141,13 @@ public class CallManager {
             int callState = getState(call);
             Log.d("CallManager", "Call state during removal: " + callState);
 
-            call2.unregisterCallback(this.callback);
+            try {
+                call2.unregisterCallback(this.callback);
+            } catch (Exception e) {
+                Log.e("CallManager", "Error unregistering call callback: " + e.getMessage(), e);
+                FirebaseCrashlytics.getInstance().recordException(e);
+            }
+            
             this.call = null;
             Log.d("CallManager", "Call reference cleared");
 
@@ -376,8 +388,31 @@ public class CallManager {
         String decode;
         try {
             Call call = this.call;
-            return (call == null || call.getDetails() == null || (decode = Uri.decode(this.call.getDetails().getHandle().toString())) == null || !decode.startsWith("tel:")) ? "" : decode.substring(decode.indexOf("tel:") + 4);
-        } catch (Exception unused) {
+            if (call == null) {
+                FirebaseCrashlytics.getInstance().setCustomKey("getPhoneCall_empty_reason", "call_null");
+                return "";
+            }
+            if (call.getDetails() == null) {
+                FirebaseCrashlytics.getInstance().setCustomKey("getPhoneCall_empty_reason", "details_null");
+                return "";
+            }
+            Uri handle = call.getDetails().getHandle();
+            if (handle == null) {
+                int presentation = call.getDetails().getHandlePresentation();
+                FirebaseCrashlytics.getInstance().setCustomKey("getPhoneCall_empty_reason", "handle_null_presentation_" + presentation);
+                FirebaseCrashlytics.getInstance().log("getPhoneCall: handle null, presentation=" + presentation);
+                return "";
+            }
+            decode = Uri.decode(handle.toString());
+            if (decode == null || !decode.startsWith("tel:")) {
+                FirebaseCrashlytics.getInstance().setCustomKey("getPhoneCall_empty_reason", "not_tel_scheme");
+                FirebaseCrashlytics.getInstance().log("getPhoneCall: non-tel handle=" + decode);
+                return "";
+            }
+            return decode.substring(decode.indexOf("tel:") + 4);
+        } catch (Exception e) {
+            FirebaseCrashlytics.getInstance().setCustomKey("getPhoneCall_empty_reason", "exception_" + e.getClass().getSimpleName());
+            FirebaseCrashlytics.getInstance().recordException(e);
             return "";
         }
     }

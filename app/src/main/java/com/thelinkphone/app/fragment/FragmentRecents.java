@@ -39,6 +39,7 @@ import com.thelinkphone.app.model.ContactLookupResult;
 import com.thelinkphone.app.repository.ContactLookupCache;
 import com.thelinkphone.app.repository.ContactLookupRepository;
 import com.thelinkphone.app.repository.RecentsRepository;
+import com.thelinkphone.app.utils.AppBadgeManager;
 import com.thelinkphone.app.utils.CallBlockReasonResolver;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
@@ -72,6 +73,7 @@ public class FragmentRecents extends BaseFragment {
         if (viewFragmentRecents != null) {
             viewFragmentRecents.loadAllRecent();
         }
+        AppBadgeManager.clear(getContext());
     }
 
 

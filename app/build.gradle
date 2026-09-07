@@ -43,6 +43,13 @@ android {
             useLegacyPackaging = false
         }
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
@@ -88,4 +95,10 @@ dependencies {
     implementation 'com.airbnb.android:lottie:6.4.0'
 
     implementation 'androidx.core:core:1.13.1'
+
+    // --- Unit testing ---
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation 'org.mockito:mockito-inline:5.2.0'   // needed to mock final Android classes (Call, Call.Details, Context, etc.)
+    testImplementation 'org.robolectric:robolectric:4.13'    // simulated Android framework, runs on JVM
 }

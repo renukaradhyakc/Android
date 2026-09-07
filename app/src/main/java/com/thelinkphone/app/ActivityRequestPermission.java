@@ -26,7 +26,7 @@ public class ActivityRequestPermission extends BaseActivity {
     private ViewPer viewPer;
     private boolean movingToNextScreen = false;
     private boolean showingSystemPicker = false;
-    private final String[] per = {"android.permission.READ_CONTACTS", "android.permission.CALL_PHONE", "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.READ_PHONE_STATE", "android.permission.READ_PHONE_NUMBERS"};
+    private final String[] per = {"android.permission.READ_CONTACTS", "android.permission.CALL_PHONE", "android.permission.READ_CALL_LOG", "android.permission.WRITE_CALL_LOG", "android.permission.READ_PHONE_STATE", "android.permission.READ_PHONE_NUMBERS", "android.permission.POST_NOTIFICATIONS"};
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback() { 
         @Override 
         public final void onActivityResult(Object obj) {

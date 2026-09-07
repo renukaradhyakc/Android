@@ -11,6 +11,7 @@ import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.thelinkphone.app.item.ItemContact;
 import com.thelinkphone.app.item.ItemPhone;
 import com.thelinkphone.app.item.ItemRecent;
@@ -109,6 +110,11 @@ public class ReadContact {
 
     public static String getIdWithNumber(Context context, String str) {
         String str2 = "";
+        Log.d("ReadContact", "getIdWithNumber called with str=[" + str + "] isNull=" + (str == null) + " isEmpty=" + (str != null && str.isEmpty()));
+        if (str == null || str.isEmpty()) {
+            FirebaseCrashlytics.getInstance().setCustomKey("getIdWithNumber_guard_hit", true);
+            return str2;
+        }
         try {
             Cursor query = context.getContentResolver().query(Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(str)), new String[]{"_id"}, null, null, null);
             if (query != null) {
@@ -117,7 +123,9 @@ public class ReadContact {
                 }
                 query.close();
             }
-        } catch (SecurityException unused) {
+        } catch (Exception e) {
+            Log.e("ReadContact", "Error looking up contact id: " + e.getMessage());
+            FirebaseCrashlytics.getInstance().recordException(e);
         }
         return str2;
     }
