@@ -3,6 +3,8 @@ package com.thelinkphone.app.fragment;
 import static android.app.Activity.RESULT_OK;
 import static android.content.Context.DOWNLOAD_SERVICE;
 
+import static com.thelinkphone.app.utils.WebViewLinkHandler.handleSpecialUrl;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
@@ -42,6 +44,7 @@ import android.widget.Toast;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyConst;
+import com.thelinkphone.app.utils.WebViewLinkHandler;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +52,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 
-public class ScheduledEventsFrag extends Fragment {
+public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler.Reloadable {
 
     WebView webview;
     // SwipeRefreshLayout mySwipeRefreshLayout;
@@ -69,7 +72,19 @@ public class ScheduledEventsFrag extends Fragment {
         // Required empty public constructor
     }
 
+    @Override
+    public void reloadWebView() {
+        if (webview != null) {
+            webview.reload();
+        }
+    }
 
+    @Override
+    public void loadUrl(String url) {
+        if (webview != null) {
+            webview.loadUrl(url);
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -296,51 +311,9 @@ public class ScheduledEventsFrag extends Fragment {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
-            if (url.startsWith("tel:")) {
-                Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
-                startActivity(intent);
+            if (handleSpecialUrl(ScheduledEventsFrag.this, view, url)) {
                 return true;
             }
-
-            else if (url.startsWith("mailto:")){
-                Intent i = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
-                startActivity(i);
-                return true;
-            }
-
-            else if (Uri.parse(url).getScheme().equals("market")) {
-                try {
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setData(Uri.parse(url));
-                    Activity host = (Activity) view.getContext();
-                    host.startActivity(intent);
-                    return true;
-                } catch (ActivityNotFoundException e) {
-                    Uri uri = Uri.parse(url);
-                    view.loadUrl("http://play.google.com/store/apps/" + uri.getHost() + "?" + uri.getQuery());
-                    return false;
-                }
-            }
-
-            else if(url != null && url.startsWith("whatsapp://")) {
-                view.getContext().startActivity(
-                        new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-
-                return true;
-
-            }
-
-          /*  else if (url.contains("youtube.com")){
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(i);
-                return true;
-            }*/
-
-          /*  else if (url.contains("instagram.com")){
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(i);
-                return true;
-            }*/
 
             view.loadUrl(url);
             return true;
@@ -374,7 +347,9 @@ public class ScheduledEventsFrag extends Fragment {
                 public boolean shouldOverrideUrlLoading(WebView clientView, String url) {
                     // clientView here is popupWebView.
                     // Load the URL into the main WebView.
-                    mainWebView.loadUrl(url);
+                    if (!handleSpecialUrl(ScheduledEventsFrag.this, mainWebView, url)) {
+                        mainWebView.loadUrl(url);
+                    }
                     
                     // The popupWebView has served its purpose. Destroy it to free resources.
                     // This check is a good practice, though clientView should be popupWebView.

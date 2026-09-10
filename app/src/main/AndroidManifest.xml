@@ -91,6 +91,7 @@
             android:exported="true"
             android:screenOrientation="portrait"
             android:hardwareAccelerated="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.DIAL" />
@@ -114,6 +115,12 @@
                 <data android:scheme="https"
                     android:host="app.callalink.com"
                     android:pathPrefix="/call" />
+                <data android:scheme="https"
+                    android:host="app.callalink.com"
+                    android:pathPrefix="/google-oauth-return" />
+                <data android:scheme="https"
+                    android:host="app.callalink.com"
+                    android:pathPrefix="/zoom-oauth-return" />
             </intent-filter>
             <!-- Custom scheme fallback for LinkPhone deep links -->
             <intent-filter>

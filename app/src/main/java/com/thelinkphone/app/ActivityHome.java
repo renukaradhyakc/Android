@@ -57,6 +57,7 @@ import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
 import com.thelinkphone.app.utils.ReadContact;
 import com.thelinkphone.app.utils.SpamProtectionManager;
+import com.thelinkphone.app.utils.WebViewLinkHandler;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,6 +138,14 @@ public class ActivityHome extends BaseActivityUi {
         if (Intent.ACTION_VIEW.equals(action) && data != null) {
             String scheme = data.getScheme();
             String host = data.getHost();
+            String path = data.getPath();
+
+            if ("https".equals(scheme) && "app.callalink.com".equals(host)
+                    && path != null
+                    && (path.startsWith("/google-oauth-return") || path.startsWith("/zoom-oauth-return"))) {
+                handleOAuthReturn(data);
+                return;
+            }
 
             Log.d(TAG, "Deep link scheme: " + scheme + ", host: " + host);
 
@@ -457,17 +466,17 @@ public class ActivityHome extends BaseActivityUi {
             }
             showFragment(this.fragmentFavorites, false);*/
         } else if (i == 1) {
-            /*if (this.scheduledEventsFrag == null) {
+            if (this.scheduledEventsFrag == null) {
                 ScheduledEventsFrag scheduledEventsFrag = new ScheduledEventsFrag();
                 this.scheduledEventsFrag = scheduledEventsFrag;
             //  fragmentRecents.setContactResult(this.contactResult);
             }
-            showFragment(this.scheduledEventsFrag, false);*/
-            if (this.fragmentUnifiedSchedule == null) {
-                FragmentUnifiedSchedule fragmentUnifiedSchedule = new FragmentUnifiedSchedule();
-                this.fragmentUnifiedSchedule = fragmentUnifiedSchedule;
-            }
-            showFragment(this.fragmentUnifiedSchedule, false);
+            showFragment(this.scheduledEventsFrag, false);
+//            if (this.fragmentUnifiedSchedule == null) {
+//                FragmentUnifiedSchedule fragmentUnifiedSchedule = new FragmentUnifiedSchedule();
+//                this.fragmentUnifiedSchedule = fragmentUnifiedSchedule;
+//            }
+//            showFragment(this.fragmentUnifiedSchedule, false);
         } else if (i == 2) {
             if (this.eventsFragment == null) {
                 EventsFragment eventsFragment = new EventsFragment();
@@ -742,6 +751,29 @@ public class ActivityHome extends BaseActivityUi {
         viewTabMode.setTabDefault(2);
     }
 
+    private void handleOAuthReturn(Uri data) {
+        String type = data.getQueryParameter("type");
+        String next = data.getQueryParameter("next");
+        Log.d(TAG, "OAuth return: type=" + type + ", next=" + next);
+        Toast.makeText(this, "Calendar connected", Toast.LENGTH_SHORT).show();
+
+        WebViewLinkHandler.Reloadable target = WebViewLinkHandler.consumePendingOAuthTarget();
+        if (target != null) {
+            applyOAuthReturn(target, next);
+        } else {
+            applyOAuthReturn(eventsFragment, next);
+            applyOAuthReturn(scheduledEventsFrag, next);
+        }
+    }
+
+    private void applyOAuthReturn(WebViewLinkHandler.Reloadable reloadable, String next) {
+        if (reloadable == null) return;
+        if (next != null && !next.isEmpty()) {
+            reloadable.loadUrl(next);
+        } else {
+            reloadable.reloadWebView();
+        }
+    }
 
     @Override
     public void onPause() {
