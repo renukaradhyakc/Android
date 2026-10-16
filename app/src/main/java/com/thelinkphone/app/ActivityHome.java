@@ -3,6 +3,7 @@ package com.thelinkphone.app;
 import static androidx.core.content.ContentProviderCompat.requireContext;
 import static java.security.AccessController.getContext;
 
+import android.Manifest;
 import android.app.role.RoleManager;
 import android.content.Context;
 import android.content.Intent;
@@ -52,6 +53,7 @@ import com.thelinkphone.app.utils.AnalyticsHelper;
 import com.thelinkphone.app.utils.ApiClient;
 import com.thelinkphone.app.utils.ApiService;
 import com.thelinkphone.app.utils.CallDisplayMode;
+import com.thelinkphone.app.utils.DeviceRegistrar;
 import com.thelinkphone.app.utils.MyConst;
 import com.thelinkphone.app.utils.MyShare;
 import com.thelinkphone.app.utils.OtherUtils;
@@ -67,6 +69,7 @@ import java.util.Iterator;
 
 public class ActivityHome extends BaseActivityUi {
     private static final String TAG = "ActivityHome";
+    public static final String ACTION_OPEN_NOTIFICATION = "com.thelinkphone.app.OPEN_NOTIFICATION";
     private ArrayList<ItemContact> arrAllContact;
     private final ContactResult contactResult = new AnonymousClass1();
     private FragmentContact fragmentContact;
@@ -109,6 +112,8 @@ public class ActivityHome extends BaseActivityUi {
         initContact();
         initView();
         handleBillNavigation();
+        handleNotificationNavigation();
+        requestNotificationPermissionIfNeeded();
         /*AdAdmob adAdmob = new AdAdmob( this);
         adAdmob.FullscreenAd( this);*/
 
@@ -664,6 +669,7 @@ public class ActivityHome extends BaseActivityUi {
         // Handle deep links when app is already running
         setIntent(intent);
         handleDeepLink();
+        handleNotificationNavigation();
     }
 
     @Override
@@ -685,6 +691,7 @@ public class ActivityHome extends BaseActivityUi {
         }
 
         AnalyticsHelper.reachedHome = true;
+        DeviceRegistrar.syncIfLoggedIn(this);
 
         if (!blockPermissionChecked) {
             blockPermissionChecked = true;
@@ -735,6 +742,55 @@ public class ActivityHome extends BaseActivityUi {
                 startActivity(intent);
             }
         });
+    }
+
+    private void handleNotificationNavigation() {
+        Intent intent = getIntent();
+
+        if (intent == null || !ACTION_OPEN_NOTIFICATION.equals(intent.getAction())) {
+            return;
+        }
+
+        String url = intent.getStringExtra("deep_link");
+        intent.setAction(null); // consume, so it cannot repeat
+
+        if (url == null || url.isEmpty() || !isOurHost(url)) {
+            return;
+        }
+
+        if (url.contains("/scheduled-events") || url.contains("/sc/")) {
+            if (scheduledEventsFrag != null && scheduledEventsFrag.isVisible()) {
+                scheduledEventsFrag.loadUrl(url);
+            } else {
+                ScheduledEventsFrag.pendingUrl = url;
+            }
+            viewTabMode.setTabDefault(1);
+        } else {
+            if (eventsFragment != null && eventsFragment.isVisible()) {
+                eventsFragment.loadUrl(url);
+            } else {
+                EventsFragment.billUrl = url;
+            }
+            viewTabMode.setTabDefault(2);
+        }
+    }
+
+    private boolean isOurHost(String url) {
+        try {
+            String host = Uri.parse(url).getHost();
+            String ours = Uri.parse(MyConst.WEB_BASE_URL).getHost();
+            return host != null && host.equalsIgnoreCase(ours);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33
+                && androidx.core.content.ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            androidx.core.app.ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 7001);
+        }
     }
 
     private void handleBillNavigation() {

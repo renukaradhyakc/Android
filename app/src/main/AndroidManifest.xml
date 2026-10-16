@@ -132,6 +132,10 @@
                 <data android:scheme="linkphone" />
                 <data android:scheme="callalink" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="com.thelinkphone.app.OPEN_NOTIFICATION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ActivityApplyTheme"
@@ -208,6 +212,14 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="phoneCall" />
+
+        <service
+            android:name=".service.CallaLinkMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -33,6 +33,7 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import okhttp3.MultipartBody;
+import okhttp3.ResponseBody;
 import retrofit2.http.Multipart;
 import retrofit2.http.Part;
 
@@ -140,5 +141,21 @@ public interface ApiService {
     @GET("unified-schedules")
     Call<UnifiedScheduleResponse> getUnifiedSchedules(
             @Header("Authorization") String token
+    );
+
+    @FormUrlEncoded
+    @POST("v1/devices")
+    Call<ResponseBody> registerDevice(
+            @Header("Authorization") String token,
+            @Field("platform") String platform,
+            @Field("token") String fcmToken,
+            @Field("device_id") String deviceId,
+            @Field("app_version") String appVersion
+    );
+
+    @DELETE("v1/devices/{token}")
+    Call<ResponseBody> unregisterDevice(
+            @Header("Authorization") String token,
+            @Path("token") String fcmToken
     );
 }

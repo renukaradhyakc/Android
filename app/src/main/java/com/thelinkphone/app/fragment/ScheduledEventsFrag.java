@@ -69,6 +69,7 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
     private SharedPreferences sharedPreferences;
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
+    public static String pendingUrl = null;
     private static final int LOCATION_PERMISSION_REQUEST = 2001;
     private String pendingGeoOrigin;
     private GeolocationPermissions.Callback pendingGeoCallback;
@@ -261,6 +262,11 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
         {
             Intent toLoginAct = new Intent(getContext(), LoginActivity.class);
             startActivity(toLoginAct);
+        }
+
+        if (pendingUrl != null && mIsloggedIn != null) {
+            webview.loadUrl(pendingUrl);
+            pendingUrl = null;
         }
 
         //  webview.reload();

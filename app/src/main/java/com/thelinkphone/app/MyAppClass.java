@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.LogLevel;
 import com.thelinkphone.app.BuildConfig;
 import com.thelinkphone.app.utils.AnalyticsHelper;
+import com.thelinkphone.app.utils.NotificationChannels;
 
 public class MyAppClass extends Application {
 
@@ -39,6 +40,7 @@ public class MyAppClass extends Application {
         });
 
         AnalyticsHelper.init(this);
+        NotificationChannels.createAll(this);
 
         // Configure RevenueCat
         PurchasesConfiguration.Builder builder = new PurchasesConfiguration.Builder(this, REVENUECAT_API_KEY);
