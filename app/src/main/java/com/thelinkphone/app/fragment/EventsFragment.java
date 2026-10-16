@@ -6,9 +6,7 @@ import static android.content.Context.DOWNLOAD_SERVICE;
 import static com.thelinkphone.app.utils.WebViewLinkHandler.handleSpecialUrl;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.DownloadManager;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -36,16 +34,12 @@ import android.webkit.DownloadListener;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import com.thelinkphone.app.AccessManager;
-import com.thelinkphone.app.ActivityPaywall;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyConst;
@@ -55,8 +49,9 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+
+import android.webkit.GeolocationPermissions;
+import androidx.core.content.ContextCompat;
 
 
 public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloadable{
@@ -79,7 +74,9 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
     private static final String EMAIL_KEY = "user_email";
     public static String billUrl = null;
     private boolean isFirstLoad = true;
-
+    private static final int LOCATION_PERMISSION_REQUEST = 2001;
+    private String pendingGeoOrigin;
+    private GeolocationPermissions.Callback pendingGeoCallback;
 
     public EventsFragment() {
         // Required empty public constructor
@@ -145,6 +142,7 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
         webview.getSettings().setAllowUniversalAccessFromFileURLs(true);
         webview.getSettings().setUseWideViewPort(true);
         webview.getSettings().setAllowContentAccess(true);
+        webview.getSettings().setGeolocationEnabled(true);
 
         // Disable autofill to prevent crashes during activity transitions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -226,6 +224,21 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
                 }
                 startActivityForResult(chooserIntent, FCR);
                 return true;
+            }
+
+            @Override
+            public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                if (!isAdded() || getContext() == null) {
+                    callback.invoke(origin, false, false);
+                    return;
+                }
+                if (hasLocationPermission()) {
+                    callback.invoke(origin, true, false);
+                } else {
+                    pendingGeoOrigin = origin;
+                    pendingGeoCallback = callback;
+                    requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
+                }
             }
         });
 
@@ -369,7 +382,22 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
 
     private void getToken(Context context) {
         mIsloggedIn = sharedPreferences.getString(TOKEN_KEY, null);
+    }
 
+    private boolean hasLocationPermission() {
+        return ContextCompat.checkSelfPermission(getContext(), android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST && pendingGeoCallback != null) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+            pendingGeoCallback.invoke(pendingGeoOrigin, granted, false);
+            pendingGeoCallback = null;
+            pendingGeoOrigin = null;
+        }
     }
 
     private File createImageFile() throws IOException {
