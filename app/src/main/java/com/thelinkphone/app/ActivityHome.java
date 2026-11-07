@@ -101,6 +101,8 @@ public class ActivityHome extends BaseActivityUi {
     private ViewTabMode viewTabMode;
     private boolean blockPermissionChecked = false;
 
+    private static final int SUPPORTED_NOTIFICATION_SCHEMA = 1;
+
     @Override
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
@@ -752,7 +754,26 @@ public class ActivityHome extends BaseActivityUi {
         }
 
         String url = intent.getStringExtra("deep_link");
-        intent.setAction(null); // consume, so it cannot repeat
+        intent.setAction(null);
+
+        String notificationId = intent.getStringExtra("notification_id");
+        markNotificationRead(notificationId);
+
+        int schema = 1;
+
+        try {
+            schema = Integer.parseInt(intent.getStringExtra("schema_version"));
+        } catch (Exception ignored) {
+            // missing or invalid: treat as version 1
+        }
+        if (schema > SUPPORTED_NOTIFICATION_SCHEMA) {
+            return;
+        }
+
+        if (WebViewLinkHandler.isStoreSubscriptionUrl(url)) {
+            WebViewLinkHandler.openStoreSubscriptionPage(this, url);
+            return;
+        }
 
         if (url == null || url.isEmpty() || !isOurHost(url)) {
             return;
@@ -773,6 +794,27 @@ public class ActivityHome extends BaseActivityUi {
             }
             viewTabMode.setTabDefault(2);
         }
+    }
+
+    private void markNotificationRead(String uuid) {
+        if (uuid == null || uuid.isEmpty() || token == null) {
+            return;
+        }
+
+        ApiClient.getClient().create(ApiService.class)
+                .markNotificationRead("Bearer " + token, uuid)
+                .enqueue(new retrofit2.Callback<okhttp3.ResponseBody>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<okhttp3.ResponseBody> call,
+                                           retrofit2.Response<okhttp3.ResponseBody> response) {
+                        // nothing to do: marking read again is harmless on the server
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<okhttp3.ResponseBody> call, Throwable t) {
+                        Log.w(TAG, "mark read failed: " + t.getMessage());
+                    }
+                });
     }
 
     private boolean isOurHost(String url) {

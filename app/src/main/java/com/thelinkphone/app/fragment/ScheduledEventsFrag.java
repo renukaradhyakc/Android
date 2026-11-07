@@ -110,6 +110,11 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
 
         webview = (WebView) view.findViewById(R.id.webview);
 
+        webview.addJavascriptInterface(
+                new com.thelinkphone.app.utils.AppBridge(requireActivity()),
+                "CallaLinkApp"
+        );
+
         webview.setBackgroundColor(Color.WHITE);
         webview.getSettings().setJavaScriptEnabled(true);
         webview.getSettings().setBuiltInZoomControls(true);

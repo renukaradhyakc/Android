@@ -134,6 +134,23 @@ public class SessionManager {
         }
     }
 
+
+    public void clearAuthSession() {
+        synchronized (lock) {
+            prefs.edit()
+                    .remove(KEY_TOKEN)
+                    .remove(KEY_EMAIL)
+                    .remove(KEY_PASSWORD)
+                    .remove(KEY_DOMAIN)
+                    .remove(KEY_PHONE)
+                    .apply();
+
+            sessionData = new SessionData(null, null, null, null, null);
+
+            Log.d(TAG, "Authentication session cleared");
+        }
+    }
+
     public void reloadSession() {
         Log.d(TAG, "Reloading session from disk");
         loadSession();

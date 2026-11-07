@@ -28,3 +28,7 @@
 
 -dontwarn com.androidlab.bokehoverlay.**
 
+-keepclassmembers class com.thelinkphone.app.utils.AppBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}
+

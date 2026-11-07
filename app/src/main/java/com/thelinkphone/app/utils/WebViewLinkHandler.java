@@ -77,6 +77,10 @@ public final class WebViewLinkHandler {
             return true;
         }
 
+        if (isStoreSubscriptionUrl(url)) {
+            return openStoreSubscriptionPage(view.getContext(), url);
+        }
+
         if (shouldHandOffExternally(url)) {
             return launchExternallyOrBrowser(fragment, url);
         }
@@ -137,6 +141,39 @@ public final class WebViewLinkHandler {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             browserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             fragment.startActivity(browserIntent);
+        }
+        return true;
+    }
+
+    public static boolean isStoreSubscriptionUrl(String url) {
+        if (url == null) return false;
+
+        Uri uri = Uri.parse(url);
+        if (!"https".equalsIgnoreCase(uri.getScheme())) return false;
+
+        String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
+        String path = uri.getPath() == null ? "" : uri.getPath();
+
+        return (host.equals("play.google.com") && path.equals("/store/account/subscriptions"))
+                || (host.equals("apps.apple.com")
+                && (path.equals("/account/subscriptions") || path.equals("/account/billing")));
+    }
+
+    public static boolean openStoreSubscriptionPage(Context context, String url) {
+        Uri uri = Uri.parse(url);
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if ("play.google.com".equalsIgnoreCase(uri.getHost())) {
+            intent.setPackage("com.android.vending");
+        }
+
+        try {
+            context.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            Intent fallback = new Intent(Intent.ACTION_VIEW, uri);
+            fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(fallback);
         }
         return true;
     }

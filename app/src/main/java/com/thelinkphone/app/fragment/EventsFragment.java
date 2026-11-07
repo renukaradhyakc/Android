@@ -120,6 +120,12 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
         sharedPreferences = getContext().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
 
         webview = (WebView) view.findViewById(R.id.webview);
+
+        webview.addJavascriptInterface(
+                new com.thelinkphone.app.utils.AppBridge(requireActivity()),
+                "CallaLinkApp"
+        );
+
         webview.setWebViewClient(new WebViewClient());
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

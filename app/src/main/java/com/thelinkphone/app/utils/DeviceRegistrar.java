@@ -3,6 +3,8 @@ package com.thelinkphone.app.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
@@ -20,10 +22,11 @@ public final class DeviceRegistrar {
     private static final String PREFS = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
     private static final long RESYNC_MS = 10 * 60 * 1000L;
-
+    private static final long[] RETRY_DELAYS_MS = {30_000L, 120_000L, 600_000L};
+    private static final Handler HANDLER = new Handler(Looper.getMainLooper());
     private static String lastSyncAuth = null;
     private static long lastSyncAt = 0;
-
+    private static int retryCount = 0;
     private DeviceRegistrar() {
     }
 
@@ -48,6 +51,7 @@ public final class DeviceRegistrar {
             if (!task.isSuccessful() || task.getResult() == null) {
                 lastSyncAuth = null;
                 Log.w(TAG, "could not read the FCM token", task.getException());
+                scheduleRetry(app);
                 return;
             }
             register(app, task.getResult());
@@ -68,10 +72,14 @@ public final class DeviceRegistrar {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                         if (response.isSuccessful()) {
+                            retryCount = 0;
                             Log.d(TAG, "device registered");
                         } else {
                             lastSyncAuth = null;
                             Log.w(TAG, "register failed: HTTP " + response.code());
+                            if (response.code() >= 500) {
+                                scheduleRetry(app);
+                            }
                         }
                     }
 
@@ -79,6 +87,7 @@ public final class DeviceRegistrar {
                     public void onFailure(Call<ResponseBody> call, Throwable t) {
                         lastSyncAuth = null;
                         Log.w(TAG, "register failed: " + t.getMessage());
+                        scheduleRetry(app);
                     }
                 });
     }
@@ -87,7 +96,10 @@ public final class DeviceRegistrar {
     public static void unregister(Context context, Runnable then) {
         final Context app = context.getApplicationContext();
         final String auth = authHeader(app);
+        final String deviceId = deviceId(app);
         lastSyncAuth = null;
+        HANDLER.removeCallbacksAndMessages(null);
+        retryCount = 0;
 
         if (auth == null) {
             run(then);
@@ -95,13 +107,10 @@ public final class DeviceRegistrar {
         }
 
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
-            if (!task.isSuccessful() || task.getResult() == null) {
-                run(then);
-                return;
-            }
+            String token = (task.isSuccessful() && task.getResult() != null) ? task.getResult() : "none";
 
             ApiClient.getClient().create(ApiService.class)
-                    .unregisterDevice(auth, task.getResult())
+                    .unregisterDevice(auth, token, deviceId)
                     .enqueue(new Callback<ResponseBody>() {
                         @Override
                         public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -114,6 +123,15 @@ public final class DeviceRegistrar {
                         }
                     });
         });
+    }
+
+    private static void scheduleRetry(final Context app) {
+        if (retryCount >= RETRY_DELAYS_MS.length) {
+            return; // give up for now; the next onResume / login tries again
+        }
+
+        long delay = RETRY_DELAYS_MS[retryCount++];
+        HANDLER.postDelayed(() -> syncIfLoggedIn(app), delay);
     }
 
     private static void run(Runnable then) {

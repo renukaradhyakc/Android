@@ -156,6 +156,13 @@ public interface ApiService {
     @DELETE("v1/devices/{token}")
     Call<ResponseBody> unregisterDevice(
             @Header("Authorization") String token,
-            @Path("token") String fcmToken
+            @Path("token") String fcmToken,
+            @Query("device_id") String deviceId
+    );
+
+    @POST("v1/notifications/{uuid}/read")
+    Call<ResponseBody> markNotificationRead(
+            @Header("Authorization") String token,
+            @Path("uuid") String uuid
     );
 }
