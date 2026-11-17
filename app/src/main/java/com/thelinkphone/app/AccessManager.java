@@ -32,6 +32,7 @@ public final class AccessManager {
     private static final String KEY_LAST_CHECK = "last_check_timestamp";
     private static final String KEY_SUBSCRIPTION_ACTIVE = "subscription_active";
     private static final String KEY_TRIAL_ACTIVE = "trial_active_cache";
+    private static final String KEY_CACHE_OWNER = "cache_owner_email";
     private static final long CACHE_TTL_MS = 6 * 60 * 60 * 1000;
     private static AccessCache memoryCache = null;
     private static long lastMemoryCacheUpdate = 0;
@@ -52,11 +53,14 @@ public final class AccessManager {
             String email,
             AccessCallback callback
     ) {
+        Log.d(TAG, "checkAccess for: " + email);
         if (activity == null || email == null || email.trim().isEmpty()) {
             Log.e(TAG, "Invalid parameters for access check");
             callback.onAccessDenied("INVALID_PARAMETERS");
             return;
         }
+
+        ensureCacheBelongsTo(activity, email);
 
         AccessCache cached = getMemoryCache(activity);
         if (cached != null && cached.isValid()) {
@@ -134,6 +138,9 @@ public final class AccessManager {
     ) {
         ApiService apiService = ApiClient.getClient().create(ApiService.class);
         SharedPreferences prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+
+        activity.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE)
+                .edit().putString(KEY_CACHE_OWNER, email.trim()).apply();
 
         Call<TrialStatusResponse> call = apiService.getTrialStatus(email);
 
@@ -243,8 +250,8 @@ public final class AccessManager {
     }
 
     private static AccessCache getMemoryCache(Activity activity) {
-        if (memoryCache != null &&
-                System.currentTimeMillis() - lastMemoryCacheUpdate < CACHE_TTL_MS) {
+        long age = System.currentTimeMillis() - lastMemoryCacheUpdate;
+        if (memoryCache != null && age >= 0 && age < CACHE_TTL_MS) {
             return memoryCache;
         }
         return null;
@@ -253,8 +260,9 @@ public final class AccessManager {
     private static AccessCache getPersistentCache(Activity activity) {
         SharedPreferences cache = activity.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE);
         long lastCheck = cache.getLong(KEY_LAST_CHECK, 0);
+        long age = System.currentTimeMillis() - lastCheck;
 
-        if (System.currentTimeMillis() - lastCheck < CACHE_TTL_MS) {
+        if (lastCheck > 0 && age >= 0 && age < CACHE_TTL_MS) {
             return new AccessCache(
                     cache.getBoolean(KEY_ACCESS_GRANTED, false),
                     cache.getBoolean(KEY_SUBSCRIPTION_ACTIVE, false),
@@ -305,6 +313,35 @@ public final class AccessManager {
                 .apply();
     }
 
+    private static void ensureCacheBelongsTo(Activity activity, String email) {
+        SharedPreferences p = activity.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE);
+        String owner = p.getString(KEY_CACHE_OWNER, null);
+        if (owner == null || !owner.equalsIgnoreCase(email.trim())) {
+            Log.d(TAG, "Cache owner mismatch (owner=" + owner + ") - clearing");
+            invalidateCache(activity);
+            activity.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE)
+                    .edit().putString(KEY_CACHE_OWNER, email.trim()).apply();
+        }
+    }
+
+    public static void clearAllOnLogout(Context context) {
+        Log.d(TAG, "Logout - clearing all access/subscription caches");
+        memoryCache = null;
+        lastMemoryCacheUpdate = 0;
+
+        context.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+        context.getSharedPreferences("paywall_subscription_cache", Context.MODE_PRIVATE).edit().clear().apply();
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(TRIAL_ACTIVE_KEY).apply();
+
+        try {
+            Purchases.getSharedInstance().logOut(
+                    new com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback() {
+                        @Override public void onReceived(@NonNull CustomerInfo info) { }
+                        @Override public void onError(@NonNull com.revenuecat.purchases.PurchasesError e) { }
+                    });
+        } catch (Exception ignored) { }
+    }
+
     private static class AccessCache {
         final boolean accessGranted;
         final boolean subscriptionActive;
@@ -320,7 +357,8 @@ public final class AccessManager {
         }
 
         boolean isValid() {
-            return System.currentTimeMillis() - timestamp < CACHE_TTL_MS;
+            long age = System.currentTimeMillis() - timestamp;
+            return age >= 0 && age < CACHE_TTL_MS;
         }
     }
 }

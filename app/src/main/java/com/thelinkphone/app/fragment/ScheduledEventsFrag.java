@@ -33,6 +33,8 @@ import android.webkit.DownloadListener;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.ProgressBar;
@@ -42,6 +44,7 @@ import android.widget.Toast;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyConst;
+import com.thelinkphone.app.utils.WebSession;
 import com.thelinkphone.app.utils.WebViewLinkHandler;
 
 import java.io.File;
@@ -70,6 +73,9 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
     private static final String SHARED_PREFS_NAME = "app_prefs";
     private static final String TOKEN_KEY = "auth_token";
     public static String pendingUrl = null;
+    private boolean isFirstResume = true;
+    private String lastTarget;
+    private boolean wipeHistory = false;
     private static final int LOCATION_PERMISSION_REQUEST = 2001;
     private String pendingGeoOrigin;
     private GeolocationPermissions.Callback pendingGeoCallback;
@@ -89,6 +95,7 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
     @Override
     public void loadUrl(String url) {
         if (webview != null) {
+            lastTarget = url;
             webview.loadUrl(url);
         }
     }
@@ -98,6 +105,8 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_scheduled_events, container, false);
+
+        isFirstResume = true;
 
         if (getActivity() != null) {
             getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
@@ -261,17 +270,17 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
         // int index = random.nextInt(kfclinks.length);
         if(mIsloggedIn != null)
         {
-            webview.loadUrl(MyConst.WEB_BASE_URL + "scheduled-events");
+            String target = MyConst.WEB_BASE_URL + "scheduled-events";
+            if (pendingUrl != null) {
+                target = pendingUrl;
+                pendingUrl = null;
+            }
+            openTarget(target);
         }
         else
         {
             Intent toLoginAct = new Intent(getContext(), LoginActivity.class);
             startActivity(toLoginAct);
-        }
-
-        if (pendingUrl != null && mIsloggedIn != null) {
-            webview.loadUrl(pendingUrl);
-            pendingUrl = null;
         }
 
         //  webview.reload();
@@ -344,6 +353,26 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
         return File.createTempFile(imageFileName,".jpg",storageDir);
     }
 
+    private void openTarget(String target) {
+        lastTarget = target;
+        Context c = getContext();
+        if (c == null) return;
+        WebSession.ensure(c, false, ok -> {
+            if (!isAdded() || webview == null) return;
+            webview.loadUrl(lastTarget);
+        });
+    }
+
+    private void recoverSession() {
+        Context c = getContext();
+        if (c == null || lastTarget == null) return;
+        WebSession.recover(c, ok -> {
+            if (ok && isAdded() && webview != null) {
+                webview.loadUrl(lastTarget);
+            }
+        });
+    }
+
     private void webViewGoBack(){
         webview.goBack();
     }
@@ -360,6 +389,27 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
 
             view.loadUrl(url);
             return true;
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            if (wipeHistory && url != null && !url.startsWith("about:blank")) {
+                view.clearHistory();
+                wipeHistory = false;
+            }
+            if (WebSession.isLoginUrl(url) && WebSession.allowRecover("scheduled")) {
+                recoverSession();
+            }
+        }
+
+        @Override
+        public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+            super.onReceivedHttpError(view, request, errorResponse);
+            if (request.isForMainFrame() && errorResponse.getStatusCode() == 419
+                    && WebSession.allowRecover("scheduled")) {
+                recoverSession();
+            }
         }
 
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
@@ -464,8 +514,25 @@ public class ScheduledEventsFrag extends Fragment  implements WebViewLinkHandler
 
     @Override
     public void onResume() {
-        webview.onResume();
+        if (webview != null) webview.onResume();
         super.onResume();
+
+        if (!isAdded() || webview == null) return;
+
+        if (isFirstResume) {
+            isFirstResume = false;
+            return;
+        }
+
+        if (WebSession.isStale(requireContext())) {
+            lastTarget = null;
+            wipeHistory = true;
+            webview.loadUrl("about:blank");
+            WebSession.ensure(requireContext(), false, ok -> {
+                if (!isAdded() || webview == null) return;
+                webview.loadUrl(lastTarget != null ? lastTarget : MyConst.WEB_BASE_URL + "scheduled-events");
+            });
+        }
     }
 
     @Override

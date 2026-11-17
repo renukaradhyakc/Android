@@ -50,12 +50,12 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         AnalyticsHelper.logEvent("login_screen_viewed"); // Event #4
-//        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-//            @Override
-//            public void handleOnBackPressed() {
-//                // Do nothing (back button disabled)
-//            }
-//        });
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                moveTaskToBack(true);
+            }
+        });
 
         emailEditText = findViewById(R.id.email);
         passwordEditText = findViewById(R.id.password);

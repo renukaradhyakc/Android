@@ -35,25 +35,45 @@ public final class DeviceRegistrar {
         final Context app = context.getApplicationContext();
         String auth = authHeader(app);
 
+        Log.d(TAG, "syncIfLoggedIn called");
+
         if (auth == null) {
+            Log.d(TAG, "No authentication token; skipping registration");
             return;
         }
 
+        Log.d(TAG, "Authenticated user detected");
+
         long now = SystemClock.elapsedRealtime();
+
+        Log.d(TAG, "Checking registration throttle");
+
         if (auth.equals(lastSyncAuth) && now - lastSyncAt < RESYNC_MS) {
+            Log.d(TAG, "Registration skipped due to throttle");
             return;
         }
+
+        Log.d(TAG, "Starting FCM token retrieval");
 
         lastSyncAuth = auth;
         lastSyncAt = now;
 
+        final long tokenRequestStart = SystemClock.elapsedRealtime();
+
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            long duration = SystemClock.elapsedRealtime() - tokenRequestStart;
+
+            Log.d(TAG, "FCM token request completed in " + duration + " ms");
+
             if (!task.isSuccessful() || task.getResult() == null) {
                 lastSyncAuth = null;
-                Log.w(TAG, "could not read the FCM token", task.getException());
+                Log.w(TAG, "FCM TOKEN RETRIEVAL FAILED", task.getException());
                 scheduleRetry(app);
                 return;
             }
+
+            Log.d(TAG, "FCM TOKEN RETRIEVED SUCCESSFULLY");
+
             register(app, task.getResult());
         });
     }
@@ -66,11 +86,14 @@ public final class DeviceRegistrar {
             return;
         }
 
+        Log.d(TAG, "Calling backend device registration API");
+
         ApiClient.getClient().create(ApiService.class)
                 .registerDevice(auth, "android", fcmToken, deviceId(app), appVersion(app))
                 .enqueue(new Callback<ResponseBody>() {
                     @Override
                     public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                        Log.d(TAG, "Backend registration response: " + response.code());
                         if (response.isSuccessful()) {
                             retryCount = 0;
                             Log.d(TAG, "device registered");
@@ -86,7 +109,7 @@ public final class DeviceRegistrar {
                     @Override
                     public void onFailure(Call<ResponseBody> call, Throwable t) {
                         lastSyncAuth = null;
-                        Log.w(TAG, "register failed: " + t.getMessage());
+                        Log.e(TAG, "Backend registration network failure", t);
                         scheduleRetry(app);
                     }
                 });
@@ -126,12 +149,17 @@ public final class DeviceRegistrar {
     }
 
     private static void scheduleRetry(final Context app) {
+        Log.w(TAG, "Scheduling retry. Current retry count: " + retryCount);
         if (retryCount >= RETRY_DELAYS_MS.length) {
             return; // give up for now; the next onResume / login tries again
         }
 
         long delay = RETRY_DELAYS_MS[retryCount++];
-        HANDLER.postDelayed(() -> syncIfLoggedIn(app), delay);
+        Log.w(TAG, "Next retry delay: " + (delay / 1000) + " seconds");
+        HANDLER.postDelayed(() -> {
+            Log.d(TAG, "Executing scheduled registration retry");
+            syncIfLoggedIn(app);
+        }, delay);
     }
 
     private static void run(Runnable then) {

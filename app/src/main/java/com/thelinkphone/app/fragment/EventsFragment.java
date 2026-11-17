@@ -43,6 +43,9 @@ import android.widget.Toast;
 import com.thelinkphone.app.LoginActivity;
 import com.thelinkphone.app.R;
 import com.thelinkphone.app.utils.MyConst;
+import com.thelinkphone.app.utils.WebSession;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import com.thelinkphone.app.utils.WebViewLinkHandler;
 
 import java.io.File;
@@ -74,6 +77,8 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
     private static final String EMAIL_KEY = "user_email";
     public static String billUrl = null;
     private boolean isFirstLoad = true;
+    private String lastTarget;
+    private boolean wipeHistory = false;
     private static final int LOCATION_PERMISSION_REQUEST = 2001;
     private String pendingGeoOrigin;
     private GeolocationPermissions.Callback pendingGeoCallback;
@@ -92,6 +97,7 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
     @Override
     public void loadUrl(String url) {
         if (webview != null) {
+            lastTarget = url;
             webview.loadUrl(url);
         }
     }
@@ -433,8 +439,24 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
         @Override
         public void onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
+            if (wipeHistory && url != null && !url.startsWith("about:blank")) {
+                view.clearHistory();
+                wipeHistory = false;
+            }
             view.requestLayout();
             view.invalidate();
+            if (WebSession.isLoginUrl(url) && WebSession.allowRecover("events")) {
+                recoverSession();
+            }
+        }
+
+        @Override
+        public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+            super.onReceivedHttpError(view, request, errorResponse);
+            if (request.isForMainFrame() && errorResponse.getStatusCode() == 419
+                    && WebSession.allowRecover("events")) {
+                recoverSession();
+            }
         }
 
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
@@ -542,7 +564,6 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
     public void onResume() {
         super.onResume();
 
-
         if (!isAdded() || webview == null) return;
 
         webview.onResume();
@@ -550,6 +571,14 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
         if (isFirstLoad) {
             isFirstLoad = false;
             webview.post(this::loadWebView);
+        } else if (WebSession.isStale(requireContext())) {
+            lastTarget = null;
+            wipeHistory = true;
+            webview.loadUrl("about:blank");
+            WebSession.ensure(requireContext(), false, ok -> {
+                if (!isAdded() || webview == null) return;
+                webview.loadUrl(lastTarget != null ? lastTarget : MyConst.WEB_BASE_URL + "events");
+            });
         }
 
 //        if (!isAdded()) return;
@@ -640,14 +669,33 @@ public class EventsFragment extends Fragment implements WebViewLinkHandler.Reloa
 
         Log.d("BillFlow", "Loading url = " + billUrl);
 
+        String target = MyConst.WEB_BASE_URL + "events";
+
         if (billUrl != null) {
-            webview.loadUrl(billUrl);
+            target = billUrl;
             billUrl = null;
         }
 
-        else {
-            webview.loadUrl(MyConst.WEB_BASE_URL + "events");
-        }
+        openTarget(target);
     }
 
+    private void openTarget(String target) {
+        lastTarget = target;
+        Context c = getContext();
+        if (c == null) return;
+        WebSession.ensure(c, false, ok -> {
+            if (!isAdded() || webview == null) return;
+            webview.loadUrl(lastTarget);
+        });
+    }
+
+    private void recoverSession() {
+        Context c = getContext();
+        if (c == null || lastTarget == null) return;
+        WebSession.recover(c, ok -> {
+            if (ok && isAdded() && webview != null) {
+                webview.loadUrl(lastTarget);
+            }
+        });
+    }
 }

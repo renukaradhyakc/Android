@@ -87,12 +87,17 @@ public class ActivityPaywall extends AppCompatActivity {
 
         long lastSync = accessPrefs.getLong(KEY_SUBSCRIPTION_LAST_SYNC, 0);
 
-        boolean cacheValid = lastSync > 0 && (System.currentTimeMillis() - lastSync) < (6 * 60 * 60 * 1000);
+        long syncAge = System.currentTimeMillis() - lastSync;
+        boolean cacheValid = lastSync > 0 && syncAge >= 0 && syncAge < (6 * 60 * 60 * 1000);
 
         String entrySource = getIntent().getStringExtra(EXTRA_ENTRY_SOURCE);
         boolean openedFromSettings = SOURCE_SETTINGS.equals(entrySource);
 
-        if (!openedFromSettings && cacheValid && subscribed) {
+        String currentEmail = getSharedPreferences(SHARED_PREFS_NAME, MODE_PRIVATE).getString(EMAIL_KEY, null);
+        String cacheOwner = accessPrefs.getString("owner_email", null);
+        boolean sameOwner = currentEmail != null && currentEmail.equalsIgnoreCase(cacheOwner);
+
+        if (!openedFromSettings && cacheValid && subscribed && sameOwner) {
             Log.d(TAG, "Subscribed user → skipping paywall");
             goToMainActivity();
             return;
@@ -131,6 +136,16 @@ public class ActivityPaywall extends AppCompatActivity {
             );
         } else {
             Log.d(TAG, "Back button enabled - user can return and try again");
+
+            boolean isPostponed = "TRIAL_POSTPONED".equals(entrySource);
+            if (!openedFromSettings && !isPostponed) {
+                getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        moveTaskToBack(true);
+                    }
+                });
+            }
         }
 
         sharedPreferences = getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE);
@@ -477,8 +492,7 @@ public class ActivityPaywall extends AppCompatActivity {
                 .putBoolean(KEY_SUBSCRIPTION_ACTIVE, active)
                 .putLong(KEY_SUBSCRIPTION_LAST_SYNC, System.currentTimeMillis())
                 .putString(KEY_SUBSCRIPTION_SKU, sku)
+                .putString("owner_email", getSharedPreferences(SHARED_PREFS_NAME, MODE_PRIVATE).getString(EMAIL_KEY, ""))
                 .apply();
     }
-
-
 }

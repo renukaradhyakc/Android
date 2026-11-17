@@ -703,7 +703,8 @@ public class ActivityHome extends BaseActivityUi {
         if (!currentToken.equals(token) || !currentEmail.equals(email)) {
             token = currentToken;
             email = currentEmail;
-//            isAccessChecked = false; // Force recheck
+            isAccessChecked = false;
+            hasAccess = false;
             Log.d(TAG, "Session credentials changed, forcing access recheck");
         }
 

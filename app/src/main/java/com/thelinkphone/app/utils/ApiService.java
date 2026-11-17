@@ -16,6 +16,7 @@ import com.thelinkphone.app.model.TimeZoneResponse;
 import com.thelinkphone.app.model.TrialStatusResponse;
 import com.thelinkphone.app.model.BillStatusResponse;
 import com.thelinkphone.app.model.UnifiedScheduleResponse;
+import com.thelinkphone.app.model.WebviewTicketResponse;
 
 import java.util.Map;
 
@@ -164,5 +165,15 @@ public interface ApiService {
     Call<ResponseBody> markNotificationRead(
             @Header("Authorization") String token,
             @Path("uuid") String uuid
+    );
+
+    @POST("webview-ticket")
+    Call<WebviewTicketResponse> getWebviewTicket(
+            @Header("Authorization") String token
+    );
+
+    @POST("logout")
+    Call<ResponseBody> logout(
+            @Header("Authorization") String token
     );
 }
